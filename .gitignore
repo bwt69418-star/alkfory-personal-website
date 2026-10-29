@@ -7,3 +7,10 @@ sessions/
 auth_info/
 backups/
 .DS_Store
+
+.env
+node_modules/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+backups/
