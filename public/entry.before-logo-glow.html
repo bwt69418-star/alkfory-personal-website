@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#080808">
+<title>ALKFORY | الدخول</title>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;min-height:100vh;display:flex;align-items:center;
+  justify-content:center;padding:20px;background:#080808;color:#fff;
+  font-family:Arial,sans-serif
+}
+.box{
+  width:100%;max-width:390px;text-align:center;padding:32px 22px;
+  border:1px solid #501414;border-radius:20px;
+  background:linear-gradient(145deg,#151515,#090909);
+  box-shadow:0 0 30px #7c101022
+}
+.logo{
+  width:90px;height:90px;margin:0 auto 18px;border:2px solid #a71919;
+  border-radius:50%;display:grid;place-items:center;font-size:32px;
+  font-weight:bold;color:#fff;text-shadow:0 0 15px #e11;
+  box-shadow:0 0 20px #a719192b
+}
+h1{font-size:24px;margin:8px 0;color:#fff}
+p{color:#aaa;font-size:14px;line-height:1.8}
+button{
+  width:100%;padding:14px;margin-top:12px;border:1px solid #a71919;
+  border-radius:10px;background:#170b0b;color:#fff;font-size:16px;
+  cursor:pointer
+}
+button:hover{background:#351010}
+input{
+  width:100%;padding:13px;margin-top:14px;border-radius:9px;
+  border:1px solid #444;background:#111;color:white;font-size:17px;
+  text-align:center
+}
+.hidden{display:none}
+.error{color:#ff6868;min-height:22px}
+.online{color:#55e58a;font-size:12px}
+</style>
+
+<style id="alkfory-entry-glow">
+/* شعار جديد واسم المطور */
+.logo {
+  width: 130px !important;
+  height: 130px !important;
+  border: 2px solid #ff1738 !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 auto 12px !important;
+  font-size: 58px !important;
+  color: #ff233f !important;
+  background: radial-gradient(circle, #26070c, #050505 72%) !important;
+  text-shadow: 0 0 15px #ff1738;
+  animation: logoPulse 2.4s ease-in-out infinite;
+}
+.brand-name {
+  text-align: center;
+  margin: 8px 0 22px;
+  font-weight: 800;
+  font-size: clamp(24px, 6vw, 32px);
+  letter-spacing: 1px;
+  color: #f5f5f5;
+  text-shadow: 0 0 10px #ff173855;
+}
+.brand-name span { color: #ff233f; }
+
+/* مربعات الاختيار: تنور وتطفي */
+button, .choice, .option, a.choice, .entry-btn {
+  animation: choiceGlow 2.2s ease-in-out infinite !important;
+  transition: box-shadow .3s, border-color .3s, background .3s;
+}
+button:nth-of-type(2), .choice:nth-of-type(2), .option:nth-of-type(2) {
+  animation-delay: 1.1s !important;
+}
+@keyframes logoPulse {
+  0%, 100% { box-shadow: 0 0 8px #ff173833; }
+  50% { box-shadow: 0 0 25px #ff1738aa, inset 0 0 16px #ff173822; }
+}
+@keyframes choiceGlow {
+  0%, 100% {
+    border-color: #65121f;
+    box-shadow: 0 0 3px #ff173822;
+  }
+  50% {
+    border-color: #ff233f;
+    box-shadow: 0 0 18px #ff173866, inset 0 0 12px #ff17381c;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .logo, button, .choice, .option, a.choice, .entry-btn {
+    animation: none !important;
+  }
+}
+</style>
+
+</head>
+<body>
+<main class="box">
+  <div class="logo">👑</div>
+<div class="brand-name">Ziad <span>Alkfory</span></div>
+  <div class="online">● ALKFORY</div>
+  <h1>مرحبًا بك</h1>
+  <p>اختر طريقة الدخول إلى الموقع</p>
+
+  <section id="choices">
+    <button onclick="visitor()">👤 زائر عادي</button>
+    <button onclick="showDeveloper()">⚜️ مطور</button>
+  </section>
+
+  <section id="developer" class="hidden">
+    <p>أدخل رمز المطور للمتابعة</p>
+    <form id="loginForm">
+      <input id="code" type="password" inputmode="numeric"
+        autocomplete="current-password" placeholder="رمز المطور" required>
+      <button type="submit">دخول لوحة المطور</button>
+    </form>
+    <p class="error" id="error"></p>
+    <button onclick="back()">رجوع</button>
+  </section>
+</main>
+
+<script>
+async function visitor(){
+  try {
+    const r = await fetch('/api/visitor-login', { method: 'POST' });
+    const data = await r.json();
+    if (data.success) location.href = '/home.html';
+    else alert('تعذر الدخول، حاول مرة أخرى.');
+  } catch {
+    alert('تعذر الاتصال بالسيرفر.');
+  }
+}
+function showDeveloper(){
+  document.getElementById('choices').classList.add('hidden');
+  document.getElementById('developer').classList.remove('hidden');
+}
+function back(){
+  document.getElementById('developer').classList.add('hidden');
+  document.getElementById('choices').classList.remove('hidden');
+}
+document.getElementById('loginForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const error=document.getElementById('error');
+  error.textContent='';
+  try{
+    const r=await fetch('/api/developer-login',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({code:document.getElementById('code').value})
+    });
+    const data=await r.json();
+    if(data.success){
+      location.href='/admin';
+    }else{
+      error.textContent='الرمز غير صحيح';
+    }
+  }catch{
+    error.textContent='تعذر الاتصال بالسيرفر';
+  }
+});
+</script>
+</body>
+</html>

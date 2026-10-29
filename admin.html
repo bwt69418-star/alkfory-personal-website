@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#080808">
+<title>ALKFORY | Developer</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#080808;color:#eee;font-family:Arial,sans-serif}
+header{padding:24px 18px;border-bottom:1px solid #501515;
+background:linear-gradient(120deg,#180909,#080808)}
+header h1{margin:0;color:#fff;font-size:23px}
+header p{color:#999;margin-bottom:0}
+main{max-width:850px;margin:25px auto;padding:0 16px}
+h2{font-size:19px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.card{background:#111;padding:20px;border:1px solid #382020;border-radius:13px}
+.card h3{margin-top:0;color:#ff7777}
+.card p{color:#aaa;line-height:1.7}
+button{padding:12px 16px;border:1px solid #8c2222;background:#210d0d;
+color:white;border-radius:8px;cursor:pointer}
+.status{color:#5be58b}
+footer{text-align:center;color:#777;padding:30px}
+</style>
+</head>
+<body>
+<header>
+  <h1>⚜️ ALKFORY DEVELOPER ⚜️</h1>
+  <p>لوحة التحكم الخاصة بالمطور</p>
+  <p class="status">● جلسة المطور</p>
+</header>
+<main>
+  <h2>إدارة الموقع</h2>
+  <div class="grid">
+    <section class="card">
+      <h3>📱 التطبيقات</h3>
+      <p>قسم مخصص لإدارة روابط التطبيقات وحالات الاتصال بها.</p>
+      <button onclick="alert('قسم التطبيقات قيد التجهيز')">إدارة التطبيقات</button>
+    </section>
+    <section class="card">
+      <h3>⚙️ الإعدادات</h3>
+      <p>قسم إعدادات الموقع واللغة والمظهر والأمان.</p>
+      <button onclick="alert('قسم الإعدادات قيد التجهيز')">إعدادات الموقع</button>
+    </section>
+    <section class="card">
+      <h3>🤖 ALKFORY AI</h3>
+      <p>إعدادات المساعد الذكي وربط خدمة Gemini.</p>
+      <button onclick="alert('إعدادات AI قيد التجهيز')">إعدادات AI</button>
+    </section>
+    <section class="card">
+      <h3>💬 رسائل الزوار</h3>
+      <p>واجهة مخصصة لتجهيز إدارة المحادثات والردود.</p>
+      <button onclick="alert('نظام المحادثات يحتاج إلى قاعدة بيانات قبل تفعيله')">المحادثات</button>
+    </section>
+  </div>
+  <p style="margin-top:25px">
+    <button id="logout">تسجيل الخروج</button>
+  </p>
+</main>
+<footer>⚜️ 𝒁𝒊𝒂𝒅 𝑨𝒍𝒌𝒇𝒐𝒓𝒚 | المطور ⚜️</footer>
+<script>
+document.getElementById('logout').onclick=async()=>{
+  await fetch('/api/developer-logout',{method:'POST'});
+  location.href='/';
+};
+</script>
+</body>
+</html>

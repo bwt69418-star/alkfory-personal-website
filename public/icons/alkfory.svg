@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="110" fill="#080808"/>
+  <rect x="16" y="16" width="480" height="480" rx="96"
+        fill="none" stroke="#a9233a" stroke-width="10"/>
+  <text x="256" y="300" text-anchor="middle"
+        font-size="190" fill="#ff536b">♛</text>
+  <text x="256" y="405" text-anchor="middle"
+        font-family="Arial,sans-serif" font-weight="bold"
+        font-size="58" fill="#ffffff">ALKFORY</text>
+</svg>

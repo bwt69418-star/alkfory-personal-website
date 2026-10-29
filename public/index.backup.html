@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#080808">
+<title>ALKFORY PERSONAL WEBSITE</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#080808;color:#fff;font-family:Arial,sans-serif;min-height:100vh}
+header{display:flex;justify-content:space-between;align-items:center;padding:18px;direction:ltr}
+button,a{cursor:pointer}
+.lang,.btn{border:1px solid #a21d2b;background:#151515;color:#fff;border-radius:12px;padding:12px 18px;text-decoration:none;font-size:15px}
+.logo{width:115px;height:115px;border-radius:50%;border:2px solid #d21f35;box-shadow:0 0 24px #b5102855;display:grid;place-items:center;font-size:42px;font-weight:bold;margin:25px auto 15px;position:relative}
+.logo:after{content:"";position:absolute;width:12px;height:12px;background:#22e66b;border-radius:50%;bottom:5px;right:7px;box-shadow:0 0 13px #22e66b}
+main{max-width:540px;margin:auto;padding:10px 20px 45px;text-align:center}
+h1{font-size:27px;margin:12px 0 8px}
+.red{color:#f13b4f}
+.sub{color:#aaa;margin-bottom:26px}
+.links{display:grid;gap:12px;margin:20px 0}
+.btn{display:block;width:100%;transition:.2s}
+.btn:hover{border-color:#ff4359;box-shadow:0 0 15px #d21f3533}
+.section{border:1px solid #292929;background:#101010;border-radius:16px;padding:18px;margin-top:18px}
+h2{font-size:18px;margin-top:0}
+footer{color:#777;font-size:12px;padding:22px}
+#chat{display:none;text-align:right}
+#messages{height:230px;overflow:auto;border:1px solid #292929;padding:10px;border-radius:10px;margin:10px 0}
+#messages p{overflow-wrap:anywhere}
+input{width:100%;background:#171717;border:1px solid #333;color:#fff;padding:13px;border-radius:10px;margin-bottom:9px}
+.row{display:flex;gap:8px}
+.row button{flex:1}
+</style>
+</head>
+<body>
+<header>
+<button class="lang" id="langBtn" onclick="toggleLang()">English</button>
+<span style="color:#d52b40;font-weight:bold">⚜️ ALKFORY ⚜️</span>
+</header>
+<main>
+<div class="logo">ZA</div>
+<h1 id="name">زياد <span class="red">الكفوري</span></h1>
+<p class="sub" id="subtitle">الموقع الشخصي الرسمي</p>
+
+<div class="links">
+<a class="btn" href="https://wa.me/201031808795" id="whats">💬 واتساب — تواصل معي</a>
+<a class="btn" href="https://www.facebook.com/share/1DSBGxXyRc/" target="_blank" rel="noopener">📘 Facebook</a>
+<a class="btn" href="https://www.tiktok.com/@ziadalkfory" target="_blank" rel="noopener">🎵 TikTok</a>
+<a class="btn" href="https://www.instagram.com/" target="_blank" rel="noopener">📸 Instagram</a>
+<a class="btn" href="https://t.me/Alkfory" target="_blank" rel="noopener">✈️ Telegram</a>
+</div>
+
+<section class="section" id="phoneSection">
+<h2 id="phoneTitle">📱 أرقام التواصل</h2>
+<div class="links">
+<a class="btn" href="https://wa.me/201031808795">واتساب 1</a>
+<a class="btn" href="https://wa.me/201114536964">واتساب 2</a>
+<a class="btn" href="https://wa.me/201105683246">واتساب 3</a>
+<a class="btn" href="tel:01031808795">📞 اتصال بالرقم الأول</a>
+<a class="btn" href="tel:01114536964">📞 اتصال بالرقم الثاني</a>
+</div>
+</section>
+
+<section class="section">
+<h2 id="contactTitle">💌 تواصل معي في الموقع</h2>
+<p id="contactDesc" style="color:#aaa;font-size:14px">واجهة تجريبية للمحادثة — يلزم إعداد الخادم لتفعيل الرسائل الحقيقية.</p>
+<button class="btn" onclick="openChat()" id="contactBtn">ابدأ المحادثة</button>
+<div id="chat">
+<div id="messages"><p style="color:#aaa">المحادثة غير متصلة بالخادم حتى الآن.</p></div>
+<input id="msg" placeholder="اكتب رسالتك...">
+<button class="btn" onclick="sendMessage()" id="sendBtn">إرسال</button>
+</div>
+</section>
+
+<section class="section">
+<h2>🤖 ALKFORY AI</h2>
+<p id="aiDesc" style="color:#aaa;font-size:14px">مساعد ذكي — يحتاج مفتاح Gemini صالحًا وإعداد الخادم.</p>
+<input id="aiInput" placeholder="اكتب سؤالك هنا...">
+<button class="btn" onclick="askAI()" id="aiBtn">اسأل الذكاء الاصطناعي</button>
+<div id="aiAnswer" style="white-space:pre-wrap;text-align:right;margin-top:12px"></div>
+</section>
+<footer>⚜️ 𝒁𝒊𝒂𝒅 𝑨𝒍𝒌𝒇𝒐𝒓𝒚 | المطور ⚜️</footer>
+</main>
+<script>
+let english=false;
+function toggleLang(){
+ english=!english;
+ document.documentElement.lang=english?'en':'ar';
+ document.documentElement.dir=english?'ltr':'rtl';
+ document.getElementById('langBtn').textContent=english?'العربية':'English';
+ document.getElementById('name').innerHTML=english?'Ziad <span class="red">Alkfory</span>':'زياد <span class="red">الكفوري</span>';
+ document.getElementById('subtitle').textContent=english?'Official personal website':'الموقع الشخصي الرسمي';
+ document.getElementById('whats').textContent=english?'💬 WhatsApp — Contact me':'💬 واتساب — تواصل معي';
+ document.getElementById('phoneTitle').textContent=english?'📱 Contact numbers':'📱 أرقام التواصل';
+ document.getElementById('contactTitle').textContent=english?'💌 Chat with Ziad':'💌 تواصل معي في الموقع';
+ document.getElementById('contactDesc').textContent=english?'Demo chat interface; real messaging requires backend setup.':'واجهة تجريبية للمحادثة — يلزم إعداد الخادم لتفعيل الرسائل الحقيقية.';
+ document.getElementById('contactBtn').textContent=english?'Start chat':'ابدأ المحادثة';
+ document.getElementById('msg').placeholder=english?'Type your message...':'اكتب رسالتك...';
+ document.getElementById('sendBtn').textContent=english?'Send':'إرسال';
+ document.getElementById('aiDesc').textContent=english?'AI assistant — requires a valid Gemini key and server setup.':'مساعد ذكي — يحتاج مفتاح Gemini صالحًا وإعداد الخادم.';
+ document.getElementById('aiInput').placeholder=english?'Ask something...':'اكتب سؤالك هنا...';
+ document.getElementById('aiBtn').textContent=english?'Ask AI':'اسأل الذكاء الاصطناعي';
+}
+function openChat(){document.getElementById('chat').style.display='block'}
+function sendMessage(){
+ const input=document.getElementById('msg'),v=input.value.trim();
+ if(!v)return;
+ const p=document.createElement('p');p.textContent=(english?'You: ':'أنت: ')+v;
+ document.getElementById('messages').appendChild(p);input.value='';
+}
+async function askAI(){
+ const input=document.getElementById('aiInput'),answer=document.getElementById('aiAnswer'),message=input.value.trim();
+ if(!message)return;
+ answer.textContent=english?'Thinking...':'جاري التفكير...';
+ try{
+  const r=await fetch('/api/ai',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message})});
+  const data=await r.json();
+  if(!r.ok)throw new Error(data.error||'Request failed');
+  answer.textContent=data.answer||'';
+ }catch(e){answer.textContent=(english?'AI connection failed: ':'تعذر الاتصال بالذكاء الاصطناعي: ')+e.message}
+}
+</script>
+</body>
+</html>

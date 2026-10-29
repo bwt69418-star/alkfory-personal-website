@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#080808">
+<title>ALKFORY | الدخول</title>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;min-height:100vh;display:flex;align-items:center;
+  justify-content:center;padding:20px;background:#080808;color:#fff;
+  font-family:Arial,sans-serif
+}
+.box{
+  width:100%;max-width:390px;text-align:center;padding:32px 22px;
+  border:1px solid #501414;border-radius:20px;
+  background:linear-gradient(145deg,#151515,#090909);
+  box-shadow:0 0 30px #7c101022
+}
+.logo{
+  width:90px;height:90px;margin:0 auto 18px;border:2px solid #a71919;
+  border-radius:50%;display:grid;place-items:center;font-size:32px;
+  font-weight:bold;color:#fff;text-shadow:0 0 15px #e11;
+  box-shadow:0 0 20px #a719192b
+}
+h1{font-size:24px;margin:8px 0;color:#fff}
+p{color:#aaa;font-size:14px;line-height:1.8}
+button{
+  width:100%;padding:14px;margin-top:12px;border:1px solid #a71919;
+  border-radius:10px;background:#170b0b;color:#fff;font-size:16px;
+  cursor:pointer
+}
+button:hover{background:#351010}
+input{
+  width:100%;padding:13px;margin-top:14px;border-radius:9px;
+  border:1px solid #444;background:#111;color:white;font-size:17px;
+  text-align:center
+}
+.hidden{display:none}
+.error{color:#ff6868;min-height:22px}
+.online{color:#55e58a;font-size:12px}
+</style>
+</head>
+<body>
+<main class="box">
+  <div class="logo">ZA</div>
+  <div class="online">● ALKFORY</div>
+  <h1>مرحبًا بك</h1>
+  <p>اختر طريقة الدخول إلى الموقع</p>
+
+  <section id="choices">
+    <button onclick="visitor()">👤 زائر عادي</button>
+    <button onclick="showDeveloper()">⚜️ مطور</button>
+  </section>
+
+  <section id="developer" class="hidden">
+    <p>أدخل رمز المطور للمتابعة</p>
+    <form id="loginForm">
+      <input id="code" type="password" inputmode="numeric"
+        autocomplete="current-password" placeholder="رمز المطور" required>
+      <button type="submit">دخول لوحة المطور</button>
+    </form>
+    <p class="error" id="error"></p>
+    <button onclick="back()">رجوع</button>
+  </section>
+</main>
+
+<script>
+function visitor(){
+  location.href='/home.html';
+}
+function showDeveloper(){
+  document.getElementById('choices').classList.add('hidden');
+  document.getElementById('developer').classList.remove('hidden');
+}
+function back(){
+  document.getElementById('developer').classList.add('hidden');
+  document.getElementById('choices').classList.remove('hidden');
+}
+document.getElementById('loginForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const error=document.getElementById('error');
+  error.textContent='';
+  try{
+    const r=await fetch('/api/developer-login',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({code:document.getElementById('code').value})
+    });
+    const data=await r.json();
+    if(data.success){
+      location.href='/admin';
+    }else{
+      error.textContent='الرمز غير صحيح';
+    }
+  }catch{
+    error.textContent='تعذر الاتصال بالسيرفر';
+  }
+});
+</script>
+</body>
+</html>
