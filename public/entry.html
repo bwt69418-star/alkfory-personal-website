@@ -237,5 +237,47 @@ document.getElementById('loginForm').addEventListener('submit',async e=>{
 })();
 </script>
 
+
+<script>
+/* ALKFORY_OFFLINE_NOTICE */
+(() => {
+  let box;
+  function showOffline() {
+    if (!box) {
+      box = document.createElement('div');
+      box.id = 'alkfory-offline-notice';
+      box.style.cssText = `
+        position:fixed;z-index:999999;top:15px;left:5%;width:90%;
+        box-sizing:border-box;padding:16px;border-radius:14px;
+        background:#641b25;color:white;text-align:center;
+        font: bold 15px Arial;box-shadow:0 5px 20px #0005;
+      `;
+      document.body.appendChild(box);
+    }
+    box.textContent = '⚠️ لا يوجد اتصال بالإنترنت أو أن السيرفر غير متاح. تأكد من الاتصال وحاول مرة أخرى.';
+    box.style.display = 'block';
+  }
+  function hideOffline() {
+    if (box) box.style.display = 'none';
+  }
+  window.addEventListener('offline', showOffline);
+  window.addEventListener('online', hideOffline);
+
+  const originalFetch = window.fetch.bind(window);
+  window.fetch = async (...args) => {
+    try {
+      const response = await originalFetch(...args);
+      if (response.ok) hideOffline();
+      return response;
+    } catch (error) {
+      showOffline();
+      throw error;
+    }
+  };
+
+  if (!navigator.onLine) showOffline();
+})();
+</script>
+
 </body>
 </html>
