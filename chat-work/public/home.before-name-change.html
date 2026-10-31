@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#050505">
+<title>ALKFORY | Official Website</title>
+
+<style>
+:root {
+  --red: #ff263f;
+  --green: #00ff88;
+  --bg: #050505;
+  --panel: #101010;
+  --muted: #999;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background:
+    radial-gradient(ellipse at 50% 0%, #44101955, transparent 45%),
+    var(--bg);
+  color: white;
+  font-family: Arial, sans-serif;
+  min-height: 100vh;
+}
+button, a { font: inherit; }
+a { color: inherit; text-decoration: none; }
+button { cursor: pointer; }
+header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #080808eF;
+  backdrop-filter: blur(15px);
+  border-bottom: 1px solid #242424;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 5%;
+  direction: ltr;
+}
+.brand {
+  color: white;
+  font-weight: 900;
+  letter-spacing: 2px;
+}
+.brand span { color: var(--red); }
+.lang {
+  color: white;
+  background: #151515;
+  border: 1px solid #3b2529;
+  border-radius: 10px;
+  padding: 9px 14px;
+}
+main { max-width: 850px; margin: auto; padding: 35px 20px; }
+.hero { text-align: center; padding: 30px 0 25px; }
+.emblem {
+  width: 145px;
+  height: 145px;
+  border-radius: 50%;
+  margin: 0 auto 25px;
+  display: grid;
+  place-items: center;
+  position: relative;
+  font-size: 47px;
+  font-weight: 900;
+  color: white;
+  background: linear-gradient(145deg, #1b1b1b, #080808);
+  border: 2px solid #a81d30;
+  box-shadow: 0 0 15px #ff263f44, inset 0 0 24px #ff263f12;
+  animation: float 4s ease-in-out infinite;
+}
+.emblem:after {
+  content: "";
+  position: absolute;
+  width: 13px;
+  height: 13px;
+  bottom: 8px;
+  right: 10px;
+  background: var(--green);
+  border: 3px solid #080808;
+  border-radius: 50%;
+  box-shadow: 0 0 15px var(--green);
+}
+@keyframes float {
+  0%,100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+.status {
+  color: var(--green);
+  font-size: 13px;
+  margin: 0 0 17px;
+}
+.status i {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  background: var(--green);
+  border-radius: 50%;
+  margin-left: 6px;
+  box-shadow: 0 0 9px var(--green);
+}
+h1 { font-size: clamp(30px, 6vw, 48px); margin: 8px 0 13px; }
+.red { color: var(--red); }
+.subtitle { color: #aaa; line-height: 1.9; }
+.hero-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 25px;
+}
+.btn {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 9px;
+  padding: 14px 20px;
+  border: 1px solid #383838;
+  background: #111;
+  border-radius: 12px;
+  color: white;
+  transition: .2s;
+}
+.btn:hover {
+  transform: translateY(-2px);
+  border-color: var(--red);
+  box-shadow: 0 0 18px #ff263f20;
+}
+.primary {
+  background: linear-gradient(110deg, #c8102e, #751020);
+  border-color: #ed3048;
+}
+.section-title { text-align: center; margin: 45px 0 20px; }
+.section-title h2 { margin-bottom: 8px; }
+.section-title p { color: var(--muted); font-size: 14px; }
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.card {
+  background: linear-gradient(145deg, #131313, #0a0a0a);
+  border: 1px solid #292929;
+  border-radius: 17px;
+  padding: 20px;
+  transition: .25s;
+}
+.card:hover {
+  border-color: #a51e31;
+  transform: translateY(-3px);
+}
+.card-icon { font-size: 27px; margin-bottom: 13px; }
+.card h3 { margin: 0 0 8px; font-size: 17px; }
+.card p { color: #999; font-size: 13px; line-height: 1.8; }
+.card .btn { width: 100%; margin-top: 10px; padding: 11px; }
+.ai-box {
+  border: 1px solid #49212a;
+  background: radial-gradient(ellipse at top right, #40101a55, transparent 70%), #0d0d0d;
+  border-radius: 18px;
+  padding: 22px;
+}
+.ai-box textarea {
+  width: 100%;
+  min-height: 90px;
+  resize: vertical;
+  background: #080808;
+  border: 1px solid #333;
+  border-radius: 12px;
+  color: white;
+  padding: 14px;
+  outline: none;
+  margin: 12px 0;
+  font: inherit;
+}
+.ai-box textarea:focus { border-color: var(--red); }
+#aiAnswer {
+  display: none;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: #080808;
+  padding: 14px;
+  border-radius: 12px;
+  line-height: 1.8;
+  margin-top: 14px;
+}
+footer {
+  margin-top: 50px;
+  border-top: 1px solid #242424;
+  padding: 25px 15px;
+  text-align: center;
+  color: #888;
+  font-size: 12px;
+}
+footer strong { color: #eee; }
+@media(max-width:560px) {
+  main { padding: 20px 15px; }
+  .grid { grid-template-columns: 1fr; }
+  .emblem { width: 125px; height: 125px; }
+  header { padding: 13px 15px; }
+  .hero { padding-top: 25px; }
+}
+</style>
+
+<style id="alkfory-compact-neon-cards">
+/* مربعات أصغر ومنصات رأسية */
+.grid {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 10px !important;
+  width: 100% !important;
+}
+
+.card {
+  position: relative;
+  padding: 13px 15px !important;
+  margin: 0 !important;
+  min-width: 0;
+  border: 1px solid #f21c35 !important;
+  border-radius: 13px !important;
+  background: #080808 !important;
+  box-shadow: 0 0 8px #ff002522, inset 0 0 10px #ff00250a;
+  animation: alkforyBorder 7s linear infinite;
+  overflow: hidden;
+}
+
+.card:nth-child(5n + 2) { animation-delay: -1.4s; }
+.card:nth-child(5n + 3) { animation-delay: -2.8s; }
+.card:nth-child(5n + 4) { animation-delay: -4.2s; }
+.card:nth-child(5n + 5) { animation-delay: -5.6s; }
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 16px #ff173755;
+}
+
+.card-icon {
+  font-size: 30px !important;
+  margin-bottom: 6px !important;
+  line-height: 1.2;
+}
+
+.card h3 {
+  margin: 0 0 5px !important;
+  font-size: 17px !important;
+}
+
+.card p {
+  margin: 4px 0 !important;
+  font-size: 12px !important;
+  line-height: 1.6 !important;
+}
+
+.card .btn {
+  display: block;
+  width: 100%;
+  margin-top: 8px !important;
+  padding: 9px 11px !important;
+  box-sizing: border-box;
+  border-radius: 10px;
+}
+
+@keyframes alkforyBorder {
+  0%, 100% {
+    border-color: #ff1838;
+    box-shadow: 0 0 8px #ff18382b, inset 0 0 8px #ff18380a;
+  }
+  33% {
+    border-color: #00ee88;
+    box-shadow: 0 0 9px #00ee882b, inset 0 0 8px #00ee880a;
+  }
+  66% {
+    border-color: #168bff;
+    box-shadow: 0 0 9px #168bff2b, inset 0 0 8px #168bff0a;
+  }
+}
+
+@media (max-width: 600px) {
+  main { padding: 20px 15px !important; }
+  .grid { grid-template-columns: minmax(0, 1fr) !important; }
+  .card { padding: 12px 14px !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card { animation: none !important; }
+}
+</style>
+
+</head>
+
+<body>
+<header>
+  <button class="lang" id="langBtn" onclick="toggleLang()">English</button>
+  <a class="brand" href="/">⚜️ ALK<span>FORY</span></a>
+</header>
+
+<main>
+<section class="hero">
+  <div class="emblem">ZA</div>
+  <p class="status"><i></i><span id="onlineText">الموقع متاح للزيارة</span></p>
+  <h1 id="heroName">زياد <span class="red">الكفوري</span></h1>
+  <p class="subtitle" id="heroDesc">أهلًا بك في موقعي الشخصي<br>كل طرق التواصل والخدمات في مكان واحد.</p>
+  <div class="hero-actions">
+    <a class="btn primary" href="/contact.html" id="contactTop">✉️ تواصل معي</a>
+    <a class="btn" href="#ai" id="aiTop">✦ جرّب ALKFORY AI</a>
+  </div>
+</section>
+
+<div class="section-title">
+  <h2 id="socialHeading">⚡ حساباتي وروابطي</h2>
+  <p id="socialDesc">اختار المنصة اللي تحب تتواصل من خلالها</p>
+</div>
+
+<section class="grid">
+  <article class="card">
+    <div class="card-icon">💬</div>
+    <h3>WhatsApp</h3>
+    <p id="waDesc">تواصل مباشر عبر أرقام الواتساب.</p>
+    <a class="btn" href="/contact.html" id="waBtn">عرض أرقام التواصل ←</a>
+  </article>
+  <article class="card">
+    <div class="card-icon">📘</div>
+    <h3>Facebook</h3>
+    <p id="fbDesc">زور صفحتي على فيسبوك.</p>
+    <a class="btn" href="https://www.facebook.com/share/1DSBGxXyRc/" target="_blank" rel="noopener">Open Facebook ↗</a>
+  </article>
+  <article class="card">
+    <div class="card-icon">🎵</div>
+    <h3>TikTok</h3>
+    <p id="ttDesc">تابع حسابي على تيك توك.</p>
+    <a class="btn" href="https://www.tiktok.com/@ziadalkfory" target="_blank" rel="noopener">Open TikTok ↗</a>
+  </article>
+  <article class="card">
+    <div class="card-icon">✈️</div>
+    <h3>Telegram</h3>
+    <p id="tgDesc">تواصل معي على تيليجرام.</p>
+    <a class="btn" href="https://t.me/Alkfory" target="_blank" rel="noopener">Open Telegram ↗</a>
+  </article>
+  <article class="card">
+    <div class="card-icon">📸</div>
+    <h3>Instagram</h3>
+    <p id="igDesc">افتح إنستجرام لاستكشاف الحساب.</p>
+    <a class="btn" href="https://www.instagram.com/" target="_blank" rel="noopener">Open Instagram ↗</a>
+  </article>
+  <article class="card">
+    <div class="card-icon">🌐</div>
+    <h3 id="websiteTitle">موقعي الشخصي</h3>
+    <p id="websiteDesc">كل ما يخص ALKFORY في مكان واحد.</p>
+    <a class="btn" href="#top" onclick="window.scrollTo({top:0,behavior:'smooth'});return false" id="homeBtn">العودة للأعلى ↑</a>
+  </article>
+</section>
+
+<div class="section-title" id="ai">
+  <h2>🤖 ALKFORY <span class="red">AI</span></h2>
+  <p id="aiDesc">اسأل المساعد الذكي — إذا كان مفتاح Gemini مضبوطًا.</p>
+</div>
+<section class="ai-box">
+  <label for="aiInput" id="aiLabel">اكتب سؤالك هنا</label>
+  <textarea id="aiInput" placeholder="اكتب رسالتك..."></textarea>
+  <button class="btn primary" style="width:100%" id="aiBtn" onclick="askAI()">إرسال إلى ALKFORY AI ↗</button>
+  <div id="aiAnswer"></div>
+</section>
+</main>
+
+<footer>
+  <strong>⚜️ 𝒁𝒊𝒂𝒅 𝑨𝒍𝒌𝒇𝒐𝒓𝒚 | المطور ⚜️</strong>
+  <p>© <span id="year"></span> ALKFORY — <span id="rights">جميع الحقوق محفوظة</span></p>
+</footer>
+
+<script>
+let english = false;
+document.getElementById('year').textContent = new Date().getFullYear();
+
+function toggleLang() {
+  english = !english;
+  document.documentElement.lang = english ? 'en' : 'ar';
+  document.documentElement.dir = english ? 'ltr' : 'rtl';
+  document.getElementById('langBtn').textContent = english ? 'العربية' : 'English';
+  const text = {
+    onlineText:['الموقع متاح للزيارة','Website available'],
+    heroDesc:['أهلًا بك في موقعي الشخصي<br>كل طرق التواصل والخدمات في مكان واحد.','Welcome to my personal website.<br>All my contact links in one place.'],
+    contactTop:['✉️ تواصل معي','✉️ Contact me'],
+    aiTop:['✦ جرّب ALKFORY AI','✦ Try ALKFORY AI'],
+    socialHeading:['⚡ حساباتي وروابطي','⚡ My Social Links'],
+    socialDesc:['اختار المنصة اللي تحب تتواصل من خلالها','Choose your preferred platform'],
+    waDesc:['تواصل مباشر عبر أرقام الواتساب.','Contact me using WhatsApp numbers.'],
+    waBtn:['عرض أرقام التواصل ←','View contact numbers →'],
+    fbDesc:['زور صفحتي على فيسبوك.','Visit my Facebook page.'],
+    ttDesc:['تابع حسابي على تيك توك.','Follow me on TikTok.'],
+    tgDesc:['تواصل معي على تيليجرام.','Contact me on Telegram.'],
+    igDesc:['افتح إنستجرام لاستكشاف الحساب.','Open Instagram to explore accounts.'],
+    websiteTitle:['موقعي الشخصي','Personal Website'],
+    websiteDesc:['كل ما يخص ALKFORY في مكان واحد.','Everything ALKFORY in one place.'],
+    homeBtn:['العودة للأعلى ↑','Back to top ↑'],
+    aiDesc:['اسأل المساعد الذكي — إذا كان مفتاح Gemini مضبوطًا.','Ask the AI assistant — requires a configured Gemini key.'],
+    aiLabel:['اكتب سؤالك هنا','Enter your question'],
+    aiBtn:['إرسال إلى ALKFORY AI ↗','Send to ALKFORY AI ↗'],
+    rights:['جميع الحقوق محفوظة','All rights reserved']
+  };
+  for (const [id, values] of Object.entries(text))
+    document.getElementById(id).innerHTML = values[english ? 1 : 0];
+  document.getElementById('heroName').innerHTML = english
+    ? 'Ziad <span class="red">Alkfory</span>'
+    : 'زياد <span class="red">الكفوري</span>';
+  document.getElementById('aiInput').placeholder = english ? 'Type your message...' : 'اكتب رسالتك...';
+}
+
+async function askAI() {
+  const input = document.getElementById('aiInput');
+  const answer = document.getElementById('aiAnswer');
+  const message = input.value.trim();
+  if (!message) {
+    answer.style.display = 'block';
+    answer.textContent = english ? 'Please type a question first.' : 'اكتب سؤالك الأول.';
+    return;
+  }
+  answer.style.display = 'block';
+  answer.textContent = english ? 'Connecting...' : 'جاري الاتصال...';
+  try {
+    const response = await fetch('/api/ai', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({message})
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'AI request failed');
+    answer.textContent = data.answer || (english ? 'No response.' : 'لم يصل رد.');
+  } catch (error) {
+    answer.textContent = (english ? 'Connection error: ' : 'خطأ في الاتصال: ') + error.message;
+  }
+}
+</script>
+</body>
+</html>

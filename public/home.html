@@ -362,7 +362,26 @@ footer strong { color: #eee; }
   <button class="btn primary" style="width:100%" id="aiBtn" onclick="askAI()">إرسال إلى Ziad Alkfory AI ↗</button>
   <div id="aiAnswer"></div>
 </section>
-</main>
+
+<section id="dynamicApps" style="display:none">
+  <div class="section-title">
+    <h2>⚡ تطبيقاتي وخدماتي</h2>
+  </div>
+  <div id="publicAppsList" class="grid"></div>
+</section>
+
+<section id="visitorCard" class="ai-box" style="margin-top:25px">
+  <h2 id="visitorTitle">✉️ أرسل رسالة للمطور</h2>
+  <input id="visitorName" type="text" maxlength="60"
+    placeholder="اسمك" style="width:100%;padding:12px;margin:8px 0">
+  <textarea id="visitorMessage" maxlength="2000"
+    placeholder="اكتب رسالتك..." style="width:100%;padding:12px;margin:8px 0"></textarea>
+  <button class="btn primary" id="visitorSend" onclick="sendVisitorMessage()">
+    إرسال الرسالة
+  </button>
+  <p id="visitorResult" role="status"></p>
+</section>
+\n</main>
 
 <footer>
   <strong>⚜️ 𝒁𝒊𝒂𝒅 𝑨𝒍𝒌𝒇𝒐𝒓𝒚 | المطور ⚜️</strong>
@@ -431,6 +450,104 @@ async function askAI() {
     answer.textContent = (english ? 'Connection error: ' : 'خطأ في الاتصال: ') + error.message;
   }
 }
+
+
+// ALKFORY_PUBLIC_LINK_V1
+async function loadPublicConfig() {
+  try {
+    const response = await fetch('/api/site-config');
+    if (!response.ok) throw new Error('Config unavailable');
+    const config = await response.json();
+
+    if (config.siteName) document.title = config.siteName;
+    if (config.welcomeText) {
+      document.getElementById('heroDesc').textContent = config.welcomeText;
+    }
+
+    document.getElementById('ai').style.display =
+      config.aiEnabled === false ? 'none' : '';
+
+    document.getElementById('visitorCard').style.display =
+      config.showVisitorCard === false ? 'none' : '';
+  } catch (error) {
+    console.warn('تعذر تحميل إعدادات الموقع:', error.message);
+  }
+}
+
+async function loadPublicApps() {
+  try {
+    const response = await fetch('/api/public/apps');
+    if (!response.ok) throw new Error('Apps unavailable');
+    const data = await response.json();
+    const apps = Array.isArray(data.apps) ? data.apps : [];
+    const section = document.getElementById('dynamicApps');
+    const list = document.getElementById('publicAppsList');
+
+    list.replaceChildren();
+    for (const item of apps) {
+      if (!item.active || !item.name || !item.url) continue;
+      let url;
+      try {
+        url = new URL(item.url);
+        if (url.protocol !== 'https:') continue;
+      } catch { continue; }
+
+      const card = document.createElement('article');
+      card.className = 'card';
+      const title = document.createElement('h3');
+      title.textContent = item.name;
+      const link = document.createElement('a');
+      link.className = 'btn';
+      link.textContent = 'فتح التطبيق ↗';
+      link.href = url.href;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      card.append(title, link);
+      list.appendChild(card);
+    }
+    section.style.display = list.children.length ? '' : 'none';
+  } catch (error) {
+    console.warn('تعذر تحميل التطبيقات:', error.message);
+  }
+}
+
+async function sendVisitorMessage() {
+  const name = document.getElementById('visitorName').value.trim();
+  const message = document.getElementById('visitorMessage').value.trim();
+  const result = document.getElementById('visitorResult');
+  const button = document.getElementById('visitorSend');
+
+  if (!message) {
+    result.textContent = 'اكتب رسالتك أولاً.';
+    return;
+  }
+
+  button.disabled = true;
+  result.textContent = 'جاري إرسال الرسالة...';
+
+  try {
+    const response = await fetch('/api/visitor-message', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({name, message})
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      throw new Error(data.error || 'تعذر إرسال الرسالة');
+    }
+    result.textContent = '✅ تم إرسال رسالتك بنجاح.';
+    document.getElementById('visitorName').value = '';
+    document.getElementById('visitorMessage').value = '';
+  } catch (error) {
+    result.textContent = '⚠️ تعذر الإرسال، حاول مرة أخرى.';
+  } finally {
+    button.disabled = false;
+  }
+}
+
+loadPublicConfig();
+loadPublicApps();
+
 </script>
 </body>
 </html>

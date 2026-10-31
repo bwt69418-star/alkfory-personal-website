@@ -14,3 +14,13 @@ node_modules/
 *.sqlite-shm
 *.sqlite-wal
 backups/
+
+# Local data and temporary files
+data/
+*.BACKUP*
+*.backup-*
+alkfory_patch.js
+fix-storage.js
+repair-db.js
+setup-dashboard.js
+server.BACKUP-*.js

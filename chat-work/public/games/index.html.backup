@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ALKFORY GAMES</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#090609;color:#fff;font-family:Arial}
+header{text-align:center;padding:22px;background:#1b0810;border-bottom:1px solid #ff1744}
+h1{color:#ff3158}
+main{max-width:900px;margin:auto;padding:14px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.card{background:#190e13;border:1px solid #652034;color:white;border-radius:15px;padding:18px 5px;cursor:pointer}
+.card span{display:block;font-size:32px;margin-bottom:8px}
+#game{display:none;text-align:center;margin-top:18px;padding:15px;background:#170d12;border:1px solid #ff1744;border-radius:16px}
+#game.show{display:block}
+button,input{font-size:16px}
+.action{background:#c10d3c;color:white;border:0;border-radius:9px;padding:10px 15px;margin:4px;cursor:pointer}
+.cell{width:65px;height:65px;background:#351522;color:white;border:1px solid #ff3158;border-radius:8px;font-size:25px}
+.board{display:grid;gap:5px;justify-content:center;margin:15px auto}
+#screen{min-height:220px}
+@media(max-width:500px){.grid{grid-template-columns:repeat(2,1fr)}.cell{width:55px;height:55px}}
+</style>
+</head>
+<body>
+<header><h1>⚜️ ALKFORY GAMES ⚜️</h1><p>اختار لعبتك وابدأ التحدي</p></header>
+<main>
+<div class="grid" id="games"></div>
+<section id="game">
+<h2 id="title"></h2>
+<div id="screen"></div>
+<button class="action" onclick="restart()">إعادة اللعب</button>
+<button class="action" onclick="back()">رجوع للألعاب</button>
+</section>
+</main>
+<script>
+const games=[
+['🧱','Block Blast'],['🔢','2048'],['❌','Tic Tac Toe'],['🐍','Snake'],
+['♟️','Chess'],['⚫','Checkers'],['🔢','Sudoku'],['💣','Minesweeper'],
+['🃏','Solitaire'],['🔴','Connect 4'],['🧠','Memory Cards'],
+['🫧','Bubble Shooter'],['🀄','Mahjong'],['🔤','Word Search'],
+['🐤','Flappy Bird'],['🏓','Pong'],['🧩','Jigsaw Puzzle'],
+['🎯','Darts'],['🏎️','Racing'],['🟦','Tetris']
+];
+const root=document.getElementById('games'),box=document.getElementById('game');
+games.forEach((g,i)=>{
+ let b=document.createElement('button');b.className='card';
+ b.innerHTML='<span>'+g[0]+'</span>'+g[1];
+ b.onclick=()=>start(i);root.appendChild(b);
+});
+let current=-1,timer=null,score=0,board=[],turn='X',flips=[],matched=0;
+function start(i){current=i;score=0;box.classList.add('show');root.style.display='none';document.getElementById('title').textContent=games[i][1];restart();}
+function back(){clearInterval(timer);box.classList.remove('show');root.style.display='grid';}
+function restart(){clearInterval(timer);score=0;turn='X';flips=[];matched=0;draw();}
+function screen(html){document.getElementById('screen').innerHTML=html;}
+function draw(){
+ let i=current;
+ if(i===2||i===9) tic(i===9);
+ else if(i===1) game2048();
+ else if(i===10) memory();
+ else if(i===7) mines();
+ else if(i===13) word();
+ else if(i===17) darts();
+ else if(i===0||i===18||i===19||i===14||i===15||i===3||i===4||i===5||i===6||i===8||i===11||i===12||i===16) simple(i);
+}
+function tic(connect){
+ let n=connect?42:9,cols=connect?7:3;
+ board=Array(n).fill('');
+ let html='<p>دور اللاعب: <b id="turn">'+turn+'</b></p><div class="board" style="grid-template-columns:repeat('+cols+',auto)">';
+ for(let j=0;j<n;j++)html+='<button class="cell" onclick="playCell('+j+','+connect+')">'+(board[j]||' ')+'</button>';
+ screen(html+'</div>');
+}
+function playCell(j,c){
+ if(board[j])return;board[j]=turn;
+ if(c){
+  let col=j%7;for(let r=5;r>=0;r--){let k=r*7+col;if(!board[k]){board[j]='';board[k]=turn;break;}}
+ }
+ let win=c?checkConnect():checkTic();
+ if(win){screen('<h2>🏆 اللاعب '+turn+' فاز!</h2>');return;}
+ turn=turn==='X'?'O':'X';draw();
+}
+function checkTic(){
+ let lines=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+ return lines.some(l=>l.every(x=>board[x]===turn));
+}
+function checkConnect(){
+ for(let r=0;r<6;r++)for(let c=0;c<7;c++){
+  let k=r*7+c;
+  for(let [dr,dc] of [[0,1],[1,0],[1,1],[1,-1]]){
+   let a=[];for(let x=0;x<4;x++){let rr=r+dr*x,cc=c+dc*x;if(rr<0||rr>5||cc<0||cc>6)break;a.push(board[rr*7+cc]);}
+   if(a.length===4&&a.every(v=>v===turn))return true;
+  }
+ }return false;
+}
+function game2048(){
+ if(!board.length){board=Array(16).fill(0);spawn();spawn();}
+ let html='<p>النقاط: '+score+'</p><div class="board" style="grid-template-columns:repeat(4,65px)">';
+ board.forEach((v,j)=>html+='<button class="cell" onclick="move2048('+j+')">'+(v||'')+'</button>');
+ screen(html+'</div><p>استخدم الأسهم أو الأزرار</p><button class="action" onclick="move2048(0)">⬅</button><button class="action" onclick="move2048(1)">⬆</button><button class="action" onclick="move2048(2)">➡</button><button class="action" onclick="move2048(3)">⬇</button>');
+}
+function spawn(){let a=board.map((v,i)=>v? -1:i).filter(x=>x>=0);if(a.length)board[a[Math.floor(Math.random()*a.length)]]=2;}
+function move2048(dir){
+ let lines=[];
+ for(let n=0;n<4;n++){
+  let ids=dir===0?[n*4,n*4+1,n*4+2,n*4+3]:dir===2?[n*4+3,n*4+2,n*4+1,n*4]:dir===1?[n,n+4,n+8,n+12]:[n+12,n+8,n+4,n];
+  let a=ids.map(k=>board[k]).filter(Boolean),b=[];
+  for(let x=0;x<a.length;x++){if(a[x]===a[x+1]){b.push(a[x]*2);score+=a[x]*2;x++;}else b.push(a[x]);}
+  while(b.length<4)b.push(0);ids.forEach((k,x)=>board[k]=b[x]);
+ }spawn();game2048();
+}
+document.addEventListener('keydown',e=>{
+ if(current!==1)return;
+ let d={ArrowLeft:0,ArrowUp:1,ArrowRight:2,ArrowDown:3}[e.key];
+ if(d!==undefined)move2048(d);
+});
+function memory(){
+ if(!flips.length){flips=['🍎','🍋','🍇','🍒','⭐','⚽','🍎','🍋','🍇','🍒','⭐','⚽'].sort(()=>Math.random()-.5);}
+ screen('<p>المتطابق: '+matched+'/6</p><div class="board" style="grid-template-columns:repeat(4,65px)">'+flips.map((v,j)=>'<button class="cell" onclick="flip('+j+')">'+(board.includes(j)?v:'❔')+'</button>').join('')+'</div>');
+}
+function flip(j){
+ if(board.includes(j))return;board.push(j);
+ if(board.length%2===0){let a=board[board.length-2],b=j;if(flips[a]===flips[b])matched++;else setTimeout(()=>{board=board.slice(0,-2);memory();},700);}
+ memory();if(matched===6)screen('<h2>🏆 فزت!</h2>');
+}
+function mines(){
+ if(!board.length){board=Array(25).fill(0);[2,7,11,18,22].forEach(x=>board[x]=1);}
+ screen('<p>اكشف المربعات وتجنب الألغام</p><div class="board" style="grid-template-columns:repeat(5,48px)">'+board.map((v,j)=>'<button class="cell" onclick="mine('+j+')">'+(flips.includes(j)?(v?'💣':'✓'):'?')+'</button>').join('')+'</div>');
+}
+function mine(j){flips.push(j);if(board[j])screen('<h2>💥 انتهت اللعبة</h2>');else mines();}
+function word(){
+ const w='ALKFORY';screen('<h3>اكتب الكلمة التالية</h3><h2>'+w+'</h2><input id="answer" placeholder="اكتب هنا"><button class="action" onclick="checkWord()">تحقق</button><p id="result"></p>');
+}
+function checkWord(){document.getElementById('result').textContent=document.getElementById('answer').value.toUpperCase()==='ALKFORY'?'✅ ممتاز!':'حاول مرة أخرى';}
+function darts(){
+ screen('<h3>🎯 اضغط على الهدف</h3><button class="cell" style="width:150px;height:150px;border-radius:50%;font-size:45px" onclick="score++;this.textContent=score">🎯</button><p>النقاط: '+score+'</p>');
+}
+function simple(i){
+ const names=['Block Blast','Chess','Checkers','Sudoku','Solitaire','Bubble Shooter','Mahjong','Flappy Bird','Pong','Jigsaw Puzzle','Racing','Snake','Tetris'];
+ let msg={
+ 0:'رتّب المكعبات في صفوف وأعمدة كاملة.',
+ 3:'أكمل شبكة الأرقام دون تكرار.',
+ 4:'رتّب الأوراق حسب النوع والترتيب.',
+ 5:'صوّب الفقاعات واجمع المتشابه.',
+ 6:'طابق القطع المتشابهة.',
+ 11:'حرّك الثعبان واجمع الطعام.',
+ 14:'اضغط وابدأ تحدي الطيران.',
+ 15:'حاول إبقاء الكرة داخل الملعب.',
+ 16:'ركّب قطع الصورة.',
+ 18:'تفادى العوائق أثناء السباق.',
+ 19:'رتّب القطع لإكمال الصفوف.'
+ };
+ screen('<h3>'+games[i][1]+'</h3><p>'+ (msg[i]||'اللعبة في وضع التجهيز.')+'</p><p>هذه النسخة تحتاج استكمال ميكانيكا اللعبة قبل اعتبارها قابلة للعب.</p>');
+}
+</script>
+</body>
+</html>
