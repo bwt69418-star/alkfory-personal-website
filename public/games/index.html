@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ALKFORY GAMES</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#090609;color:white;font-family:Arial}
+header{text-align:center;padding:20px;background:#1b0810;border-bottom:1px solid #f14}
+h1{color:#ff3158}
+main{max-width:850px;margin:auto;padding:14px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+button{cursor:pointer;color:white;background:#25101a;border:1px solid #713047;border-radius:12px;padding:13px;font-size:15px}
+.card{min-height:95px}.icon{display:block;font-size:30px;margin-bottom:8px}
+#play{display:none;text-align:center;margin-top:18px;padding:15px;background:#170d12;border:1px solid #f14;border-radius:16px}
+#play.show{display:block}
+#stage{min-height:230px;margin:15px auto}
+.cell{width:58px;height:58px;font-size:22px;padding:4px}
+.board{display:grid;gap:5px;justify-content:center;margin:15px auto}
+.action{background:#b20d3b;margin:4px}
+input{padding:12px;width:90%;max-width:280px;border-radius:8px}
+@media(max-width:500px){.grid{grid-template-columns:repeat(2,1fr)}.cell{width:48px;height:48px}}
+</style>
+</head>
+<body>
+<header><h1>⚜️ ALKFORY GAMES ⚜️</h1><p>20 لعبة تفاعلية</p></header>
+<main>
+<div class="grid" id="games"></div>
+<section id="play">
+<h2 id="title"></h2><div id="stage"></div>
+<button class="action" onclick="restart()">إعادة اللعب</button>
+<button class="action" onclick="back()">رجوع</button>
+</section>
+</main>
+<script>
+const list=[
+['🧱','Block Blast'],['🔢','2048'],['❌','Tic Tac Toe'],['🐍','Snake'],
+['♟️','Chess'],['⚫','Checkers'],['🔢','Sudoku'],['💣','Minesweeper'],
+['🃏','Solitaire'],['🔴','Connect 4'],['🧠','Memory Cards'],
+['🫧','Bubble Shooter'],['🀄','Mahjong'],['🔤','Word Search'],
+['🐤','Flappy Bird'],['🏓','Pong'],['🧩','Jigsaw Puzzle'],
+['🎯','Darts'],['🏎️','Racing'],['🟦','Tetris']
+];
+const root=document.getElementById('games'),play=document.getElementById('play');
+let id=0,board=[],turn='X',score=0,timer=null,selected=-1,over=false;
+list.forEach((g,i)=>{
+ let b=document.createElement('button');b.className='card';
+ b.innerHTML='<span class="icon">'+g[0]+'</span>'+g[1];
+ b.onclick=()=>start(i);root.appendChild(b);
+});
+function start(i){id=i;root.style.display='none';play.classList.add('show');document.getElementById('title').textContent=list[i][1];restart();}
+function back(){clearInterval(timer);play.classList.remove('show');root.style.display='grid';}
+function stage(s){document.getElementById('stage').innerHTML=s;}
+function restart(){
+ clearInterval(timer);board=[];turn='X';score=0;selected=-1;over=false;
+ if(id===0)blocks();else if(id===1)g2048();else if(id===2)xo();
+ else if(id===3)snake();else if(id===9)connect();else if(id===10)memory();
+ else if(id===7)mines();else if(id===13)words();else if(id===17)darts();
+ else if(id===14)flappy();else if(id===15)pong();else if(id===18)racing();
+ else if(id===19)tetris();else if(id===5)checkers();else if(id===6)sudoku();
+ else if(id===4)chess();else if(id===8)solitaire();else if(id===11)bubbles();
+ else if(id===12)mahjong();else if(id===16)puzzle();
+}
+function xo(){
+ board=Array(9).fill('');
+ stage('<p>دور اللاعب: <b id="turn">X</b></p><div class="board" style="grid-template-columns:repeat(3,58px)">'+board.map((v,i)=>'<button class="cell" onclick="xoPlay('+i+')">'+v+'</button>').join('')+'</div>');
+}
+function xoPlay(i){
+ if(board[i]||over)return;board[i]=turn;
+ let lines=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+ if(lines.some(l=>l.every(x=>board[x]===turn))){over=true;stage('<h2>🏆 '+turn+' فاز!</h2>');return;}
+ if(board.every(Boolean)){over=true;stage('<h2>تعادل!</h2>');return;}
+ turn=turn==='X'?'O':'X';xo();
+}
+function g2048(){
+ if(!board.length){board=Array(16).fill(0);spawn();spawn();}
+ stage('<p>النقاط: '+score+'</p><div class="board" style="grid-template-columns:repeat(4,58px)">'+board.map((v,i)=>'<button class="cell" onclick="move2048('+i+')">'+(v||'')+'</button>').join('')+'</div><p>استخدم الأسهم</p>');
+}
+function spawn(){let a=board.map((v,i)=>v? -1:i).filter(i=>i>=0);if(a.length)board[a[Math.random()*a.length|0]]=2;}
+function move2048(d){
+ let dir=d<4?d:0;
+ for(let n=0;n<4;n++){
+  let ids=dir===0?[n*4,n*4+1,n*4+2,n*4+3]:dir===2?[n*4+3,n*4+2,n*4+1,n*4]:dir===1?[n,n+4,n+8,n+12]:[n+12,n+8,n+4,n];
+  let a=ids.map(k=>board[k]).filter(Boolean),b=[];
+  for(let x=0;x<a.length;x++){if(a[x]===a[x+1]){b.push(a[x]*2);score+=a[x]*2;x++;}else b.push(a[x]);}
+  while(b.length<4)b.push(0);ids.forEach((k,x)=>board[k]=b[x]);
+ }
+ spawn();g2048();
+}
+document.addEventListener('keydown',e=>{if(id!==1)return;let d={ArrowLeft:0,ArrowUp:1,ArrowRight:2,ArrowDown:3}[e.key];if(d!==undefined)move2048(d);});
+function blocks(){
+ board=Array(100).fill(0);let pieces=[[1,1,1],[1,1],[1,1,1,1],[1,0,1],[1,1,0,0,1,1]];
+ let p=pieces[Math.random()*pieces.length|0];
+ stage('<p>اضغط خانات الشبكة لوضع مكعبات. أكمل صفًا لمسحه.</p><div class="board" style="grid-template-columns:repeat(10,25px)">'+board.map((v,i)=>'<button class="cell" style="width:25px;height:25px" onclick="blockPut('+i+')"></button>').join('')+'</div><p>النقاط: '+score+'</p><button class="action" onclick="blockPiece()">قطعة جديدة</button>');
+ window.blockPiece=()=>{p=pieces[Math.random()*pieces.length|0];};
+ window.blockPut=i=>{if(board[i])return;board[i]=1;score++;if(board.slice(Math.floor(i/10)*10,Math.floor(i/10)*10+10).every(Boolean)){board.fill(0,Math.floor(i/10)*10,Math.floor(i/10)*10+10);score+=10;}blocks();};
+}
+function connect(){
+ board=Array(42).fill('');stage('<p>وصل أربعة رموز للفوز</p><div class="board" style="grid-template-columns:repeat(7,42px)">'+board.map((v,i)=>'<button class="cell" onclick="drop('+i%7+')">'+(v||'·')+'</button>').join('')+'</div>');
+}
+function drop(c){if(over)return;for(let r=5;r>=0;r--){let i=r*7+c;if(!board[i]){board[i]=turn;break;}}
+ let win=false;for(let r=0;r<6;r++)for(let c=0;c<7;c++)for(let [dr,dc] of [[0,1],[1,0],[1,1],[1,-1]]){let a=[];for(let k=0;k<4;k++){let y=r+dr*k,x=c+dc*k;if(y<0||y>5||x<0||x>6)break;a.push(board[y*7+x]);}if(a.length===4&&a.every(v=>v===turn))win=true;}
+ if(win){over=true;stage('<h2>🏆 '+turn+' فاز!</h2>');return;}turn=turn==='X'?'O':'X';connect();
+}
+function memory(){
+ if(!board.length)board=['🍎','🍋','🍇','🍒','⭐','⚽','🍎','🍋','🍇','🍒','⭐','⚽'].sort(()=>Math.random()-.5);
+ stage('<p>النقاط: '+score+'</p><div class="board" style="grid-template-columns:repeat(4,55px)">'+board.map((v,i)=>'<button class="cell" onclick="mem('+i+')">'+(selected===i||board[i]===null?v:'❔')+'</button>').join('')+'</div>');
+}
+let first=-1,locked=false;
+function mem(i){if(locked||board[i]===null)return;if(first<0){first=i;selected=i;memory();return;}if(first===i)return;let a=first;locked=true;if(board[a]===board[i]){board[a]=board[i]=null;score++;first=-1;locked=false;memory();if(score===6)stage('<h2>🏆 فزت!</h2>');}else{selected=i;memory();setTimeout(()=>{first=-1;selected=-1;locked=false;memory();},700);}}
+function mines(){
+ if(!board.length){board=Array(25).fill(0);[2,7,11,18,22].forEach(i=>board[i]=1);}
+ stage('<p>اكشف المربعات وتجنب الألغام</p><div class="board" style="grid-template-columns:repeat(5,45px)">'+board.map((v,i)=>'<button class="cell" onclick="mine('+i+')">'+(v===2?'✓':v===3?'💣':'?')+'</button>').join('')+'</div>');
+}
+function mine(i){if(board[i]===2||board[i]===3)return;if(board[i]===1){board[i]=3;stage('<h2>💥 انتهت اللعبة</h2>');return;}board[i]=2;score++;mines();if(score===20)stage('<h2>🏆 فزت!</h2>');}
+function words(){stage('<h3>رتّب الحروف لتكوين كلمة</h3><h2>Y R O F K L A</h2><input id="ans" placeholder="اكتب ALKFORY"><button class="action" onclick="wordCheck()">تحقق</button><p id="result"></p>');}
+function wordCheck(){document.getElementById('result').textContent=document.getElementById('ans').value.trim().toUpperCase()==='ALKFORY'?'✅ صحيح':'حاول مرة أخرى';}
+function darts(){stage('<h3>🎯 اضغط على الهدف</h3><button style="font-size:60px;border-radius:50%;width:160px;height:160px" onclick="score++;this.nextElementSibling.textContent=score">🎯</button><h2>النقاط: <span>0</span></h2>');}
+function snake(){
+ let x=5,y=5,food=[2,2],body=[[5,5]],dir=[1,0];
+ stage('<p>لعبة الثعبان: استخدم الأسهم</p><div id="snake" class="board" style="grid-template-columns:repeat(10,24px)"></div><div><button onclick="dir=[0,-1]">⬆</button><button onclick="dir=[-1,0]">⬅</button><button onclick="dir=[1,0]">➡</button><button onclick="dir=[0,1]">⬇</button></div><p>النقاط: <span id="ss">0</span></p>');
+ function tick(){x+=dir[0];y+=dir[1];if(x<0||x>9||y<0||y>9||body.some(p=>p[0]===x&&p[1]===y)){clearInterval(timer);return;}body.unshift([x,y]);if(x===food[0]&&y===food[1]){score++;food=[Math.random()*10|0,Math.random()*10|0];}else body.pop();document.getElementById('snake').innerHTML=Array.from({length:100},(_,i)=>'<span style="width:24px;height:24px;background:'+(body.some(p=>p[1]*10+p[0]===i)?'#ff3158':food[1]*10+food[0]===i?'#3c6':'#25101a')+'"></span>').join('');document.getElementById('ss').textContent=score;}
+ timer=setInterval(tick,300);
+}
+function flappy(){
+ let y=100,v=0;stage('<p>اضغط للقفز وتجنب السقوط</p><button id="bird" style="font-size:45px" onclick="jump()">🐤</button><p id="fy">اضغط لبدء اللعب</p>');
+ window.jump=()=>{v=-8;y+=v;document.getElementById('fy').textContent='ارتفاع: '+Math.max(0,100-y);};
+}
+function pong(){let x=0;stage('<p>حرّك المضرب وارتد بالكرة</p><button class="action" onclick="score++;this.nextElementSibling.textContent=score">🏓 اضرب الكرة</button><h2>النقاط: <span>0</span></h2>');}
+function racing(){stage('<p>تفادى السيارات</p><button class="action" onclick="score++;this.nextElementSibling.textContent=score">⬅️</button><button class="action" onclick="score++;this.nextElementSibling.textContent=score">➡️</button><h2>المسافة: <span>0</span></h2>');}
+function tetris(){stage('<p>اضغط لتدوير القطعة ثم إسقاطها</p><div class="board" style="grid-template-columns:repeat(4,50px)">'+Array.from({length:16},(_,i)=>'<button class="cell" onclick="score++;this.textContent=\'🟦\'">·</button>').join('')+'</div><p>النقاط: '+score+'</p>');}
+function checkers(){board=Array(64).fill('');for(let i=0;i<24;i++)board[i]='⚫';for(let i=40;i<64;i++)board[i]='🔴';stage('<p>لعبة الداما: اختر قطعة ثم خانة فارغة</p><div class="board" style="grid-template-columns:repeat(8,35px)">'+board.map((v,i)=>'<button class="cell" style="width:35px;height:35px" onclick="checkMove('+i+')">'+v+'</button>').join('')+'</div>');}
+function checkMove(i){if(selected<0){if(board[i])selected=i;}else{board[i]=board[selected];board[selected]='';selected=-1;}checkers();}
+function sudoku(){let a=[1,2,3,4,5,6,7,8,9];stage('<p>اختر رقمًا ثم اضغط الخانة</p><div>'+a.map(n=>'<button onclick="selected='+n+'">'+n+'</button>').join('')+'</div><div class="board" style="grid-template-columns:repeat(3,48px)">'+Array.from({length:9},(_,i)=>'<button class="cell" onclick="this.textContent=selected||\'?\'">?</button>').join('')+'</div>');}
+function chess(){stage('<p>لوحة شطرنج تدريبية: اختر قطعة ثم مكانها</p><div class="board" style="grid-template-columns:repeat(8,32px)">'+Array.from({length:64},(_,i)=>'<button class="cell" style="width:32px;height:32px" onclick="this.textContent=this.textContent?\'\':\'♟\'"> '+(i<16?'♟':i>47?'♙':'')+'</button>').join('')+'</div>');}
+function solitaire(){let cards=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];cards.sort(()=>Math.random()-.5);stage('<p>رتّب الأوراق تصاعديًا</p>'+cards.map(c=>'<button onclick="this.remove();score++">'+c+'</button>').join('')+'<p>الأوراق المختارة: '+score+'</p>');}
+function bubbles(){let colors=['🔴','🟡','🔵','🟢'];stage('<p>اضغط الفقاعات المتشابهة</p>'+Array.from({length:20},()=>'<button onclick="score++;this.remove()">'+colors[Math.random()*4|0]+'</button>').join('')+'<p>النقاط: '+score+'</p>');}
+function mahjong(){let a=['🀄','🀅','🀆','🀇','🀈','🀉'];stage('<p>طابق الرموز</p>'+Array.from({length:18},(_,i)=>'<button onclick="this.textContent=\'✓\';score++">'+a[i%6]+'</button>').join('')+'<p>النقاط: '+score+'</p>');}
+function puzzle(){let a=['1','2','3','4','5','6','7','8','9'];a.sort(()=>Math.random()-.5);stage('<p>رتّب الأرقام من 1 إلى 9</p><div class="board" style="grid-template-columns:repeat(3,55px)">'+a.map(v=>'<button class="cell" onclick="this.textContent=prompt(\'اكتب الرقم الصحيح\')||this.textContent">'+v+'</button>').join('')+'</div>');}
+</script>
+
+<script>
+(() => {
+  if (!('Notification' in window)) return;
+  if (sessionStorage.getItem('alkforyNoticeAsked')) return;
+  sessionStorage.setItem('alkforyNoticeAsked', '1');
+
+  setTimeout(async () => {
+    if (Notification.permission !== 'default') return;
+    const accepted = confirm('⚜️ ALKFORY ⚜️\nهل تريد تفعيل إشعارات الموقع؟');
+    if (!accepted) return;
+    const permission = await Notification.requestPermission();
+    if (permission === 'granted') {
+      new Notification('⚜️ ALKFORY ⚜️', {
+        body: 'أهلاً بك في موقع ALKFORY!'
+      });
+    }
+  }, 1800);
+})();
+</script>
+
+</body>
+</html>

@@ -5,12 +5,15 @@ self.addEventListener('message', event => {
   }
 });
 
-const CACHE_NAME = 'alkfory-shell-v2';
+const CACHE_NAME = 'alkfory-shell-v4';
 const APP_SHELL = [
   '/',
   '/entry.html',
   '/manifest.json',
-  '/icons/alkfory.svg'
+  '/icons/alkfory.svg',
+  '/audio/entry-1.mp3',
+  '/audio/entry-2.mp3',
+  '/audio/profile-recording.mp3'
 ];
 
 self.addEventListener('install', event => {

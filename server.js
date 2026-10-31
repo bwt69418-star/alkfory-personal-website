@@ -71,6 +71,10 @@ app.use((req, res, next) => {
   next();
 });
 
+app.get('/games/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'games', 'index.html'));
+});
+
 app.use(express.static(path.join(__dirname, 'public'), {
   index: false
 }));
@@ -357,6 +361,13 @@ app.post('/api/ai', async (req, res) => {
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'online' });
+});
+
+require('./chat-routes')(app, {
+  dataDir,
+  requireDeveloper,
+  getStore: () => store,
+  saveStore
 });
 
 app.listen(PORT, '0.0.0.0', () => {

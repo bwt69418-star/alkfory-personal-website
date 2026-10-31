@@ -287,45 +287,169 @@ document.getElementById('loginForm').addEventListener('submit',async e=>{
 
 
 <script>
-/* ALKFORY_APP_UPDATE_V1 */
+/* ALKFORY_APP_UPDATE_V2 */
 (() => {
   const btn = document.getElementById('alkforyUpdateBtn');
   const hint = document.getElementById('alkforyUpdateHint');
   if (!btn || !hint || !('serviceWorker' in navigator)) return;
 
   let refreshing = false;
+
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (refreshing) return;
     refreshing = true;
+    hint.textContent = '✅ تم تفعيل التحديث، جاري فتح النسخة الجديدة...';
     location.reload();
   });
 
   btn.addEventListener('click', async () => {
     btn.disabled = true;
-    hint.textContent = '⏳ جاري البحث عن تحديث...';
+    hint.textContent = '⏳ جاري فحص وتحميل آخر تحديث...';
 
     try {
-      const registration = await navigator.serviceWorker.getRegistration('/');
-      if (!registration) {
-        await navigator.serviceWorker.register('/sw.js');
+      let reg = await navigator.serviceWorker.getRegistration('/');
+
+      if (!reg) {
+        reg = await navigator.serviceWorker.register('/sw.js');
       }
 
-      const reg = registration || await navigator.serviceWorker.ready;
       await reg.update();
 
       if (reg.waiting) {
-        hint.textContent = '✅ تم العثور على تحديث، جاري تفعيله...';
+        hint.textContent = '✅ تم العثور على تحديث، جاري التفعيل...';
         reg.waiting.postMessage({ type: 'SKIP_WAITING' });
         return;
       }
 
-      hint.textContent = '✅ التطبيق يستخدم أحدث إصدار متاح.';
+      if (reg.installing) {
+        hint.textContent = '⏳ يتم تثبيت التحديث...';
+        reg.installing.addEventListener('statechange', () => {
+          if (reg.installing && reg.installing.state === 'installed') {
+            if (reg.waiting) {
+              reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+            }
+          }
+        });
+        return;
+      }
+
+      hint.textContent = '✅ التطبيق يستخدم أحدث نسخة منشورة.';
     } catch (error) {
-      hint.textContent = '⚠️ تعذر فحص التحديث. تأكد من اتصال الإنترنت وحاول مجددًا.';
+      console.error('ALKFORY update error:', error);
+      hint.textContent = '⚠️ فشل التحديث. تحقق من الإنترنت وحاول مجددًا.';
     } finally {
       btn.disabled = false;
     }
   });
+})();
+</script>
+
+
+
+
+
+
+<style>
+#alkfory-welcome {
+ position:fixed;z-index:999999;bottom:22px;left:16px;right:16px;
+ background:#171717;color:white;border:1px solid #a90030;
+ border-radius:18px;padding:18px;text-align:center;
+ box-shadow:0 0 22px #a9003055;font-size:17px;
+}
+#alkfory-welcome button {
+ background:#a90030;color:white;border:0;border-radius:10px;
+ padding:10px 20px;margin:10px 5px;font-weight:bold;
+}
+</style>
+
+<div id="alkfory-welcome" hidden>
+ <div style="font-size:30px;color:#ff233f;font-weight:bold">Z</div>
+ <div>⚜️ أهلاً بيك في موقع ALKFORY ⚜️</div>
+ <div>نورت الموقع، نتمنى لك تجربة ممتعة ❤️</div>
+ <button id="alkfory-start">تفعيل الإشعار والصوت</button>
+ <button id="alkfory-close">إغلاق</button>
+</div>
+
+<script>
+(() => {
+ const box = document.getElementById('alkfory-welcome');
+ const start = document.getElementById('alkfory-start');
+ const close = document.getElementById('alkfory-close');
+ if (!box || !start || !close) return;
+
+ const seenKey = 'alkfory_welcome_seen_v2';
+ const noticeKey = 'alkfory_notice_shown_v2';
+
+ const firstAudio = new Audio('/audio/entry-1.mp3');
+ firstAudio.preload = 'auto';
+
+ let audioStarted = false;
+
+ async function playEntryAudio() {
+   if (audioStarted) return;
+   audioStarted = true;
+   try {
+     await firstAudio.play();
+     await new Promise(resolve => {
+       firstAudio.addEventListener('ended', resolve, { once: true });
+       firstAudio.addEventListener('error', resolve, { once: true });
+     });
+   } catch (e) {
+     audioStarted = false;
+     console.log('تعذر تشغيل تسجيلات الترحيب:', e);
+   }
+ }
+
+ if (!localStorage.getItem(seenKey)) {
+   box.hidden = false;
+ } else {
+   playEntryAudio();
+ }
+
+ close.addEventListener('click', () => {
+   box.hidden = true;
+ });
+
+ async function handleNotification() {
+   if (!('Notification' in window)) return;
+   if (Notification.permission === 'default') {
+     try {
+       await Notification.requestPermission();
+     } catch (e) {
+       console.log('Notification permission unavailable:', e);
+     }
+   }
+
+   if (Notification.permission !== 'granted') return;
+   if (sessionStorage.getItem(noticeKey)) return;
+
+   const options = {
+     body: 'أهلاً بيك! نورت موقع ALKFORY ❤️',
+     icon: '/icons/z-notification.svg',
+     badge: '/icons/z-notification.svg',
+     tag: 'alkfory-visitor-welcome',
+     renotify: false
+   };
+
+   try {
+     if ('serviceWorker' in navigator) {
+       const reg = await navigator.serviceWorker.ready;
+       await reg.showNotification('Z | ALKFORY', options);
+     } else {
+       new Notification('Z | ALKFORY', options);
+     }
+     sessionStorage.setItem(noticeKey, '1');
+   } catch (e) {
+     console.log('Notification unavailable:', e);
+   }
+ }
+
+ start.addEventListener('click', async () => {
+   localStorage.setItem(seenKey, '1');
+   box.hidden = true;
+   await playEntryAudio();
+   await handleNotification();
+ });
 })();
 </script>
 
