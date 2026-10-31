@@ -1,4 +1,11 @@
-const CACHE_NAME = 'alkfory-shell-v1';
+
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
+const CACHE_NAME = 'alkfory-shell-v2';
 const APP_SHELL = [
   '/',
   '/entry.html',
@@ -18,7 +25,7 @@ self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
       Promise.all(keys
-        .filter(key => key !== CACHE_NAME)
+        .filter(key => key.startsWith('alkfory-shell-') && key !== CACHE_NAME)
         .map(key => caches.delete(key))
       )
     ).then(() => self.clients.claim())

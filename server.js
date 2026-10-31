@@ -129,15 +129,31 @@ app.get('/api/site-config', (req, res) => {
     theme: s.theme || 'dark',
     language: s.language || 'ar',
     showVisitorCard: s.showVisitorCard !== false,
-    aiEnabled: s.aiEnabled !== false
+    aiEnabled: s.aiEnabled !== false,
+    accentColor: s.accentColor || '#ed354d',
+    backgroundColor: s.backgroundColor || '#090909',
+    textColor: s.textColor || '#ffffff',
+    buttonColor: s.buttonColor || '#a71930',
+    fontFamily: s.fontFamily || 'Arial',
+    fontSize: Number(s.fontSize) || 16,
+    borderRadius: Number(s.borderRadius) || 12,
+    showApps: s.showApps !== false,
+    showAI: s.showAI !== false,
+    showWelcome: s.showWelcome !== false,
+    maintenanceMode: s.maintenanceMode === true,
+    maintenanceMessage: s.maintenanceMessage || 'الموقع تحت الصيانة',
+    announcementText: s.announcementText || '',
+    footerText: s.footerText || ''
   });
 });
 
 app.get('/api/public/apps', (req, res) => {
   res.json({
     apps: (store.apps || [])
-      .filter(item => item.active === true)
-      .map(({ name, url }) => ({ name, url }))
+      .filter(item => item.active === true && item.visible !== false)
+      .sort((a,b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+      .map(({ name, url, description, category, icon, sortOrder }) =>
+        ({ name, url, description, category, icon, sortOrder }))
   });
 });
 
@@ -176,7 +192,7 @@ app.delete('/api/admin/messages/:id', requireDeveloper, (req, res) => {
 
 app.get('/api/admin/settings', requireDeveloper, (req, res) => res.json({ settings: store.settings }));
 app.put('/api/admin/settings', requireDeveloper, (req, res) => {
-  const allowed = ['siteName','welcomeText','theme','language','showVisitorCard','aiEnabled','aiPersona','aiReplyLength'];
+  const allowed = ["siteName","welcomeText","theme","language","showVisitorCard","accentColor","backgroundColor","textColor","buttonColor","fontFamily","fontSize","borderRadius","showSocialLinks","showApps","showAI","showWelcome","maintenanceMode","maintenanceMessage","contactEmail","footerText","announcementText","aiEnabled","aiPersona","aiReplyLength","aiLanguage","aiTone","aiEmoji","aiGreeting","aiSignature","aiTemperature","aiMaxTokens","aiAnswerFormat","aiUseSiteContext","aiAllowCode","aiExplainSteps","aiCustomInstructions","aiFallbackMessage","aiWelcomeMessage","aiCreativity","aiFormality","aiUseExamples","aiResponseStyle"];
   for (const key of allowed) if (Object.prototype.hasOwnProperty.call(req.body || {}, key)) store.settings[key] = req.body[key];
   saveStore(); res.json({ success: true });
 });
@@ -185,13 +201,36 @@ app.post('/api/admin/apps', requireDeveloper, (req, res) => {
   const name = String(req.body?.name || '').trim().slice(0, 80);
   const url = String(req.body?.url || '').trim().slice(0, 500);
   if (!name || !/^https:\/\//i.test(url)) return res.status(400).json({ error: 'أدخل اسمًا ورابط HTTPS صحيحًا' });
-  const app = { id: Date.now(), name, url, active: true };
-  store.apps.push(app); saveStore(); res.json({ success: true, app });
+  const body = req.body || {};
+  const app = {
+    id: Date.now(),
+    name,
+    url,
+    description: String(body.description || '').slice(0, 300),
+    category: String(body.category || '').slice(0, 60),
+    icon: String(body.icon || '').slice(0, 500),
+    sortOrder: Math.max(0, Math.min(9999, Number(body.sortOrder) || 0)),
+    visible: true,
+    active: true
+  };
+  store.apps.push(app);
+  saveStore();
+  res.json({ success: true, app });
 });
 app.patch('/api/admin/apps/:id', requireDeveloper, (req, res) => {
   const item = store.apps.find(x => x.id === Number(req.params.id));
   if (!item) return res.status(404).json({ success: false });
-  item.active = !!req.body?.active; saveStore(); res.json({ success: true });
+
+  const body = req.body || {};
+  if (Object.prototype.hasOwnProperty.call(body, 'active')) item.active = !!body.active;
+  if (Object.prototype.hasOwnProperty.call(body, 'description')) item.description = String(body.description).slice(0, 300);
+  if (Object.prototype.hasOwnProperty.call(body, 'category')) item.category = String(body.category).slice(0, 60);
+  if (Object.prototype.hasOwnProperty.call(body, 'icon')) item.icon = String(body.icon).slice(0, 300);
+  if (Object.prototype.hasOwnProperty.call(body, 'sortOrder')) item.sortOrder = Math.max(0, Math.min(9999, Number(body.sortOrder) || 0));
+  if (Object.prototype.hasOwnProperty.call(body, 'visible')) item.visible = !!body.visible;
+
+  saveStore();
+  res.json({ success: true, app: item });
 });
 app.delete('/api/admin/apps/:id', requireDeveloper, (req, res) => {
   store.apps = store.apps.filter(x => x.id !== Number(req.params.id));
@@ -229,21 +268,49 @@ app.post('/api/ai', async (req, res) => {
           systemInstruction: {
             parts: [{
               text: (() => {
-                const persona = store.settings.aiPersona || 'friendly';
-                const length = store.settings.aiReplyLength || 'medium';
+                const settings = store.settings || {};
+                const persona = settings.aiPersona || 'friendly';
+                const length = settings.aiReplyLength || 'medium';
                 const personas = {
                   friendly: 'كن ودودًا وبسيطًا.',
                   professional: 'كن احترافيًا ومنظمًا.',
-                  concise: 'كن مختصرًا ومباشرًا.'
+                  concise: 'كن مختصرًا ومباشرًا.',
+                  creative: 'استخدم أفكارًا إبداعية مع الحفاظ على الدقة.',
+                  teacher: 'اشرح المعلومات تدريجيًا وبأسلوب تعليمي واضح.'
                 };
                 const lengths = {
                   short: 'اجعل الرد قصيرًا.',
                   medium: 'اجعل الرد متوسط الطول.',
                   long: 'قدّم شرحًا مفصلًا عند الحاجة.'
                 };
-                return 'أنت ALKFORY AI، مساعد لموقع Ziad Alkfory. أجب بلغة المستخدم، وكن واضحًا ومفيدًا. ' +
+                const tones = {
+                  calm: 'استخدم نبرة هادئة.',
+                  enthusiastic: 'استخدم نبرة مشجعة وحيوية.',
+                  formal: 'استخدم نبرة رسمية.',
+                  simple: 'استخدم لغة سهلة ومباشرة.'
+                };
+                const language = settings.aiLanguage || 'auto';
+                const languageRule = language === 'auto'
+                  ? 'أجب بلغة المستخدم.'
+                  : 'أجب باللغة المحددة: ' + language + '.';
+                const emojiRule = settings.aiEmoji === false
+                  ? 'لا تستخدم الرموز التعبيرية.'
+                  : 'استخدم الرموز التعبيرية باعتدال عند ملاءمتها.';
+                const formatRule = {
+                  paragraphs: 'نظم الرد في فقرات واضحة.',
+                  bullets: 'استخدم نقاطًا عند عرض عدة معلومات.',
+                  direct: 'ابدأ بالإجابة مباشرة دون مقدمات طويلة.'
+                }[settings.aiAnswerFormat || 'paragraphs'];
+                const greeting = settings.aiGreeting ? 'تحية مفضلة: ' + settings.aiGreeting : '';
+                const signature = settings.aiSignature ? 'اختم الرد بهذه العبارة عند ملاءمتها: ' + settings.aiSignature : '';
+                const custom = settings.aiCustomInstructions || '';
+                return 'أنت ALKFORY AI، مساعد لموقع Ziad Alkfory. كن واضحًا ومفيدًا ولا تخترع معلومات. ' +
+                  languageRule + ' ' +
                   (personas[persona] || personas.friendly) + ' ' +
-                  (lengths[length] || lengths.medium);
+                  (lengths[length] || lengths.medium) + ' ' +
+                  (tones[settings.aiTone] || tones.simple) + ' ' +
+                  emojiRule + ' ' + (formatRule || '') + ' ' +
+                  greeting + ' ' + signature + ' ' + custom;
               })()
             }]
           },
@@ -253,7 +320,7 @@ app.post('/api/ai', async (req, res) => {
           }],
           generationConfig: {
             temperature: 0.7,
-            maxOutputTokens: store.settings.aiReplyLength === 'short' ? 250 : store.settings.aiReplyLength === 'long' ? 1200 : 700
+            maxOutputTokens: Math.max(100, Math.min(2000, Number(store.settings.aiMaxTokens) || (store.settings.aiReplyLength === 'short' ? 250 : store.settings.aiReplyLength === 'long' ? 1200 : 700)))
           }
         })
       }

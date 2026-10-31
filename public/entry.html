@@ -122,6 +122,12 @@ button:nth-of-type(2), .choice:nth-of-type(2), .option:nth-of-type(2) {
       style="width:100%;margin-top:12px;background:#171017;border:1px solid #b52b45;color:#fff">
       📲 تنزيل تطبيق ALKFORY
     </button>
+
+    <button id="alkforyUpdateBtn" type="button"
+      style="width:100%;margin-top:10px;background:#25151a;border:1px solid #d12b48;color:#fff;padding:12px;border-radius:10px">
+      🔄 تحديث التطبيق
+    </button>
+    <p id="alkforyUpdateHint" style="font-size:13px;color:#aaa;line-height:1.7"></p>
     <p id="alkforyInstallHint" style="font-size:13px;color:#aaa;line-height:1.7"></p>
 
   </section>
@@ -276,6 +282,50 @@ document.getElementById('loginForm').addEventListener('submit',async e=>{
   };
 
   if (!navigator.onLine) showOffline();
+})();
+</script>
+
+
+<script>
+/* ALKFORY_APP_UPDATE_V1 */
+(() => {
+  const btn = document.getElementById('alkforyUpdateBtn');
+  const hint = document.getElementById('alkforyUpdateHint');
+  if (!btn || !hint || !('serviceWorker' in navigator)) return;
+
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (refreshing) return;
+    refreshing = true;
+    location.reload();
+  });
+
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    hint.textContent = '⏳ جاري البحث عن تحديث...';
+
+    try {
+      const registration = await navigator.serviceWorker.getRegistration('/');
+      if (!registration) {
+        await navigator.serviceWorker.register('/sw.js');
+      }
+
+      const reg = registration || await navigator.serviceWorker.ready;
+      await reg.update();
+
+      if (reg.waiting) {
+        hint.textContent = '✅ تم العثور على تحديث، جاري تفعيله...';
+        reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+        return;
+      }
+
+      hint.textContent = '✅ التطبيق يستخدم أحدث إصدار متاح.';
+    } catch (error) {
+      hint.textContent = '⚠️ تعذر فحص التحديث. تأكد من اتصال الإنترنت وحاول مجددًا.';
+    } finally {
+      btn.disabled = false;
+    }
+  });
 })();
 </script>
 

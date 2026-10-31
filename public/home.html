@@ -459,21 +459,58 @@ async function loadPublicConfig() {
     if (!response.ok) throw new Error('Config unavailable');
     const config = await response.json();
 
-    if (config.siteName) document.title = config.siteName;
-    if (config.welcomeText) {
-      document.getElementById('heroDesc').textContent = config.welcomeText;
+    document.title = config.siteName || 'ALKFORY';
+
+    const hero = document.getElementById('heroDesc');
+    if (hero) {
+      hero.textContent = config.welcomeText || '';
+      hero.style.display = config.showWelcome === false ? 'none' : '';
     }
 
-    document.getElementById('ai').style.display =
-      config.aiEnabled === false ? 'none' : '';
+    document.documentElement.lang = config.language || 'ar';
+    document.documentElement.dir = config.language === 'en' ? 'ltr' : 'rtl';
 
-    document.getElementById('visitorCard').style.display =
+    const root = document.documentElement;
+    root.style.setProperty('--accent', config.accentColor);
+    root.style.setProperty('--bg', config.backgroundColor);
+    root.style.setProperty('--text', config.textColor);
+    root.style.setProperty('--button', config.buttonColor);
+    document.body.style.backgroundColor = config.backgroundColor;
+    document.body.style.color = config.textColor;
+    document.body.style.fontFamily = config.fontFamily || 'Arial, sans-serif';
+    document.body.style.fontSize = (config.fontSize || 16) + 'px';
+
+    document.querySelectorAll('.btn, button').forEach(el => {
+      el.style.borderRadius = (config.borderRadius || 12) + 'px';
+      el.style.backgroundColor = config.buttonColor;
+    });
+
+    const ai = document.getElementById('ai');
+    if (ai) ai.style.display =
+      config.aiEnabled === false || config.showAI === false ? 'none' : '';
+
+    const visitor = document.getElementById('visitorCard');
+    if (visitor) visitor.style.display =
       config.showVisitorCard === false ? 'none' : '';
+
+    const apps = document.getElementById('dynamicApps');
+    if (apps && config.showApps === false) apps.style.display = 'none';
+
+    if (config.maintenanceMode) {
+      document.body.replaceChildren();
+      const notice = document.createElement('main');
+      notice.style.cssText = 'min-height:100vh;display:grid;place-content:center;text-align:center;padding:25px';
+      const title = document.createElement('h1');
+      title.textContent = config.siteName || 'ALKFORY';
+      const message = document.createElement('p');
+      message.textContent = config.maintenanceMessage || 'الموقع تحت الصيانة';
+      notice.append(title, message);
+      document.body.append(notice);
+    }
   } catch (error) {
     console.warn('تعذر تحميل إعدادات الموقع:', error.message);
   }
 }
-
 async function loadPublicApps() {
   try {
     const response = await fetch('/api/public/apps');
@@ -482,10 +519,12 @@ async function loadPublicApps() {
     const apps = Array.isArray(data.apps) ? data.apps : [];
     const section = document.getElementById('dynamicApps');
     const list = document.getElementById('publicAppsList');
+    if (!section || !list) return;
 
     list.replaceChildren();
+
     for (const item of apps) {
-      if (!item.active || !item.name || !item.url) continue;
+      if (!item.name || !item.url) continue;
       let url;
       try {
         url = new URL(item.url);
@@ -494,18 +533,48 @@ async function loadPublicApps() {
 
       const card = document.createElement('article');
       card.className = 'card';
+
+      if (item.icon) {
+        try {
+          const iconUrl = new URL(item.icon);
+          if (iconUrl.protocol === 'https:') {
+            const icon = document.createElement('img');
+            icon.src = iconUrl.href;
+            icon.alt = '';
+            icon.loading = 'lazy';
+            icon.style.cssText = 'width:55px;height:55px;object-fit:contain';
+            card.append(icon);
+          }
+        } catch {}
+      }
+
       const title = document.createElement('h3');
       title.textContent = item.name;
+      card.append(title);
+
+      if (item.category) {
+        const category = document.createElement('small');
+        category.textContent = item.category;
+        card.append(category);
+      }
+
+      if (item.description) {
+        const description = document.createElement('p');
+        description.textContent = item.description;
+        card.append(description);
+      }
+
       const link = document.createElement('a');
       link.className = 'btn';
       link.textContent = 'فتح التطبيق ↗';
       link.href = url.href;
       link.target = '_blank';
       link.rel = 'noopener noreferrer';
-      card.append(title, link);
-      list.appendChild(card);
+      card.append(link);
+      list.append(card);
     }
-    section.style.display = list.children.length ? '' : 'none';
+
+    section.style.display = apps.length ? '' : 'none';
   } catch (error) {
     console.warn('تعذر تحميل التطبيقات:', error.message);
   }
