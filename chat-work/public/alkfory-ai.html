@@ -1,0 +1,1623 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#090909">
+<link rel="manifest" href="/manifest.json">
+
+<style>
+*{box-sizing:border-box}body{margin:0;background:#090909;color:#f5f5f5;font-family:Arial,sans-serif}
+header{padding:12px 17px;border-bottom:1px solid #292929;color:#ff4545;font-weight:bold;display:flex;align-items:center;gap:11px}
+main{max-width:850px;margin:auto;padding:18px}
+#messages{height:65vh;overflow:auto;display:flex;flex-direction:column;gap:12px;padding:10px}
+.msg{padding:13px 15px;border-radius:15px;max-width:88%;white-space:pre-wrap;line-height:1.7}
+.user{align-self:flex-start;background:#252525}.ai{align-self:flex-end;background:#401313;border:1px solid #762222}
+form{display:flex;gap:8px;flex-wrap:wrap;padding:12px;border-top:1px solid #292929}
+textarea{flex:1;min-width:180px;resize:vertical;min-height:52px;max-height:150px;background:#171717;color:white;border:1px solid #444;border-radius:12px;padding:13px;font-size:16px}
+button,label{background:#a81717;color:white;border:0;border-radius:10px;padding:13px;cursor:pointer}
+#status{color:#aaa;padding:0 12px}
+
+/* ALKFORY_AI_ACTIONS_FIXED_LEFT */
+.msg.ai .ai-actions,
+.msg.ai .message-actions,
+.msg.ai .msg-actions,
+.msg.ai .actions {
+  direction: ltr !important;
+  display: flex !important;
+  justify-content: flex-start !important;
+  align-items: center !important;
+  width: 100% !important;
+  margin: 5px 0 0 0 !important;
+  padding: 0 !important;
+  gap: 5px !important;
+  text-align: left !important;
+}
+.msg.ai .ai-actions button,
+.msg.ai .message-actions button,
+.msg.ai .msg-actions button,
+.msg.ai .actions button {
+  width: 25px !important;
+  height: 25px !important;
+  min-width: 25px !important;
+  min-height: 25px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  display: inline-flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  font-size: 12px !important;
+  line-height: 1 !important;
+  flex: 0 0 25px !important;
+}
+
+
+/* ALKFORY media and send controls */
+#form #send{
+  width:54px!important;
+  min-width:54px!important;
+  height:54px!important;
+  border-radius:18px!important;
+  font-size:34px!important;
+  font-weight:800!important;
+  line-height:1!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:0 0 5px!important;
+  cursor:pointer;
+}
+#imageButton,#attachButton,.media-button{
+  width:48px!important;
+  min-width:48px!important;
+  height:48px!important;
+  font-size:23px!important;
+  border-radius:15px!important;
+}
+#image{
+  max-width:100%;
+}
+
+
+/* ALKFORY — Large premium send arrow */
+#form #send{
+  width:60px!important;
+  min-width:60px!important;
+  height:56px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  border-radius:18px!important;
+  font-size:42px!important;
+  font-weight:900!important;
+  line-height:1!important;
+  padding:0 0 7px!important;
+  cursor:pointer!important;
+}
+#form #send:active{transform:scale(.94)}
+
+</style>
+
+<style id="ALKFORY_COMPACT_INPUT">
+#form{display:flex;align-items:center;gap:8px;padding:8px}
+#text{min-height:38px;height:38px;max-height:90px;resize:none;flex:1;font-size:14px;padding:9px 12px;border-radius:14px}
+#attachButton{width:42px;height:42px;flex:0 0 42px;display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer;border:1px solid #a81717;border-radius:50%;color:#fff}
+#form button[type="submit"]{min-width:42px;height:42px;padding:0 12px}
+</style>
+
+
+<style id="ALKFORY_FIXED_HEADER_LAYOUT">
+header {
+  direction: ltr !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  text-align: left !important;
+}
+header > * {
+  flex-shrink: 0;
+}
+header img {
+  object-fit: cover;
+}
+header span {
+  direction: ltr !important;
+  unicode-bidi: isolate;
+}
+#alkMenuButton, #menuButton, #alkMenuOpen {
+  direction: ltr !important;
+  flex-shrink: 0;
+}
+</style>
+
+
+<style id="ALKFORY_CHAT_LAYOUT_V2">
+html, body {
+  min-height: 100%;
+  height: 100%;
+  margin: 0;
+}
+body {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+body > header {
+  flex: 0 0 auto;
+}
+main {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto !important;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 0 !important;
+}
+#messages {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 12px 16px;
+  scroll-behavior: smooth;
+}
+.msg {
+  width: fit-content;
+  max-width: 82%;
+  box-sizing: border-box;
+  margin: 10px 0;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.msg.ai {
+  font-family: Tahoma, "Noto Naskh Arabic", sans-serif !important;
+  font-size: 17px;
+  padding: 12px 16px !important;
+  white-space: normal !important;
+  line-height: 1.5;
+}
+.msg.user {
+  font-family: Arial, sans-serif !important;
+  font-size: 17px;
+  padding: 9px 15px !important;
+  white-space: pre-wrap;
+  margin-right: 0;
+  margin-left: auto;
+}
+#status {
+  flex: 0 0 auto;
+  padding: 5px 14px !important;
+  margin: 0 !important;
+}
+#form {
+  flex: 0 0 auto;
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  margin: 0 !important;
+  padding: 9px 12px max(9px, env(safe-area-inset-bottom)) !important;
+  background: #090909;
+  border-top: 1px solid #333;
+}
+#text {
+  min-width: 0;
+}
+@media (max-width: 600px) {
+  #messages { padding: 8px 12px; }
+  .msg.ai { max-width: 88%; font-size: 16px; padding: 10px 13px !important; }
+  .msg.user { max-width: 82%; font-size: 16px; }
+}
+</style>
+
+
+<style id="ALKFORY_AI_ACTIONS">
+.ai-actions{
+ display:flex;
+ flex-wrap:wrap;
+ gap:7px;
+ margin:-3px 12px 16px;
+ direction:rtl;
+}
+.ai-actions button{
+ background:transparent;
+ color:#c9c9c9;
+ border:1px solid #444;
+ border-radius:9px;
+ padding:6px 10px;
+ font-size:12px;
+ cursor:pointer;
+}
+.ai-actions button:active{
+ background:#551515;
+ color:white;
+}
+</style>
+
+
+<style id="ALKFORY_ICON_CONTROLS">
+.ai-actions button{
+  width:38px;height:36px;padding:0;
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:18px;border-radius:50%;
+}
+#form #send,#form #alkMicButton,#form #alkCallButton{
+  width:42px;min-width:42px;height:42px;
+  padding:0;border-radius:50%;
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:19px;flex:0 0 42px;
+}
+#form #send{font-size:22px;background:#a71930}
+#form #alkMicButton,#form #alkCallButton{
+  background:#242424;border:1px solid #a71930;color:white;
+}
+</style>
+
+
+<style id="ALKFORY_CHATGPT_INPUT_SIZE">
+#form {
+  display:flex !important;
+  align-items:center !important;
+  gap:7px !important;
+  padding:10px 12px max(10px,env(safe-area-inset-bottom)) !important;
+  width:100% !important;
+  box-sizing:border-box !important;
+}
+#form #text {
+  order:2;
+  flex:1 1 auto !important;
+  width:100% !important;
+  min-width:0 !important;
+  height:50px !important;
+  min-height:50px !important;
+  max-height:110px !important;
+  padding:12px 16px !important;
+  font-size:16px !important;
+  border-radius:25px !important;
+  resize:none !important;
+}
+#form #attachButton {
+  order:1;
+  width:32px !important;
+  height:32px !important;
+  flex:0 0 32px !important;
+  font-size:19px !important;
+  border:0 !important;
+  background:transparent !important;
+}
+#form #alkCallButton {
+  order:3;
+}
+#form #alkMicButton {
+  order:4;
+}
+#form #send {
+  order:5;
+}
+#form #alkMicButton,
+#form #alkCallButton,
+#form #send {
+  width:32px !important;
+  min-width:32px !important;
+  height:32px !important;
+  flex:0 0 32px !important;
+  padding:0 !important;
+  border-radius:50% !important;
+  font-size:16px !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+}
+.ai-actions {
+  gap:5px !important;
+  margin:0 12px 12px !important;
+}
+.ai-actions button {
+  width:30px !important;
+  height:30px !important;
+  font-size:15px !important;
+  padding:0 !important;
+}
+@media(max-width:380px) {
+  #form {gap:5px !important;padding-inline:7px !important}
+  #form #text {font-size:15px !important;padding-inline:12px !important}
+}
+</style>
+
+
+<style id="ALKFORY_COMPACT_CHAT_BAR">
+#form {
+  direction: rtl !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 5px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 7px 9px max(7px, env(safe-area-inset-bottom)) !important;
+}
+#form > * {
+  order: initial !important;
+}
+#form #text {
+  flex: 1 1 0 !important;
+  width: 0 !important;
+  min-width: 0 !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  max-height: 75px !important;
+  padding: 9px 13px !important;
+  margin: 0 !important;
+  font-size: 15px !important;
+  line-height: 1.4 !important;
+  border-radius: 22px !important;
+  resize: none !important;
+}
+#form #attachButton,
+#form #alkCallButton,
+#form #alkMicButton,
+#form #send {
+  width: 30px !important;
+  min-width: 30px !important;
+  height: 30px !important;
+  min-height: 30px !important;
+  flex: 0 0 30px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border-radius: 50% !important;
+  font-size: 16px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+#form #attachButton {
+  border: 0 !important;
+  background: transparent !important;
+}
+#form #alkCallButton,
+#form #alkMicButton {
+  background: #242424 !important;
+  border: 1px solid #555 !important;
+}
+#form #send {
+  background: #a71930 !important;
+  font-size: 18px !important;
+}
+</style>
+
+<style>
+
+/* ALKFORY_FINAL_AI_ACTIONS */
+.msg.ai {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+}
+.msg.ai .ai-actions {
+  direction: ltr !important;
+  display: flex !important;
+  justify-content: flex-start !important;
+  align-items: center !important;
+  align-self: stretch !important;
+  width: 100% !important;
+  margin: 5px 0 0 !important;
+  padding: 0 !important;
+  gap: 4px !important;
+  order: 2 !important;
+}
+.msg.ai .ai-actions button {
+  box-sizing: border-box !important;
+  width: 24px !important;
+  min-width: 24px !important;
+  max-width: 24px !important;
+  height: 24px !important;
+  min-height: 24px !important;
+  max-height: 24px !important;
+  flex: 0 0 24px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border-radius: 50% !important;
+  font-size: 12px !important;
+  line-height: 1 !important;
+}
+
+</style>
+
+<style id="ALKFORY_REACTIONS_VOICE_ARROW">
+.ai-actions{position:relative;align-items:center}
+.alk-reaction-picker{
+ display:flex;gap:5px;align-items:center;flex-wrap:wrap;
+ padding:5px 8px;margin:3px 0;border:1px solid #555;
+ border-radius:20px;background:#171717;
+}
+.alk-reaction-picker[hidden]{display:none}
+.alk-reaction-picker button{
+ border:0;background:transparent;padding:3px;
+ min-width:30px;height:30px;font-size:19px;
+}
+.alk-reaction-thanks{
+ display:block;width:100%;font-size:10px;font-weight:300;
+ line-height:1.4;opacity:.68;margin:2px 3px 0;
+}
+#form #send{font-size:19px!important}
+</style>
+\n
+<style id="alk-ai-spinner-style">
+.alk-ai-spinner {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:3px;
+  height:24px;
+  color:#e00032;
+  font-size:21px;
+  line-height:1;
+  vertical-align:middle;
+}
+.alk-ai-spinner span {
+  display:inline-block;
+  animation:alkSpin .85s linear infinite;
+}
+.alk-ai-spinner span:last-child {
+  animation-direction:reverse;
+}
+@keyframes alkSpin {
+  to { transform:rotate(360deg); }
+}
+</style>
+
+
+<style id="ALKFORY_UI_FINAL">
+body > header {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  z-index: 9999 !important;
+  margin: 0 !important;
+  padding-top: 5px !important;
+  padding-bottom: 5px !important;
+}
+body > main {
+  padding-top: 76px !important;
+}
+#status {
+  display: none !important;
+}
+#text::placeholder {
+  opacity: 1 !important;
+  color: #aaa !important;
+}
+</style>
+
+
+<title>زياد الكفوري | الموقع الرسمي ALKFORY</title>
+<meta name="description" content="الموقع الرسمي لزياد الكفوري ALKFORY. اكتشف المنصة الشخصية والتطبيقات والخدمات ومساعد الذكاء الاصطناعي.">
+<meta name="keywords" content="زياد الكفوري, موقع زياد الكفوري, منصة زياد الكفوري, ALKFORY, Ziad Alkfory">
+<meta name="author" content="Ziad Alkfory">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://alkfory-personal-website.onrender.com/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="زياد الكفوري | الموقع الرسمي ALKFORY">
+<meta property="og:description" content="الموقع الرسمي لزياد الكفوري ALKFORY. اكتشف المنصة الشخصية والتطبيقات والخدمات ومساعد الذكاء الاصطناعي.">
+<meta property="og:url" content="https://alkfory-personal-website.onrender.com/">
+<meta property="og:site_name" content="ALKFORY">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="زياد الكفوري | الموقع الرسمي ALKFORY">
+<meta name="twitter:description" content="الموقع الرسمي لزياد الكفوري ALKFORY. اكتشف المنصة الشخصية والتطبيقات والخدمات ومساعد الذكاء الاصطناعي.">
+
+</head>
+<body>
+<header><button id="menuOpen" type="button" aria-label="القائمة" style="margin-right:auto;background:#292929">☰</button><img src="/alkfory-profile.jpg" alt="صورة المطور" style="width:42px;height:42px;border-radius:50%;object-fit:cover;border:2px solid #a81717"><span>⚜️ ALKFORY AI</span></header>
+
+<div id="alkMenu" hidden style="position:fixed;inset:0;z-index:20;background:#000b">
+ <aside style="position:absolute;right:0;top:0;bottom:0;width:min(300px,85%);background:#111;border-left:1px solid #8b0000;padding:18px;overflow:auto">
+  <button id="menuClose" type="button">إغلاق ✕</button>
+  <h3 style="color:#ff4545">⚜️ قائمة ALKFORY</h3>
+  <hr>
+  <h4>إعدادات التطبيق</h4>
+  <button id="themeToggle" type="button" style="width:100%;margin:5px 0">تغيير الألوان والثيم</button>
+  <button id="languageToggle" type="button" style="width:100%;margin:5px 0">العربية / English</button>
+  <hr>
+  <button id="developerOpen" type="button" style="width:100%;margin:5px 0">رسائل المطور الواردة</button>
+  <button id="platformOpen" type="button" style="width:100%;margin:5px 0">منصة الكفوري</button>
+ </aside>
+</div>
+
+<div id="alkInstallArea" style="padding:8px 16px;text-align:center"><button id="alkInstallBtn" type="button" hidden>تثبيت تطبيق الكفوري</button></div>
+<main>
+<div id="messages" aria-live="polite"></div>
+<p id="status">مساعدك جاهز. اكتب سؤالك.</p>
+<form id="form">
+<textarea id="text" placeholder="اكتب رسالتك هنا..." maxlength="4000" rows="1" aria-label="اكتب رسالتك"></textarea>
+<label id="attachButton" title="إرفاق صورة أو فيديو أو ملف" aria-label="إرفاق صورة أو فيديو أو ملف">📎<input id="image" type="file" accept="image/*,audio/*,video/*,.pdf,.txt,.doc,.docx,.ppt,.pptx,.xls,.xlsx" hidden></label>
+<button id="alkCallButton" type="button" aria-label="مكالمة" title="مكالمة">📞</button>
+<button id="alkMicButton" type="button" aria-label="تحدث" title="تحدث">🎙️</button>
+<button id="send" aria-label="إرسال" title="إرسال">↑</button>
+</form>
+</main>
+<script>
+const box=document.getElementById('messages');
+const form=document.getElementById('form');
+const input=document.getElementById('text');
+const statusBox=document.getElementById('status');
+const historyKey='alkfory_ai_history_v1';
+let history=[];
+try{history=JSON.parse(localStorage.getItem(historyKey)||'[]')}catch(e){history=[]}
+function save(){localStorage.setItem(historyKey,JSON.stringify(history.slice(-80)))}
+
+function draw(){
+ box.innerHTML='';
+ for(const m of history){
+  const el=document.createElement('div');
+  el.className='msg '+(m.role==='user'?'user':'ai');
+  el.textContent=m.text;
+  box.appendChild(el);
+
+  if(m.role==='assistant'){
+   const actions=document.createElement('div');
+   actions.className='ai-actions';
+
+   const copy=document.createElement('button');
+   copy.type='button';copy.textContent='📋';
+   copy.addEventListener('click',async()=>{
+    try{
+     await navigator.clipboard.writeText(m.text);
+     statusBox.textContent='تم نسخ الرد';
+    }catch(e){statusBox.textContent='تعذر النسخ من المتصفح';}
+   });
+
+   const react=document.createElement('button');
+   react.type='button';react.textContent=m.reaction?'❤️':'👍';
+   react.textContent=typeof m.reaction==='string'?m.reaction:(m.reaction?'❤️':'👍');
+   const picker=document.createElement('div');
+   picker.className='alk-reaction-picker';
+   picker.hidden=true;
+   const thanks=document.createElement('span');
+   thanks.className='alk-reaction-thanks';
+   thanks.textContent=m.reaction?'شكرًا لتفاعلك':'';
+   const reactions=['❤️','😂','😮','😢','😡','👍'];
+   for(const emoji of reactions){
+    const choice=document.createElement('button');
+    choice.type='button';
+    choice.textContent=emoji;
+    choice.setAttribute('aria-label','تفاعل '+emoji);
+    choice.addEventListener('click',()=>{
+     m.reaction=emoji;
+     react.textContent=emoji;
+     thanks.textContent=document.documentElement.lang==='en'?'Thanks for reacting':'شكرًا لتفاعلك';
+     picker.hidden=true;
+     save();
+    });
+    picker.appendChild(choice);
+   }
+   let pressTimer=null;
+   let longPressed=false;
+   react.addEventListener('pointerdown',()=>{
+    longPressed=false;
+    clearTimeout(pressTimer);
+    pressTimer=setTimeout(()=>{
+     longPressed=true;
+     picker.hidden=false;
+    },500);
+   });
+   ['pointerup','pointerleave','pointercancel'].forEach(eventName=>{
+    react.addEventListener(eventName,()=>clearTimeout(pressTimer));
+   });
+   react.addEventListener('contextmenu',e=>e.preventDefault());
+   react.addEventListener('click',()=>{
+    if(longPressed){longPressed=false;return;}
+    m.reaction=m.reaction?'':'👍';
+    react.textContent=m.reaction||'👍';
+    thanks.textContent=m.reaction?(document.documentElement.lang==='en'?'Thanks for reacting':'شكرًا لتفاعلك'):'';
+    save();
+   });
+
+   const voice=document.createElement('button');
+   voice.type='button';voice.textContent='🔊';
+   voice.addEventListener('click',()=>{
+    if(!('speechSynthesis' in window)){
+     statusBox.textContent='الصوت غير مدعوم في هذا المتصفح';return;
+    }
+
+    const english=document.documentElement.lang==='en';
+    let spokenText=String(m.text||'');
+    if(!english){
+      spokenText=spokenText
+        .replace(/[\p{Extended_Pictographic}\p{Emoji_Presentation}\uFE0F\u200D]/gu,' ')
+        .replace(/[A-Za-z][A-Za-z0-9._-]*/g,' ')
+        .replace(/\s+/g,' ').trim();
+    }else{
+      spokenText=spokenText
+        .replace(/[\p{Extended_Pictographic}\p{Emoji_Presentation}\uFE0F\u200D]/gu,' ')
+        .replace(/\s+/g,' ').trim();
+    }
+    if(!spokenText)return;
+    speechSynthesis.cancel();
+    const utterance=new SpeechSynthesisUtterance(spokenText);
+    utterance.lang=english?'en-US':'ar-EG';
+    utterance.rate=0.96;
+    utterance.pitch=1.08;
+    const voices=speechSynthesis.getVoices();
+    const matching=voices.filter(v=>english?/^en/i.test(v.lang):/^ar/i.test(v.lang));
+    const preferred=matching.find(v=>/female|woman|hoda|salma|amira|laila|layla/i.test(v.name));
+    if(preferred)utterance.voice=preferred;
+    speechSynthesis.speak(utterance);
+   });
+
+   const share=document.createElement('button');
+   share.type='button';share.textContent='↗️';
+   share.addEventListener('click',async()=>{
+    try{
+     if(navigator.share){
+      await navigator.share({title:'ALKFORY AI',text:m.text});
+     }else{
+      await navigator.clipboard.writeText(m.text);
+      statusBox.textContent='تم نسخ الرد للمشاركة';
+     }
+    }catch(e){
+     if(e.name!=='AbortError')statusBox.textContent='تعذرت المشاركة';
+    }
+   });
+
+   actions.append(copy,react,voice,share,picker,thanks);
+   el.appendChild(actions);
+  }
+ }
+ box.scrollTop=box.scrollHeight;
+}
+draw();
+
+
+const alkMenu=document.getElementById('alkMenu');
+document.getElementById('menuOpen').addEventListener('click',()=>alkMenu.hidden=false);
+document.getElementById('menuClose').addEventListener('click',()=>alkMenu.hidden=true);
+alkMenu.addEventListener('click',e=>{if(e.target===alkMenu)alkMenu.hidden=true;});
+
+function applyAlkTheme(){
+ const dark=localStorage.getItem('alkfory_theme')!=='light';
+ document.body.style.background=dark?'#090909':'#f3f3f3';
+ document.body.style.color=dark?'#f5f5f5':'#171717';
+ document.querySelectorAll('.msg.user').forEach(x=>x.style.background=dark?'#252525':'#dedede');
+ document.querySelectorAll('textarea').forEach(x=>{
+  x.style.background=dark?'#171717':'#fff';
+  x.style.color=dark?'#fff':'#171717';
+ });
+}
+applyAlkTheme();
+document.getElementById('themeToggle').addEventListener('click',()=>{
+ localStorage.setItem('alkfory_theme',localStorage.getItem('alkfory_theme')==='light'?'dark':'light');
+ applyAlkTheme();
+});
+
+function applyAlkLanguage(){
+ const english=localStorage.getItem('alkfory_language')==='en';
+ document.documentElement.lang=english?'en':'ar';
+ document.documentElement.dir=english?'ltr':'rtl';
+ document.getElementById('text').placeholder=english?'Write your message...':'اكتب رسالتك هنا...';
+ const sendButton=document.getElementById('send');
+ sendButton.textContent='↑';
+ sendButton.title=english?'Send message':'إرسال الرسالة';
+ sendButton.setAttribute('aria-label',sendButton.title);
+ document.getElementById('status').textContent=english?'Ready':'مساعدك جاهز. اكتب سؤالك.';
+ document.querySelector('header span').textContent=english?'⚜️ ALKFORY AI':'⚜️ ALKFORY AI';
+}
+applyAlkLanguage();
+document.getElementById('languageToggle').addEventListener('click',()=>{
+ localStorage.setItem('alkfory_language',localStorage.getItem('alkfory_language')==='en'?'ar':'en');
+ applyAlkLanguage();
+});
+
+document.getElementById('developerOpen').addEventListener('click',()=>location.href='/admin');
+document.getElementById('platformOpen').addEventListener('click',()=>location.href='/platforms');
+
+form.addEventListener('submit',async e=>{
+ e.preventDefault();
+ const message=input.value.trim();
+ const imageFile=document.getElementById('image').files[0];
+ if(!message && !imageFile)return;
+ if(imageFile && imageFile.size > 4 * 1024 * 1024){
+  statusBox.textContent='حجم الصورة أكبر من الحد المسموح (4 ميجابايت).';
+  return;
+ }
+ let image=null;
+ if(imageFile){
+  image=await new Promise((resolve,reject)=>{
+   const reader=new FileReader();
+   reader.onload=()=>resolve({
+    mimeType:imageFile.type,
+    data:String(reader.result).split(',')[1]
+   });
+   reader.onerror=reject;
+   reader.readAsDataURL(imageFile);
+  });
+ }
+ history.push({role:'user',text:message || 'أرسلت صورة', image:!!image});
+ save();draw();input.value='';document.getElementById('image').value='';
+ statusBox.innerHTML='<span class="alk-ai-spinner" role="status" aria-label="جاري الرد"><span>⟳</span><span>⟳</span></span>';
+ document.getElementById('send').disabled=true;
+ try{
+  const context=history.slice(-12).map(m=>(m.role==='user'?'المستخدم: ':'المساعد: ')+m.text).join('\n');
+  const response=await fetch('/api/ai',{
+   method:'POST',
+   headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({
+    message:(message || 'حلّل الصورة وأجب عن السؤال الموجود فيها.')+
+      '\nتابع سياق المحادثة التالية وأجب عن آخر رسالة فقط:\n'+context,
+    image
+   })
+  });
+  const data=await response.json();
+  if(!response.ok)throw new Error(data.error||'تعذر الحصول على الرد');
+  history.push({role:'assistant',text:data.answer||'لم يصل رد.'});
+  save();draw();statusBox.textContent='جاهز';
+ }catch(err){
+  statusBox.textContent=err.message||'حدث خطأ في الاتصال';
+ }
+ document.getElementById('send').disabled=false;
+ input.focus();
+});
+</script>
+<!-- ALKFORY_PWA_CHAT_INSTALL -->
+
+<script>
+(() => {
+  const button = document.getElementById('alkInstallBtn');
+  if (!button) return;
+
+  const standalone = () =>
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true;
+
+  function updateInstallButton() {
+    const area = document.getElementById('alkInstallArea');
+    if (standalone()) {
+      area.hidden = true;
+      button.hidden = true;
+    }
+  }
+
+  updateInstallButton();
+  window.addEventListener('appinstalled', () => {
+    button.hidden = true;
+    document.getElementById('alkInstallArea').hidden = true;
+  });
+
+  window.addEventListener('beforeinstallprompt', event => {
+    event.preventDefault();
+    if (standalone()) return;
+    window.alkInstallPrompt = event;
+    button.hidden = false;
+  });
+
+  button.addEventListener('click', async () => {
+    const promptEvent = window.alkInstallPrompt;
+    if (!promptEvent) return;
+    promptEvent.prompt();
+    await promptEvent.userChoice;
+    window.alkInstallPrompt = null;
+    button.hidden = true;
+  });
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    });
+  }
+})();
+</script>
+
+
+<script id="ALKFORY_VOICE_CONTROLS">
+(() => {
+  const mic = document.getElementById('alkMicButton');
+  const call = document.getElementById('alkCallButton');
+  const input = document.getElementById('text');
+  const status = document.getElementById('status');
+
+
+
+  mic?.addEventListener('click', () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      status.textContent = 'الإملاء الصوتي غير مدعوم في هذا المتصفح.';
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = document.documentElement.lang === 'en' ? 'en-US' : 'ar-EG';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    mic.textContent = '🔴';
+    status.textContent = 'اتكلم الآن...';
+
+    recognition.onresult = event => {
+      const spoken = event.results[0][0].transcript;
+      input.value = (input.value + ' ' + spoken).trim();
+      input.focus();
+      status.textContent = 'تم تحويل كلامك إلى كتابة.';
+    };
+    recognition.onerror = () => {
+      status.textContent = 'لم يتم التقاط الصوت. تحقق من إذن الميكروفون.';
+    };
+    recognition.onend = () => {
+      mic.textContent = '🎙️';
+    };
+
+    try { recognition.start(); }
+    catch (error) {
+      mic.textContent = '🎙️';
+      status.textContent = 'تعذر تشغيل الميكروفون.';
+    }
+  });
+})();
+</script>
+
+
+<script>
+(function(){
+  if(window.alkforyVoiceChat) return;
+  window.alkforyVoiceChat = true;
+
+  const mic = document.getElementById('alkMicButton') ||
+              document.getElementById('mic');
+  if(!mic) return;
+
+  const Recognition = window.SpeechRecognition ||
+                      window.webkitSpeechRecognition;
+  let listening = false;
+  let recognition = null;
+
+  mic.title = 'محادثة صوتية: اضغط للتحدث';
+  mic.setAttribute('aria-label','بدء المحادثة الصوتية');
+
+  mic.addEventListener('click', function(){
+    if(!Recognition){
+      const box = document.getElementById('status') ||
+                  document.getElementById('statusBox');
+      if(box) box.textContent =
+        'التعرف الصوتي غير مدعوم في هذا المتصفح.';
+      return;
+    }
+
+    if(listening){
+      try { recognition.stop(); } catch(e) {}
+      listening = false;
+      mic.classList.remove('voice-listening');
+      return;
+    }
+
+    recognition = new Recognition();
+    recognition.lang =
+      document.documentElement.lang === 'en' ? 'en-US' : 'ar-EG';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onstart = function(){
+      listening = true;
+      mic.classList.add('voice-listening');
+      mic.title = 'استمع الآن... اضغط للإيقاف';
+    };
+
+    recognition.onresult = function(event){
+      const spoken = event.results[0][0].transcript.trim();
+      const input = document.getElementById('message') ||
+                    document.querySelector('textarea');
+      if(!input || !spoken) return;
+      input.value = spoken;
+      input.dispatchEvent(new Event('input',{bubbles:true}));
+      const form = document.getElementById('form') ||
+                   input.closest('form');
+      if(form) form.requestSubmit();
+    };
+
+    recognition.onerror = function(){
+      const box = document.getElementById('status') ||
+                  document.getElementById('statusBox');
+      if(box) box.textContent = 'تعذر التقاط الصوت؛ حاول مرة أخرى.';
+    };
+
+    recognition.onend = function(){
+      listening = false;
+      mic.classList.remove('voice-listening');
+      mic.title = 'محادثة صوتية: اضغط للتحدث';
+    };
+
+    try { recognition.start(); }
+    catch(e) { listening = false; }
+  });
+})();
+</script>
+
+
+<style id="alkfory-live-voice-style">
+#form #send{
+ width:60px!important;min-width:60px!important;height:56px!important;
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ border-radius:18px!important;font-size:42px!important;font-weight:900!important;
+ line-height:1!important;padding:0 0 7px!important;cursor:pointer!important;
+}
+#form #send:active{transform:scale(.93)}
+#alkforyVoicePanel{
+ display:none;position:relative;margin:12px auto;padding:22px 14px;
+ width:min(100%,340px);text-align:center;border:1px solid #343b46;
+ border-radius:24px;background:#10151d;color:#fff;
+}
+#alkforyVoicePanel.active{display:block}
+#alkforyVoiceAvatar{
+ width:116px;height:116px;border-radius:50%;object-fit:cover;
+ border:4px solid #54c9f2;box-shadow:0 0 22px #54c9f255;
+ background:#202b38;
+}
+#alkforyVoiceState{font-size:13px;margin:12px 0;color:#8edfff}
+#alkforyVoiceEnd{
+ border:0;border-radius:50%;width:48px;height:48px;
+ background:#b42335;color:white;font-size:20px;margin-top:8px;
+}
+.voice-listening{animation:alkVoicePulse 1.2s infinite}
+@keyframes alkVoicePulse{
+ 50%{box-shadow:0 0 0 12px #54c9f233}
+}
+</style>
+<div id="alkforyVoicePanel" aria-live="polite">
+ <img id="alkforyVoiceAvatar" alt="الصورة الشخصية">
+ <div id="alkforyVoiceState">اضغط زر المكالمة وابدأ الكلام</div>
+ <button id="alkforyVoiceEnd" type="button" aria-label="إنهاء المكالمة">■</button>
+</div>
+
+
+
+<div id="alkforyVoiceScreen" role="dialog" aria-modal="true" aria-label="المحادثة الصوتية">
+ <div id="alkVoiceTop">ALKFORY AI</div>
+ <button id="alkVoiceClose" type="button" aria-label="إغلاق">×</button>
+ <div id="alkVoiceOrb"><img id="alkVoicePhoto" alt="صورتك الشخصية"></div>
+ <div id="alkVoiceCaption">اضغط زر البدء وتحدث</div>
+ <div id="alkVoiceHint">تحدث بوضوح، وسيقرأ الذكاء الاصطناعي رده</div>
+ <div id="alkVoiceControls">
+  <button class="alkVoiceControl" id="alkVoiceCancel" type="button" aria-label="إلغاء">×</button>
+  <button class="alkVoiceControl" id="alkVoicePause" type="button" aria-label="إيقاف مؤقت">Ⅱ</button>
+ </div>
+</div>
+
+<style id="alkfory-voice-screen-style">
+#form #send{
+ width:48px!important;min-width:48px!important;height:46px!important;
+ font-size:30px!important;font-weight:800!important;padding:0 0 4px!important;
+ border-radius:15px!important;
+}
+#alkforyVoiceScreen{
+ display:none;position:fixed;inset:0;z-index:999999;
+ background:#090b0f;color:#fff;align-items:center;justify-content:center;
+ flex-direction:column;padding:24px 20px;
+}
+#alkforyVoiceScreen.open{display:flex}
+#alkVoiceTop{position:absolute;top:18px;left:18px;right:18px;
+ text-align:center;font-size:17px;font-weight:700;letter-spacing:.5px}
+#alkVoiceOrb{
+ width: min(62vw,245px);height:min(62vw,245px);
+ border-radius:50%;display:flex;align-items:center;justify-content:center;
+ border:5px solid #a9a9a9;background:#191d24;
+ box-shadow:0 0 40px #7773;overflow:hidden;
+}
+#alkVoiceOrb img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+#alkVoiceOrb.listening{border-color:#d5d5d5;box-shadow:0 0 38px #aaa8}
+#alkVoiceOrb.speaking{border-color:#f0f0f0;box-shadow:0 0 48px #ddd8}
+#alkVoiceCaption{margin-top:28px;text-align:center;font-size:15px;color:#ddd;min-height:26px}
+#alkVoiceControls{
+ position:absolute;bottom:48px;left:0;right:0;
+ display:flex;justify-content:space-between;align-items:center;
+ padding:0 38px;
+}
+.alkVoiceControl{
+ width:62px;height:62px;border:0;border-radius:50%;
+ color:#fff;font-size:24px;display:flex;align-items:center;
+ justify-content:center;
+}
+#alkVoiceCancel{background:#a72a35}
+#alkVoicePause{background:#393d45}
+#alkVoicePause.paused{background:#777}
+#alkVoiceHint{position:absolute;bottom:125px;color:#999;font-size:12px}
+#alkVoiceClose{position:absolute;top:18px;left:18px;background:none;
+ color:#fff;border:0;font-size:25px}
+@media(max-height:550px){
+ #alkVoiceOrb{width:145px;height:145px}
+ #alkVoiceControls{bottom:18px}
+ #alkVoiceHint{bottom:88px}
+}
+</style>
+
+<script>
+(function(){
+ if(window.__alkforyVoiceScreenV2)return;
+ window.__alkforyVoiceScreenV2=true;
+
+ const screen=document.getElementById('alkforyVoiceScreen');
+ const call=document.getElementById('alkCallButton');
+ const orb=document.getElementById('alkVoiceOrb');
+ const caption=document.getElementById('alkVoiceCaption');
+ const photo=document.getElementById('alkVoicePhoto');
+ const cancel=document.getElementById('alkVoiceCancel');
+ const pause=document.getElementById('alkVoicePause');
+ const close=document.getElementById('alkVoiceClose');
+ const input=document.getElementById('message') ||
+              document.querySelector('#form textarea');
+ const form=document.getElementById('form') ||
+             (input && input.closest('form'));
+ const Recognition=window.SpeechRecognition || window.webkitSpeechRecognition;
+
+ if(!screen || !call || !input || !form)return;
+
+ // البحث عن صورة الحساب في عناصر الموقع
+ const profile=document.querySelector(
+  '#profileImage,#profile-image,#avatar,.profile img,.profile-image,img.avatar'
+ );
+ if(profile && profile.src)photo.src=profile.src;
+ else photo.style.display='none';
+
+ let active=false,paused=false,recognition=null,lastReply='',observer=null;
+
+ function status(t){caption.textContent=t}
+ function stopRecognition(){
+  if(recognition){try{recognition.stop()}catch(e){} recognition=null}
+ }
+ function stopAll(){
+  active=false;paused=false;stopRecognition();
+  if('speechSynthesis' in window)speechSynthesis.cancel();
+  if(observer)observer.disconnect();
+  observer=null;orb.className='';pause.textContent='Ⅱ';
+  pause.classList.remove('paused');
+ }
+ function closeScreen(){
+  stopAll();screen.classList.remove('open');
+ }
+ function speak(text){
+  if(!active || paused || !text || !('speechSynthesis' in window))return;
+  text=String(text)
+   .replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu,' ')
+   .replace(/\s+/g,' ').trim();
+  if(!text)return;
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(text);
+  const en=document.documentElement.lang==='en';
+  u.lang=en?'en-US':'ar-EG';u.rate=.96;u.pitch=1.12;
+  const voices=speechSynthesis.getVoices();
+  const matching=voices.filter(v=>en?/^en/i.test(v.lang):/^ar/i.test(v.lang));
+  const female=matching.find(v=>/female|woman|hoda|salma|amira|laila|layla|zira/i.test(v.name));
+  if(female)u.voice=female;
+  u.onstart=()=>{orb.className='speaking';status('ALKFORY AI بيتكلم...')};
+  u.onend=()=>{orb.className='';if(active&&!paused)status('اضغط زر التحدث للمتابعة')};
+  u.onerror=()=>{orb.className='';status('تعذر تشغيل الصوت على هذا الجهاز')};
+  speechSynthesis.speak(u);
+ }
+
+ function findLatestReply(){
+  const selectors=[
+   '.message.assistant','.assistant-message',
+   '[data-role="assistant"]','.ai-message',
+   '.message.bot','.bot-message'
+  ];
+  let nodes=[];
+  selectors.forEach(sel=>document.querySelectorAll(sel).forEach(n=>nodes.push(n)));
+  nodes=[...new Set(nodes)];
+  for(let i=nodes.length-1;i>=0;i--){
+   const t=(nodes[i].innerText||'').trim();
+   if(t && t!==lastReply){
+    lastReply=t;
+    return t;
+   }
+  }
+  return '';
+ }
+
+ function watchReply(){
+  if(observer)observer.disconnect();
+  observer=new MutationObserver(()=>{
+   if(!active||paused)return;
+   const reply=findLatestReply();
+   if(reply){
+    observer.disconnect();observer=null;
+    speak(reply);
+   }
+  });
+  observer.observe(document.body,{subtree:true,childList:true,characterData:true});
+  setTimeout(()=>{
+   if(observer){
+    observer.disconnect();observer=null;
+    if(active&&!paused)status('الرد لم يظهر بعد؛ حاول مرة أخرى');
+   }
+  },90000);
+ }
+
+ function listen(){
+  if(!active||paused)return;
+  if(!Recognition){status('التعرف على الصوت غير مدعوم في المتصفح');return}
+  recognition=new Recognition();
+  recognition.lang=document.documentElement.lang==='en'?'en-US':'ar-EG';
+  recognition.continuous=false;recognition.interimResults=false;
+  recognition.onstart=()=>{orb.className='listening';status('أنا بسمعك... اتكلم')};
+  recognition.onresult=e=>{
+   const words=e.results[0][0].transcript.trim();
+   if(!words)return;
+   input.value=words;
+   input.dispatchEvent(new Event('input',{bubbles:true}));
+   status('جاري إرسال كلامك...');
+   watchReply();
+   form.requestSubmit();
+  };
+  recognition.onerror=()=>status('تعذر التقاط الصوت؛ اضغط للتحدث مرة أخرى');
+  recognition.onend=()=>{if(active&&!paused){orb.className='';if(!observer)status('اضغط زر التحدث للمتابعة')}};
+  try{recognition.start()}catch(e){status('تعذر بدء الميكروفون')}
+ }
+
+ function openScreen(){
+  stopAll();active=true;screen.classList.add('open');
+  status('اضغط زر التحدث وابدأ كلامك');
+  listen();
+ }
+
+ call.addEventListener('click',e=>{e.preventDefault();openScreen()});
+ cancel.addEventListener('click',closeScreen);
+ close.addEventListener('click',closeScreen);
+
+ pause.addEventListener('click',()=>{
+  if(!active)return;
+  paused=!paused;
+  if(paused){
+   stopRecognition();
+   if('speechSynthesis' in window)speechSynthesis.pause();
+   pause.textContent='▶';pause.classList.add('paused');
+   status('المحادثة متوقفة مؤقتًا');
+  }else{
+   pause.textContent='Ⅱ';pause.classList.remove('paused');
+   if('speechSynthesis' in window && speechSynthesis.paused){
+    speechSynthesis.resume();status('استكمال صوت الرد...');
+   }else{
+    status('اضغط زر التحدث للمتابعة');listen();
+   }
+  }
+ });
+})();
+</script>
+
+
+<!-- ALKFORY VOICE COMPLETE FIX -->
+<style>
+#alkforyVoiceScreen {
+  display:none !important;
+  position:fixed !important;
+  inset:0 !important;
+  z-index:2147483000 !important;
+  background:#000 !important;
+  color:#fff !important;
+}
+#alkforyVoiceScreen.alk-voice-active {
+  display:flex !important;
+  background:#000 !important;
+}
+#alkVoiceOrb {
+  background:#050505 !important;
+  border:2px solid #b00020 !important;
+  overflow:hidden !important;
+}
+#alkVoicePhoto {
+  display:block !important;
+  width:100% !important;
+  height:100% !important;
+  object-fit:cover !important;
+  border-radius:50% !important;
+}
+#alkVoiceCaption {
+  color:#fff !important;
+}
+#alkVoiceCancel,#alkVoicePause,#alkVoiceClose {
+  cursor:pointer;
+}
+</style>
+
+<script>
+(() => {
+  if (window.__ALKFORY_VOICE_COMPLETE_FIX) return;
+  window.__ALKFORY_VOICE_COMPLETE_FIX = true;
+
+  const $ = s => document.querySelector(s);
+  const screen = $('#alkforyVoiceScreen');
+  const call = $('#alkCallButton');
+  const photo = $('#alkVoicePhoto');
+  const caption = $('#alkVoiceCaption');
+  const cancel = $('#alkVoiceCancel');
+  const pause = $('#alkVoicePause');
+  const close = $('#alkVoiceClose');
+
+  const input = $('#text') || $('#message') || $('#form textarea') ||
+                $('#form input[type="text"]');
+  const form = $('#form') || (input && input.closest('form'));
+
+  const profile = $('header img[alt="صورة المطور"]') ||
+                  $('header img[src*="alkfory-profile"]') ||
+                  $('img[src*="alkfory-profile"]');
+
+  if (profile && photo) {
+    photo.src = profile.currentSrc || profile.src;
+    photo.style.display = 'block';
+    photo.onerror = () => {
+      photo.src = '/alkfory-profile.jpg';
+      photo.style.display = 'block';
+    };
+  }
+
+  function setCaption(text) {
+    if (caption) caption.textContent = text;
+  }
+
+  function speak(text, done) {
+    if (!('speechSynthesis' in window) || !text) {
+      if (done) done();
+      return;
+    }
+    speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'ar-EG';
+    utterance.rate = 0.94;
+    utterance.pitch = 1.12;
+
+    const voices = speechSynthesis.getVoices();
+    const female = voices.find(v =>
+      /ar/i.test(v.lang) && /female|hoda|salma|amira|laila|layla/i.test(v.name)
+    );
+    const arabic = voices.find(v => /ar/i.test(v.lang));
+    if (female || arabic) utterance.voice = female || arabic;
+
+    utterance.onend = () => done && done();
+    utterance.onerror = () => done && done();
+    speechSynthesis.speak(utterance);
+  }
+
+  const Recognition = window.SpeechRecognition ||
+                      window.webkitSpeechRecognition;
+  let recognition = null;
+  let active = false;
+  let paused = false;
+  let waitingReply = false;
+  let lastReply = '';
+  let observer = null;
+
+  function findReply() {
+    const nodes = document.querySelectorAll(
+      '.message.assistant,.assistant-message,[data-role="assistant"],' +
+      '.ai-message,.message.bot,.bot-message'
+    );
+    for (let i = nodes.length - 1; i >= 0; i--) {
+      const t = (nodes[i].innerText || nodes[i].textContent || '').trim();
+      if (t && t !== lastReply && t.length > 2) return t;
+    }
+    return '';
+  }
+
+  function startListening() {
+    if (!active || paused || waitingReply || !recognition) return;
+    try {
+      recognition.start();
+      setCaption('سامعك… اتكلم دلوقتي');
+    } catch (e) {}
+  }
+
+  function stopListening() {
+    if (recognition) {
+      try { recognition.stop(); } catch (e) {}
+    }
+  }
+
+  function startObserver() {
+    if (observer) observer.disconnect();
+
+    observer = new MutationObserver(() => {
+      if (!active || !waitingReply) return;
+      const reply = findReply();
+      if (!reply) return;
+
+      lastReply = reply;
+      waitingReply = false;
+      observer.disconnect();
+
+      speak(reply, () => {
+        if (active && !paused) {
+          setCaption('اتفضل، سامعك تاني');
+          setTimeout(startListening, 500);
+        }
+      });
+    });
+
+    observer.observe(document.body, {
+      childList:true, subtree:true, characterData:true
+    });
+
+    setTimeout(() => {
+      if (waitingReply) {
+        const reply = findReply();
+        if (reply) {
+          lastReply = reply;
+          waitingReply = false;
+          observer.disconnect();
+          speak(reply, () => {
+            if (active && !paused) startListening();
+          });
+        }
+      }
+    }, 1800);
+  }
+
+  function submitSpeech(text) {
+    if (!input || !form) {
+      setCaption('مش قادر أوصل لمربع الكتابة');
+      return;
+    }
+    input.value = text;
+    input.dispatchEvent(new Event('input', {bubbles:true}));
+    waitingReply = true;
+    startObserver();
+    stopListening();
+    setCaption('ثواني، بفكر في الرد…');
+    if (form.requestSubmit) form.requestSubmit();
+    else form.dispatchEvent(new Event('submit', {bubbles:true,cancelable:true}));
+  }
+
+  if (Recognition) {
+    recognition = new Recognition();
+    recognition.lang = 'ar-EG';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.onresult = event => {
+      const text = event.results?.[0]?.[0]?.transcript?.trim();
+      if (text) submitSpeech(text);
+    };
+    recognition.onerror = event => {
+      if (active) setCaption('مشكلة في الميكروفون: ' + event.error);
+    };
+    recognition.onend = () => {
+      if (active && !paused && !waitingReply) {
+        setTimeout(startListening, 500);
+      }
+    };
+  }
+
+  async function openVoice() {
+    if (!screen) return;
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      alert('افتح الموقع من Chrome عبر اتصال آمن HTTPS حتى يعمل الميكروفون.');
+      return;
+    }
+
+    try {
+      setCaption('اسمح باستخدام الميكروفون لبدء المحادثة');
+
+      // طلب الإذن يظهر بعد ضغط المستخدم على زر الدردشة
+      const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+      stream.getTracks().forEach(track => track.stop());
+
+      active = true;
+      paused = false;
+      waitingReply = false;
+      screen.classList.add('alk-voice-active');
+      screen.style.setProperty('display','flex','important');
+
+      if (profile && photo) {
+        photo.src = profile.currentSrc || profile.src;
+        photo.style.display = 'block';
+      }
+
+      if (!Recognition) {
+        setCaption('المتصفح لا يدعم الاستماع الصوتي. استخدم Chrome.');
+        speak('الميكروفون اتفعل، لكن المتصفح لا يدعم الاستماع الصوتي.');
+        return;
+      }
+
+      setCaption('أهلًا بيك، أنا سامعاك. اتكلم براحتك.');
+      speak('أهلًا بيك! أنا معاك، قولّي محتاج إيه؟', () => {
+        if (active && !paused) startListening();
+      });
+
+    } catch (err) {
+      active = false;
+      setCaption(
+        err.name === 'NotAllowedError'
+          ? 'إذن الميكروفون مرفوض. اسمح به من نافذة المتصفح.'
+          : 'تعذر تشغيل الميكروفون: ' + err.name
+      );
+    }
+  }
+
+  function closeVoice() {
+    active = false;
+    paused = false;
+    waitingReply = false;
+    stopListening();
+    if (observer) observer.disconnect();
+    if ('speechSynthesis' in window) speechSynthesis.cancel();
+    if (screen) {
+      screen.classList.remove('alk-voice-active');
+      screen.style.setProperty('display','none','important');
+    }
+  }
+
+  function togglePause() {
+    if (!active) return;
+    paused = !paused;
+    if (paused) {
+      stopListening();
+      if ('speechSynthesis' in window) speechSynthesis.pause();
+      setCaption('المحادثة متوقفة مؤقتًا');
+      if (pause) pause.textContent = 'استئناف';
+    } else {
+      if ('speechSynthesis' in window) speechSynthesis.resume();
+      if (pause) pause.textContent = 'إيقاف مؤقت';
+      setCaption('رجعنا، اتكلم');
+      startListening();
+    }
+  }
+
+  if (call) call.addEventListener('click', e => {
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    openVoice();
+  }, true);
+
+  if (cancel) cancel.addEventListener('click', closeVoice);
+  if (close) close.addEventListener('click', closeVoice);
+  if (pause) pause.addEventListener('click', togglePause);
+
+  // ترحيب يظهر داخل المحادثة عند فتح الصفحة
+  function addWelcome() {
+    const box = $('#messages') || $('.messages') ||
+                $('#chatMessages') || $('#chat-messages');
+    if (!box || box.querySelector('.alkfory-auto-welcome')) return;
+
+    const welcome = document.createElement('div');
+    welcome.className = 'alkfory-auto-welcome';
+    welcome.textContent = 'إزيك! أنا معاك، قولّي محتاج إيه؟';
+    welcome.style.cssText =
+      'margin:12px auto;padding:12px 16px;max-width:88%;' +
+      'background:#171717;color:#fff;border:1px solid #8d0019;' +
+      'border-radius:16px;text-align:right;direction:rtl;';
+    box.appendChild(welcome);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', addWelcome, {once:true});
+  } else {
+    addWelcome();
+  }
+})();
+</script>
+<!-- /ALKFORY VOICE COMPLETE FIX -->
+
+
+<script>
+/* ALKFORY SINGLE VOICE BUTTON HANDLER */
+(() => {
+  const button = document.getElementById('alkCallButton');
+  if (!button || button.dataset.alkSingleHandler) return;
+  button.dataset.alkSingleHandler = '1';
+
+  button.addEventListener('click', event => {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+
+    const screen = document.getElementById('alkforyVoiceScreen');
+    const starter = document.getElementById('alkVoiceCancel');
+
+    if (screen) {
+      screen.classList.add('alk-voice-active');
+      screen.style.setProperty('display', 'flex', 'important');
+    }
+
+    // شغّل معالج النظام الجديد فقط إن كان متاحًا.
+    window.dispatchEvent(new CustomEvent('alkfory-start-voice'));
+  }, true);
+})();
+</script>
+
+
+<script id="ALKFORY_MIC_REPAIR">
+(() => {
+  if (window.__alkMicRepairLoaded) return;
+  window.__alkMicRepairLoaded = true;
+
+  const input = document.getElementById('text');
+  const mic = document.getElementById('alkMicButton');
+  const status = document.getElementById('status');
+  const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  if (!input || !mic) return;
+
+  let recognition = null;
+  let listening = false;
+
+  function showStatus(message) {
+    if (status) {
+      status.hidden = false;
+      status.textContent = message;
+    }
+  }
+
+  mic.addEventListener('click', () => {
+    if (!Recognition) {
+      showStatus('المتصفح لا يدعم تحويل الكلام إلى نص. جرّب Chrome.');
+      return;
+    }
+
+    if (listening && recognition) {
+      recognition.stop();
+      return;
+    }
+
+    recognition = new Recognition();
+    recognition.lang = document.documentElement.lang === 'en' ? 'en-US' : 'ar-EG';
+    recognition.continuous = false;
+    recognition.interimResults = true;
+
+    let finalText = '';
+
+    recognition.onstart = () => {
+      listening = true;
+      mic.style.color = '#ff4545';
+      showStatus('🎙️ بتكلم الآن... اضغط الميكروفون للإيقاف.');
+    };
+
+    recognition.onresult = event => {
+      let interim = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const text = event.results[i][0].transcript;
+        if (event.results[i].isFinal) finalText += text;
+        else interim += text;
+      }
+      input.value = (input.value ? input.value + ' ' : '') + '';
+      input.dataset.voiceDraft = finalText + interim;
+      input.placeholder = finalText + interim || 'اكتب رسالتك هنا...';
+    };
+
+    recognition.onerror = event => {
+      showStatus(event.error === 'not-allowed'
+        ? 'اسمح للمتصفح باستخدام الميكروفون من إعدادات الموقع.'
+        : 'تعذر تشغيل الميكروفون: ' + event.error);
+    };
+
+    recognition.onend = () => {
+      listening = false;
+      mic.style.color = '';
+      const spoken = (input.dataset.voiceDraft || finalText).trim();
+      if (spoken) {
+        input.value = (input.value.trim() ? input.value.trim() + ' ' : '') + spoken;
+        input.dataset.voiceDraft = '';
+        input.focus();
+        showStatus('تم تحويل كلامك إلى نص. اضغط إرسال.');
+      }
+      input.placeholder = 'اكتب رسالتك هنا...';
+    };
+
+    try {
+      recognition.start();
+    } catch (e) {
+      listening = false;
+      showStatus('الميكروفون مشغول أو لم يبدأ. حاول مرة أخرى.');
+    }
+  });
+})();
+</script>
+
+</body>
+</html>
+<style>
+button[aria-label="المزيد"],button[aria-label="More options"],
+.more-menu,.more-options{display:none!important}
+</style>
+
+<style id="alkfory-top-compact">
+header,.topbar,.navbar,.app-header{
+ padding-top:5px!important;padding-bottom:5px!important;
+ min-height:0!important;
+}
+</style>
