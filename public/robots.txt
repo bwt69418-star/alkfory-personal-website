@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Sitemap: https://alkfory-personal-website.onrender.com/sitemap.xml
