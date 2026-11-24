@@ -44,6 +44,75 @@ app.use(session({
   }
 }));
 
+// ALKFORY REAL VISITOR ANALYTICS
+function alkforyToday() {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Africa/Cairo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(new Date());
+}
+
+app.use((req, res, next) => {
+  const ignored =
+    req.path === '/api/health' ||
+    req.path === '/admin' ||
+    req.path.startsWith('/api/admin/') ||
+    req.path.startsWith('/api/developer-');
+
+  if (ignored || req.session?.isDeveloper === true) return next();
+
+  const cookies = String(req.headers.cookie || '').split(';');
+  const savedCookie = cookies.find(v => v.trim().startsWith('alkfory.vid='));
+  let visitorId = savedCookie ? savedCookie.trim().slice('alkfory.vid='.length) : '';
+
+  if (!/^[a-f0-9-]{36}$/i.test(visitorId)) {
+    visitorId = crypto.randomUUID();
+    res.cookie('alkfory.vid', visitorId, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 365 * 24 * 60 * 60 * 1000
+    });
+  }
+
+  const pageView = req.method === 'GET' &&
+    (req.path === '/' || req.path.endsWith('.html') ||
+     ['/ai', '/platforms'].includes(req.path));
+
+  const activity = pageView || req.path.startsWith('/api/');
+
+  if (!pageView && !activity) return next();
+
+  store.analytics ||= { visitors: {}, days: {}, firstSeenAt: new Date().toISOString() };
+  store.analytics.visitors ||= {};
+  store.analytics.days ||= {};
+
+  let changed = false;
+  if (!store.analytics.visitors[visitorId]) {
+    store.analytics.visitors[visitorId] = new Date().toISOString();
+    changed = true;
+  }
+
+  const day = alkforyToday();
+  store.analytics.days[day] ||= { visitors: [], active: [] };
+  const record = store.analytics.days[day];
+
+  if (pageView && !record.visitors.includes(visitorId)) {
+    record.visitors.push(visitorId);
+    changed = true;
+  }
+
+  if (activity && !record.active.includes(visitorId)) {
+    record.active.push(visitorId);
+    changed = true;
+  }
+
+  if (changed) saveStore();
+  next();
+});
+
 // اختيار طريقة الدخول من جديد عند فتح الصفحة الرئيسية
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'alkfory-ai.html'));
@@ -357,6 +426,22 @@ app.post('/api/ai', async (req, res) => {
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'online' });
+});
+
+// إحصائيات الموقع - للمطور المسجل فقط
+app.get('/api/admin/analytics', requireDeveloper, (req, res) => {
+  const analytics = store.analytics || { visitors: {}, days: {} };
+  const today = analytics.days?.[alkforyToday()] || { visitors: [], active: [] };
+
+  res.json({
+    success: true,
+    trackingSince: analytics.firstSeenAt || null,
+    totalUsers: Object.keys(analytics.visitors || {}).length,
+    visitorsToday: (today.visitors || []).length,
+    activeToday: (today.active || []).length,
+    date: alkforyToday(),
+    timezone: 'Africa/Cairo'
+  });
 });
 
 
