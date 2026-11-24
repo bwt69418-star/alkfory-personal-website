@@ -1,0 +1,85 @@
+{
+  "settings": {},
+  "apps": [],
+  "messages": [],
+  "chats": [
+    {
+      "id": "f21f0c2f-677f-4f17-b1cc-3e59398cd351",
+      "name": "زياد",
+      "phone": "01031808795",
+      "tokenHash": "d4c5ca61be45a1e0290f41fe9e5edf4ba579fd04e9c04451714884c0897eb236",
+      "createdAt": "2026-10-30T19:35:53.606Z",
+      "messages": [
+        {
+          "id": "d77fc59f-fd0b-45db-b506-96646fdcb181",
+          "sender": "visitor",
+          "text": "عامل ايه",
+          "date": "2026-10-30T19:36:03.749Z",
+          "file": null
+        },
+        {
+          "id": "c8ff4e7c-06e8-4ac7-8389-546238a759cd",
+          "sender": "visitor",
+          "text": "بقلك",
+          "date": "2026-10-30T20:16:37.113Z",
+          "file": null
+        }
+      ]
+    },
+    {
+      "id": "75442c9f-0505-4bfa-b5e0-c0ec900de44d",
+      "name": "بقلك",
+      "phone": "",
+      "tokenHash": "ed0451b81ef07ffe79fdccad64a2ec6d9be0fde5e998de721f2a24c59aeb98e0",
+      "createdAt": "2026-10-31T09:00:15.800Z",
+      "messages": [
+        {
+          "id": "502d203e-93fc-41d8-8bcc-443052c9a3e4",
+          "sender": "visitor",
+          "text": "بقلك",
+          "date": "2026-10-31T10:42:25.406Z",
+          "file": null
+        }
+      ]
+    },
+    {
+      "id": "12d50f32-6dfd-4fe3-8c0b-daf7105a2633",
+      "name": "زياد",
+      "phone": "",
+      "tokenHash": "af8b2b9c319b1bbe4fd6bc6403abc61e835d26504ad791244dd2ce7d3f4773d7",
+      "createdAt": "2026-10-31T11:06:06.214Z",
+      "messages": [
+        {
+          "id": "1e23ec2e-88f2-499a-804c-6c638254b34d",
+          "sender": "visitor",
+          "text": "بقبك",
+          "date": "2026-10-31T11:06:09.560Z",
+          "file": null
+        }
+      ]
+    },
+    {
+      "id": "540b94eb-7617-4be2-953f-9324c07ab9c3",
+      "name": "مجهول",
+      "phone": "",
+      "tokenHash": "90781ec7764079adf55e69658964f96e4c2b7d0128dcc3429f6668a0febe6541",
+      "createdAt": "2026-10-31T17:32:34.273Z",
+      "messages": [
+        {
+          "id": "f998b188-b2a6-45be-bc01-6030513fd158",
+          "sender": "visitor",
+          "text": "بقلك",
+          "date": "2026-10-31T17:32:37.832Z",
+          "file": null
+        },
+        {
+          "id": "8c08ee01-eb33-4738-bd66-b2a337658594",
+          "sender": "visitor",
+          "text": "..",
+          "date": "2026-10-31T17:45:38.506Z",
+          "file": null
+        }
+      ]
+    }
+  ]
+}

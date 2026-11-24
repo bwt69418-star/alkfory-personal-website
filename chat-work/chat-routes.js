@@ -227,6 +227,35 @@ module.exports = function installChat(app, options) {
     res.json({ success: true });
   });
 
+
+  // ALKFORY: استقبال رسائل الشكر من الزوار
+  app.post('/api/developer-messages', (req, res) => {
+    const text = String(req.body?.text || '').trim().slice(0, 2000);
+    const studentId = String(req.body?.studentId || '').trim().slice(0, 80);
+
+    if (!text) {
+      return res.status(400).json({ error: 'اكتب رسالة الشكر أولاً' });
+    }
+
+    const currentStore = getStore();
+    currentStore.messages ||= [];
+
+    const message = {
+      id: crypto.randomUUID(),
+      text,
+      studentId,
+      sender: 'visitor',
+      type: 'thanks',
+      date: new Date().toISOString(),
+      read: false
+    };
+
+    currentStore.messages.push(message);
+    saveStore();
+
+    return res.json({ success: true, message: 'وصلت رسالتك للمطور' });
+  });
+
   app.use((err, req, res, next) => {
     if (err instanceof multer.MulterError) {
       return res.status(400).json({ error: 'حجم الملف الأقصى 3 ميجابايت أو الملف غير صالح' });

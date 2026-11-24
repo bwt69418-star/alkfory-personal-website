@@ -1,3 +1,6 @@
+
+require('./alkfory-screen');
+
 require('dotenv').config();
 
 const express = require('express');
@@ -43,8 +46,7 @@ app.use(session({
 
 // اختيار طريقة الدخول من جديد عند فتح الصفحة الرئيسية
 app.get('/', (req, res) => {
-  req.session.allowHomeOnce = false;
-  res.sendFile(path.join(__dirname, 'public', 'entry.html'));
+  res.sendFile(path.join(__dirname, 'public', 'alkfory-ai.html'));
 });
 
 // السماح للزائر بالدخول مرة واحدة بعد اختياره
@@ -69,10 +71,6 @@ app.use((req, res, next) => {
     return res.redirect('/');
   }
   next();
-});
-
-app.get('/games/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'games', 'index.html'));
 });
 
 app.use(express.static(path.join(__dirname, 'public'), {
@@ -240,121 +238,119 @@ app.delete('/api/admin/apps/:id', requireDeveloper, (req, res) => {
   store.apps = store.apps.filter(x => x.id !== Number(req.params.id));
   saveStore(); res.json({ success: true });
 });
+
 app.post('/api/ai', async (req, res) => {
+  console.log('⚜️ ALKFORY AI NEW ROUTE HIT ⚜️');
   try {
-    if (store.settings.aiEnabled === false) {
+    const settings = store.settings || {};
+
+    if (settings.aiEnabled === false) {
       return res.status(403).json({ error: 'الذكاء الاصطناعي متوقف حاليًا.' });
     }
-    const apiKey = process.env.GEMINI_API_KEY;
+
     const message = String(req.body?.message || '').trim();
-
-    if (!apiKey || apiKey === 'PUT_NEW_KEY_HERE') {
-      return res.status(503).json({
-        error: 'مفتاح ALKFORY AI يحتاج إلى الإعداد.'
-      });
+    if (!message || message.length > 12000) {
+      return res.status(400).json({ error: 'الرسالة فارغة أو طويلة جدًا.' });
     }
 
-    if (!message || message.length > 4000) {
-      return res.status(400).json({
-        error: 'الرسالة فارغة أو طويلة جدًا.'
+    const persona = settings.aiPersona || 'friendly';
+    const length = settings.aiReplyLength || 'medium';
+
+    const personas = {
+      friendly: 'كن ودودًا وطبيعيًا.',
+      professional: 'كن احترافيًا ومنظمًا.',
+      concise: 'كن مختصرًا ومباشرًا.',
+      creative: 'كن مبدعًا مع الحفاظ على الدقة.',
+      teacher: 'اشرح تدريجيًا وبأسلوب تعليمي واضح.'
+    };
+
+    const lengths = {
+      short: 'اجعل الرد مختصرًا.',
+      medium: 'اجعل الرد متوسط الطول.',
+      long: 'قدّم شرحًا مفصلًا عند الحاجة.'
+    };
+
+    const tones = {
+      calm: 'استخدم نبرة هادئة.',
+      enthusiastic: 'استخدم نبرة مشجعة.',
+      formal: 'استخدم نبرة رسمية.',
+      simple: 'استخدم لغة سهلة ومباشرة.'
+    };
+
+    const language = settings.aiLanguage || 'auto';
+    const languageRule = language === 'auto'
+      ? 'أجب بلغة المستخدم.'
+      : 'أجب باللغة المحددة: ' + language + '.';
+
+    const systemInstruction = [
+      'أنت ALKFORY AI، مساعد محادثة ذكي داخل موقع شخصي.',
+      'افهم رسالة المستخدم وسياقها وأجب مباشرة وبشكل مفيد.',
+      'تحدث بصورة طبيعية، ويمكنك استخدام اللهجة المصرية عندما تناسب المستخدم.',
+      'لا تستخدم الكرف أو الشتائم أو المناكفة الإجبارية.',
+      'لا تخترع معلومات ولا تدّعِ تنفيذ أفعال لم تنفذها.',
+      'لا تذكر اسم المطور أو توقيعًا داخل الرد.',
+      'لا تدّعِ أنك إنسان، ولا تذكر أنك ذكاء اصطناعي إلا عند السؤال عن هويتك.',
+      languageRule,
+      personas[persona] || personas.friendly,
+      lengths[length] || lengths.medium,
+      tones[settings.aiTone] || tones.simple,
+      settings.aiEmoji === false ? 'لا تستخدم الرموز التعبيرية.' : 'استخدم الرموز باعتدال.',
+      String(settings.aiCustomInstructions || '')
+    ].filter(Boolean).join(' ');
+
+    const prompt = systemInstruction + '\n\nرسالة المستخدم:\n' + message;
+    const endpoint = 'https://engez.a7a.online/api/v1/ai/gemini';
+    const url = endpoint + '?' + new URLSearchParams({ q: prompt }).toString();
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 60000);
+
+    let response;
+    let data;
+    try {
+      response = await fetch(url, {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' },
+        signal: controller.signal
       });
+      data = await response.json();
+    } finally {
+      clearTimeout(timer);
     }
 
-    const response = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': apiKey
-        },
-        body: JSON.stringify({
-          systemInstruction: {
-            parts: [{
-              text: (() => {
-                const settings = store.settings || {};
-                const persona = settings.aiPersona || 'friendly';
-                const length = settings.aiReplyLength || 'medium';
-                const personas = {
-                  friendly: 'كن ودودًا وبسيطًا.',
-                  professional: 'كن احترافيًا ومنظمًا.',
-                  concise: 'كن مختصرًا ومباشرًا.',
-                  creative: 'استخدم أفكارًا إبداعية مع الحفاظ على الدقة.',
-                  teacher: 'اشرح المعلومات تدريجيًا وبأسلوب تعليمي واضح.'
-                };
-                const lengths = {
-                  short: 'اجعل الرد قصيرًا.',
-                  medium: 'اجعل الرد متوسط الطول.',
-                  long: 'قدّم شرحًا مفصلًا عند الحاجة.'
-                };
-                const tones = {
-                  calm: 'استخدم نبرة هادئة.',
-                  enthusiastic: 'استخدم نبرة مشجعة وحيوية.',
-                  formal: 'استخدم نبرة رسمية.',
-                  simple: 'استخدم لغة سهلة ومباشرة.'
-                };
-                const language = settings.aiLanguage || 'auto';
-                const languageRule = language === 'auto'
-                  ? 'أجب بلغة المستخدم.'
-                  : 'أجب باللغة المحددة: ' + language + '.';
-                const emojiRule = settings.aiEmoji === false
-                  ? 'لا تستخدم الرموز التعبيرية.'
-                  : 'استخدم الرموز التعبيرية باعتدال عند ملاءمتها.';
-                const formatRule = {
-                  paragraphs: 'نظم الرد في فقرات واضحة.',
-                  bullets: 'استخدم نقاطًا عند عرض عدة معلومات.',
-                  direct: 'ابدأ بالإجابة مباشرة دون مقدمات طويلة.'
-                }[settings.aiAnswerFormat || 'paragraphs'];
-                const greeting = settings.aiGreeting ? 'تحية مفضلة: ' + settings.aiGreeting : '';
-                const signature = settings.aiSignature ? 'اختم الرد بهذه العبارة عند ملاءمتها: ' + settings.aiSignature : '';
-                const custom = settings.aiCustomInstructions || '';
-                return 'أنت ALKFORY AI، مساعد لموقع Ziad Alkfory. كن واضحًا ومفيدًا ولا تخترع معلومات. ' +
-                  languageRule + ' ' +
-                  (personas[persona] || personas.friendly) + ' ' +
-                  (lengths[length] || lengths.medium) + ' ' +
-                  (tones[settings.aiTone] || tones.simple) + ' ' +
-                  emojiRule + ' ' + (formatRule || '') + ' ' +
-                  greeting + ' ' + signature + ' ' + custom;
-              })()
-            }]
-          },
-          contents: [{
-            role: 'user',
-            parts: [{ text: message }]
-          }],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: Math.max(100, Math.min(2000, Number(store.settings.aiMaxTokens) || (store.settings.aiReplyLength === 'short' ? 250 : store.settings.aiReplyLength === 'long' ? 1200 : 700)))
-          }
-        })
-      }
-    );
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      console.error('AI API error:', response.status);
-      return res.status(502).json({
-        error: 'خدمة AI غير متاحة حاليًا. حاول مرة أخرى.'
-      });
+    if (!response.ok || !data?.success) {
+      const detail = data?.error || data?.message || ('HTTP ' + response.status);
+      console.error('ALKFORY AI provider error:', detail);
+      return res.status(502).json({ error: 'خدمة الذكاء الاصطناعي لم تتمكن من الرد حاليًا.' });
     }
 
-    const answer = data.candidates?.[0]?.content?.parts
-      ?.map(part => part.text || '')
-      .join('')
-      .trim();
+    const answer = String(
+      data?.response?.reply ||
+      data?.response ||
+      ''
+    ).trim();
 
     if (!answer) {
-      return res.status(502).json({
-        error: 'لم يصل رد من الذكاء الاصطناعي.'
-      });
+      return res.status(502).json({ error: 'وصل رد فارغ من خدمة الذكاء الاصطناعي.' });
     }
 
-    res.json({ answer });
+    return res.json({
+      success: true,
+      answer,
+      reply: answer,
+      text: answer,
+      message: answer,
+      response: answer,
+      provider: 'alkfory-ai-service',
+      routeVersion: 'proxy-v2'
+    });
+
   } catch (error) {
-    console.error('AI request failed:', error.message);
-    res.status(500).json({
-      error: 'حدث خطأ في الاتصال. حاول مرة أخرى.'
+    console.error('ALKFORY AI request failed:', error.name, error.message);
+    return res.status(502).json({
+      error: error.name === 'AbortError'
+        ? 'تأخر الرد. حاول مرة أخرى.'
+        : 'خدمة الذكاء الاصطناعي غير متاحة حاليًا.'
     });
   }
 });
@@ -369,6 +365,22 @@ require('./chat-routes')(app, {
   requireDeveloper,
   getStore: () => store,
   saveStore
+});
+
+
+// شاشة ALKFORY AI الجديدة
+app.get('/ai', (req, res) => {
+  res.sendFile(require('path').join(__dirname, 'public', 'alkfory-ai.html'));
+});
+
+
+// السماح بفتح منصة الكفوري بعد الضغط على زر المنصة
+app.get('/platforms', (req, res) => {
+  req.session.allowHomeOnce = true;
+  req.session.save(err => {
+    if (err) return res.status(500).send('تعذر فتح المنصة');
+    res.redirect('/home.html');
+  });
 });
 
 app.listen(PORT, '0.0.0.0', () => {

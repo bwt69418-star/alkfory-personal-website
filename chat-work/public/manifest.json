@@ -5,7 +5,7 @@
   "description": "⚜️ ALKFORY Personal Website",
   "lang": "ar",
   "dir": "rtl",
-  "start_url": "/",
+  "start_url": "/ai",
   "scope": "/",
   "display": "standalone",
   "background_color": "#080808",
@@ -18,5 +18,8 @@
       "type": "image/svg+xml",
       "purpose": "any"
     }
+  ],
+  "display_override": [
+    "standalone"
   ]
 }

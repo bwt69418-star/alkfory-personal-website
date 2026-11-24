@@ -176,16 +176,6 @@ h1 { font-size: clamp(30px, 6vw, 48px); margin: 8px 0 13px; }
   font: inherit;
 }
 .ai-box textarea:focus { border-color: var(--red); }
-#aiAnswer {
-  display: none;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  background: #080808;
-  padding: 14px;
-  border-radius: 12px;
-  line-height: 1.8;
-  margin-top: 14px;
-}
 footer {
   margin-top: 50px;
   border-top: 1px solid #242424;
@@ -341,7 +331,6 @@ footer strong { color: #eee; }
 
 
 <style id="alkfory-hide-old-visitor-form">
-#visitorCard { display: none !important; }
 </style>
 
 
@@ -653,6 +642,21 @@ document.addEventListener('DOMContentLoaded', function(){
   to { stroke-dashoffset:0; }
 }
 </style>
+
+<style id="ALKFORY-GLOBAL-THEME">
+body[data-theme] :is(button,a,.btn,[class*="card"],h1,h2,h3) {
+  border-color:var(--accent)!important;
+}
+body[data-theme] :is(h1,h2,h3,.red) {
+  color:var(--accent)!important;
+}
+body[data-theme] :is(button,a,.btn) {
+  accent-color:var(--accent)!important;
+}
+</style>
+
+
+<link rel="stylesheet" href="/alkfory-global-theme.css">
 </head>
 
 <body>
@@ -742,13 +746,110 @@ style="max-width:900px;margin:20px auto;padding:0 16px;position:relative;z-index
     <audio id="alkforyProfileAudio" preload="none" src="/audio/profile-recording.mp3"></audio>
   </div>
   <p class="status"><i></i><span id="onlineText"></span></p>
-  <h1 id="heroName">زياد <span class="red">الكفوري</span></h1>
+  
+<!-- ALKFORY-HOME-DEVELOPER-TICKER -->
+<div id="alkforyHomeDeveloperTicker">
+  <span>تم إنشاء الموقع بواسطة المطور زياد الكفوري</span>
+</div>
+<style>
+#alkforyHomeDeveloperTicker{
+  width:min(94%,440px);
+  height:35px;
+  margin:10px auto;
+  position:relative;
+  overflow:hidden;
+  display:flex;
+  align-items:center;
+  border:1px solid rgba(0,220,255,.45);
+  border-radius:22px;
+  background:rgba(0,180,220,.07);
+  direction:ltr;
+}
+#alkforyHomeDeveloperTicker span{
+  position:absolute;
+  white-space:nowrap;
+  color:#00dcff;
+  font-size:13px;
+  font-weight:800;
+  text-shadow:0 0 10px rgba(0,220,255,.7);
+  animation:alkHomeTickerMove 8s linear infinite;
+}
+@keyframes alkHomeTickerMove{
+  0%{transform:translateX(125%);opacity:0}
+  12%{opacity:1}
+  30%{transform:translateX(0);opacity:1}
+  62%{transform:translateX(0);opacity:1}
+  90%{transform:translateX(-125%);opacity:0}
+  100%{transform:translateX(-125%);opacity:0}
+}
+#heroName,
+#heroName .red{
+  color:#00dcff !important;
+  -webkit-text-fill-color:#00dcff !important;
+}
+</style>
+<!-- /ALKFORY-HOME-DEVELOPER-TICKER -->
+
+
+<!-- ALKFORY-MAIN-SITE-DEVELOPER-TICKER -->
+<div id="alkforyMainDeveloperTicker">
+  <span>
+    تم إنشاء الموقع بواسطة المطور
+    <strong>زياد الكفوري</strong>
+  </span>
+</div>
+<style>
+#alkforyMainDeveloperTicker{
+  width:min(94%,440px);
+  height:36px;
+  margin:10px auto;
+  position:relative;
+  overflow:hidden;
+  display:flex;
+  align-items:center;
+  border:1px solid rgba(0,220,255,.4);
+  border-radius:25px;
+  background:rgba(0,0,0,.18);
+  direction:ltr;
+}
+#alkforyMainDeveloperTicker span{
+  position:absolute;
+  white-space:nowrap;
+  color:#fff;
+  font-size:13px;
+  font-weight:800;
+  animation:alkMainTickerMove 9s linear infinite;
+}
+#alkforyMainDeveloperTicker strong,
+#heroName .red{
+  background:linear-gradient(90deg,#ff1744,#00dcff,#b2ff59,#ff00e5,#ff1744)!important;
+  background-size:300% 100%!important;
+  background-clip:text!important;
+  -webkit-background-clip:text!important;
+  color:transparent!important;
+  -webkit-text-fill-color:transparent!important;
+  animation:alkMainNameColors 3s linear infinite!important;
+}
+@keyframes alkMainTickerMove{
+  0%{transform:translateX(120%);opacity:0}
+  12%{opacity:1}
+  35%{transform:translateX(0);opacity:1}
+  65%{transform:translateX(0);opacity:1}
+  90%{transform:translateX(-120%);opacity:0}
+  100%{transform:translateX(-120%);opacity:0}
+}
+@keyframes alkMainNameColors{
+  to{background-position:300% center}
+}
+</style>
+<!-- /ALKFORY-MAIN-SITE-DEVELOPER-TICKER -->
+
+<h1 id="heroName">زياد <span class="red">الكفوري</span></h1>
   <p class="subtitle" id="heroDesc">أهلًا بك في موقعي الشخصي<br>كل طرق التواصل والخدمات في مكان واحد.</p>
   <div class="hero-actions">
     <a class="btn" id="alkforyAppLink" href="http://127.0.0.1:3000/" target="_blank" rel="noopener">📱 لينك التطبيق</a>
 
     <a class="btn primary" href="/contact.html" id="contactTop">✉️ تواصل معي</a>
-    <a class="btn" href="#ai" id="aiTop">✦ جرّب Ziad Alkfory AI</a>
   </div>
 </section>
 
@@ -796,17 +897,6 @@ style="max-width:900px;margin:20px auto;padding:0 16px;position:relative;z-index
   </article>
 </section>
 
-<div class="section-title" id="ai">
-  <h2>🤖 Ziad Alkfory <span class="red">AI</span></h2>
-  <p id="aiDesc">اسأل المساعد الذكي — إذا كان مفتاح Gemini مضبوطًا.</p>
-</div>
-<section class="ai-box">
-  <label for="aiInput" id="aiLabel">اكتب سؤالك هنا</label>
-  <textarea id="aiInput" placeholder="اكتب رسالتك..."></textarea>
-  <button class="btn primary" style="width:100%" id="aiBtn" onclick="askAI()">إرسال إلى Ziad Alkfory AI ↗</button>
-  <div id="aiAnswer"></div>
-</section>
-
 <section id="dynamicApps" style="display:none">
   <div class="section-title">
     <h2>⚡ تطبيقاتي وخدماتي</h2>
@@ -814,22 +904,14 @@ style="max-width:900px;margin:20px auto;padding:0 16px;position:relative;z-index
   <div id="publicAppsList" class="grid"></div>
 </section>
 
-<section id="visitorCard" class="ai-box" style="margin-top:25px">
-  <h2 id="visitorTitle"></h2>
-  <input id="visitorName" type="text" maxlength="60"
-    placeholder="اسمك" style="width:100%;padding:12px;margin:8px 0">
-  <textarea id="visitorMessage" maxlength="2000"
-    placeholder="اكتب رسالتك..." style="width:100%;padding:12px;margin:8px 0"></textarea>
-  <button class="btn primary" id="visitorSend" onclick="sendVisitorMessage()">
-    إرسال الرسالة
-  </button>
-  <p id="visitorResult" role="status"></p>
-</section>
 </main>
 
 <footer>
   <strong>⚜️ 𝒁𝒊𝒂𝒅 𝑨𝒍𝒌𝒇𝒐𝒓𝒚 | المطور ⚜️</strong>
-  <p>© <span id="year"></span> Ziad Alkfory — <span id="rights">جميع الحقوق محفوظة</span></p>
+  
+
+
+<p>© <span id="year"></span> Ziad Alkfory — <span id="rights">جميع الحقوق محفوظة</span></p>
 </footer>
 
 <script>
@@ -845,7 +927,6 @@ function toggleLang() {
     onlineText:['','Website available'],
     heroDesc:['أهلًا بك في موقعي الشخصي<br>كل طرق التواصل والخدمات في مكان واحد.','Welcome to my personal website.<br>All my contact links in one place.'],
     contactTop:['✉️ تواصل معي','✉️ Contact me'],
-    aiTop:['✦ جرّب Ziad Alkfory AI','✦ Try Ziad Alkfory AI'],
     socialHeading:['⚡ حساباتي وروابطي','⚡ My Social Links'],
     socialDesc:['اختار المنصة اللي تحب تتواصل من خلالها','Choose your preferred platform'],
     waDesc:['تواصل مباشر عبر أرقام الواتساب.','Contact me using WhatsApp numbers.'],
@@ -857,9 +938,6 @@ function toggleLang() {
     websiteTitle:['موقعي الشخصي','Personal Website'],
     websiteDesc:['كل ما يخص Ziad Alkfory في مكان واحد.','Everything Ziad Alkfory in one place.'],
     homeBtn:['العودة للأعلى ↑','Back to top ↑'],
-    aiDesc:['اسأل المساعد الذكي — إذا كان مفتاح Gemini مضبوطًا.','Ask the AI assistant — requires a configured Gemini key.'],
-    aiLabel:['اكتب سؤالك هنا','Enter your question'],
-    aiBtn:['إرسال إلى Ziad Alkfory AI ↗','Send to Ziad Alkfory AI ↗'],
     rights:['جميع الحقوق محفوظة','All rights reserved']
   };
   for (const [id, values] of Object.entries(text))
@@ -867,33 +945,8 @@ function toggleLang() {
   document.getElementById('heroName').innerHTML = english
     ? 'Ziad <span class="red">Ziad Alkfory</span>'
     : 'زياد <span class="red">الكفوري</span>';
-  document.getElementById('aiInput').placeholder = english ? 'Type your message...' : 'اكتب رسالتك...';
 }
 
-async function askAI() {
-  const input = document.getElementById('aiInput');
-  const answer = document.getElementById('aiAnswer');
-  const message = input.value.trim();
-  if (!message) {
-    answer.style.display = 'block';
-    answer.textContent = english ? 'Please type a question first.' : 'اكتب سؤالك الأول.';
-    return;
-  }
-  answer.style.display = 'block';
-  answer.textContent = english ? 'Connecting...' : 'جاري الاتصال...';
-  try {
-    const response = await fetch('/api/ai', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({message})
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'AI request failed');
-    answer.textContent = data.answer || (english ? 'No response.' : 'لم يصل رد.');
-  } catch (error) {
-    answer.textContent = (english ? 'Connection error: ' : 'خطأ في الاتصال: ') + error.message;
-  }
-}
 
 
 // ALKFORY_PUBLIC_LINK_V1
@@ -915,7 +968,18 @@ async function loadPublicConfig() {
     document.documentElement.dir = config.language === 'en' ? 'ltr' : 'rtl';
 
     const root = document.documentElement;
-    root.style.setProperty('--accent', config.accentColor);
+    
+    const alkPalette = {
+      default:'#b00035', green:'#00b86b', blue:'#087cf0',
+      purple:'#923be0', gold:'#c69b20', orange:'#e87516',
+      cyan:'#009eae', pink:'#df438b', red:'#e32636', teal:'#008f83'
+    };
+    const alkSavedTheme = localStorage.getItem('alkfory-theme') || 'default';
+    document.body.dataset.theme = alkSavedTheme;
+    const alkChosenAccent = alkPalette[alkSavedTheme] || config.accentColor;
+    root.style.setProperty('--accent', alkChosenAccent);
+    root.style.setProperty('--accent2', alkChosenAccent);
+
     root.style.setProperty('--bg', config.backgroundColor);
     root.style.setProperty('--text', config.textColor);
     root.style.setProperty('--button', config.buttonColor);
@@ -928,14 +992,6 @@ async function loadPublicConfig() {
       el.style.borderRadius = (config.borderRadius || 12) + 'px';
       el.style.backgroundColor = config.buttonColor;
     });
-
-    const ai = document.getElementById('ai');
-    if (ai) ai.style.display =
-      config.aiEnabled === false || config.showAI === false ? 'none' : '';
-
-    const visitor = document.getElementById('visitorCard');
-    if (visitor) visitor.style.display =
-      config.showVisitorCard === false ? 'none' : '';
 
     const apps = document.getElementById('dynamicApps');
     if (apps && config.showApps === false) apps.style.display = 'none';
@@ -1024,39 +1080,6 @@ async function loadPublicApps() {
   }
 }
 
-async function sendVisitorMessage() {
-  const name = document.getElementById('visitorName').value.trim();
-  const message = document.getElementById('visitorMessage').value.trim();
-  const result = document.getElementById('visitorResult');
-  const button = document.getElementById('visitorSend');
-
-  if (!message) {
-    result.textContent = 'اكتب رسالتك أولاً.';
-    return;
-  }
-
-  button.disabled = true;
-  result.textContent = 'جاري إرسال الرسالة...';
-
-  try {
-    const response = await fetch('/api/visitor-message', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({name, message})
-    });
-    const data = await response.json();
-    if (!response.ok || !data.success) {
-      throw new Error(data.error || 'تعذر إرسال الرسالة');
-    }
-    result.textContent = '✅ تم إرسال رسالتك بنجاح.';
-    document.getElementById('visitorName').value = '';
-    document.getElementById('visitorMessage').value = '';
-  } catch (error) {
-    result.textContent = '⚠️ تعذر الإرسال، حاول مرة أخرى.';
-  } finally {
-    button.disabled = false;
-  }
-}
 
 loadPublicConfig();
 loadPublicApps();
@@ -1348,20 +1371,7 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 \n
-<script id="alkfory-profile-photo">
-document.addEventListener('DOMContentLoaded', function () {
-  const candidates = [...document.querySelectorAll('body *')]
-    .filter(el => el.children.length === 0 && el.textContent.trim() === 'ZA');
 
-  for (const el of candidates) {
-    const img = document.createElement('img');
-    img.src = '/alkfory-profile.jpg';
-    img.alt = 'Alkfory';
-    img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;';
-    el.replaceChildren(img);
-  }
-});
-</script>
 
 
 
@@ -1555,139 +1565,7 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 
 
-<style id="alkfory-games-section-v1">
-#alkGamesBtn{
-  display:inline-flex;align-items:center;justify-content:center;
-  gap:8px;padding:12px 20px;border-radius:14px;
-  border:1px solid #ff1744;background:#17070c;color:#fff;
-  font-weight:800;text-decoration:none;cursor:pointer;
-}
-#alkGamesPage{
-  display:none;max-width:1000px;margin:28px auto;padding:18px;
-  color:#fff;font-family:inherit;
-}
-#alkGamesPage.active{display:block}
-#alkGamesPage .games-head{
-  display:flex;align-items:center;justify-content:space-between;
-  gap:12px;margin-bottom:20px;flex-wrap:wrap
-}
-#alkGamesPage h2{color:#ff3158;margin:0}
-#alkGamesPage .games-back{
-  background:#260b12;color:white;border:1px solid #ff3158;
-  border-radius:12px;padding:10px 16px;cursor:pointer
-}
-#alkGamesPage .games-grid{
-  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px
-}
-#alkGamesPage .game-card{
-  min-width:0;min-height:112px;border:1px solid #49202b;
-  border-radius:16px;background:#130d10;color:white;
-  display:flex;flex-direction:column;align-items:center;
-  justify-content:center;gap:9px;padding:12px;cursor:pointer;
-  transition:.2s
-}
-#alkGamesPage .game-card:active{transform:scale(.97)}
-#alkGamesPage .game-icon{font-size:35px;line-height:1.2}
-#alkGamesPage .game-name{font-size:13px;font-weight:800;text-align:center}
-#alkGamesPage .game-note{color:#aaa;font-size:12px;margin-top:18px}
-@media(max-width:600px){
- #alkGamesPage{padding:12px}
- #alkGamesPage .games-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
- #alkGamesPage .game-card{min-height:100px;padding:8px}
- #alkGamesPage .game-icon{font-size:30px}
- #alkGamesPage .game-name{font-size:11px}
-}
-</style>
 
-<section id="alkGamesPage" aria-label="قسم الألعاب">
- <div class="games-head">
-  <h2>🎮 ALKFORY GAMES</h2>
-  <button class="games-back" id="alkGamesBack" type="button">رجوع ←</button>
- </div>
- <div class="games-grid" id="alkGamesGrid"></div>
- <p class="game-note">اختر لعبتك المفضلة. الألعاب قيد التجهيز والتطوير.</p>
-</section>
-
-<script>
-(function(){
- const games=[
-  ['🧱','Block Blast'],
-  ['🔢','2048'],
-  ['❌','Tic Tac Toe'],
-  ['🐍','Snake'],
-  ['♟️','Chess'],
-  ['⚫','Checkers'],
-  ['🔢','Sudoku'],
-  ['💣','Minesweeper'],
-  ['🃏','Solitaire'],
-  ['🔴','Connect 4'],
-  ['🧠','Memory Cards'],
-  ['🫧','Bubble Shooter'],
-  ['🀄','Mahjong'],
-  ['🔤','Word Search'],
-  ['🐤','Flappy Bird'],
-  ['🏓','Pong'],
-  ['🧩','Jigsaw Puzzle'],
-  ['🎯','Darts'],
-  ['🏎️','Racing'],
-  ['🟦','Tetris']
- ];
-
- function init(){
-  const page=document.getElementById('alkGamesPage');
-  const grid=document.getElementById('alkGamesGrid');
-  if(!page||!grid||page.dataset.ready)return;
-  page.dataset.ready='1';
-
-  games.forEach(([icon,name])=>{
-   const card=document.createElement('button');
-   card.type='button';
-   card.className='game-card';
-   const emoji=document.createElement('span');
-   emoji.className='game-icon';
-   emoji.textContent=icon;
-   const label=document.createElement('span');
-   label.className='game-name';
-   label.textContent=name;
-   card.append(emoji,label);
-   card.addEventListener('click',()=>{
-    console.warn('Game is not implemented yet');
-   });
-   grid.appendChild(card);
-  });
-
-  const btn=document.createElement('button');
-  btn.type='button';
-  btn.id='alkGamesBtn';
-  btn.textContent='🎮 الألعاب';
-
-  const contact=[...document.querySelectorAll('a,button')]
-    .find(el=>(el.innerText||'').includes('تواصل معي'));
-
-  if(contact && contact.parentElement){
-   contact.insertAdjacentElement('afterend',btn);
-  }else{
-   document.body.appendChild(btn);
-  }
-
-  function openGames(){
-   page.classList.add('active');
-   page.scrollIntoView({behavior:'smooth',block:'start'});
-  }
-  function closeGames(){
-   page.classList.remove('active');
-   btn.scrollIntoView({behavior:'smooth',block:'center'});
-  }
-  btn.addEventListener('click',openGames);
-  document.getElementById('alkGamesBack').addEventListener('click',closeGames);
- }
- if(document.readyState==='loading'){
-  document.addEventListener('DOMContentLoaded',init,{once:true});
- }else{init();}
-})();
-</script>
-
-<a href="/games/" class="games-link">🎮 الألعاب</a>
 
 <script>
 (() => {
@@ -1821,6 +1699,309 @@ document.addEventListener('DOMContentLoaded', function () {
 })();
 </script>
 <!-- END ALKFORY-WELCOME-NOTIFICATION -->
+
+<script id="alkfory-profile-photo">
+document.addEventListener('DOMContentLoaded', function () {
+  const candidates = [...document.querySelectorAll('body *')]
+    .filter(el => el.children.length === 0 && el.textContent.trim() === 'ZA');
+
+  for (const el of candidates) {
+    const img = document.createElement('img');
+    img.src = '/alkfory-profile.jpg';
+    img.alt = 'Alkfory';
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;';
+    el.replaceChildren(img);
+  }
+});
+</script>
+
+
+
+
+<script src="/alkfory-global-theme.js" defer></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- ALKFORY-UNIFIED-GLOBAL-SEARCH -->
+<style>
+#alkforyMenuSearchBox{
+  width:100%;box-sizing:border-box;padding:12px;margin-bottom:12px;
+  border:1px solid #00dcff;border-radius:12px;background:#101010;
+  direction:rtl;position:relative;z-index:99999
+}
+#alkforyMenuSearchInput{
+  width:100%;box-sizing:border-box;padding:12px;border:1px solid #00dcff;
+  border-radius:9px;background:#080808;color:white;font-size:15px;outline:none
+}
+#alkforySearchCount{color:#00dcff;font-size:12px;padding:8px}
+#alkforyMenuSearchResults{max-height:300px;overflow-y:auto}
+.alkfory-search-result{
+  display:block;width:100%;box-sizing:border-box;padding:11px;margin:5px 0;
+  border:1px solid #333;border-radius:9px;background:#171717;
+  color:white;text-align:right;cursor:pointer
+}
+.alkfory-search-focus{outline:3px solid #00dcff!important}
+</style>
+
+<script>
+(() => {
+  if (window.alkforyUnifiedSearch) return;
+  window.alkforyUnifiedSearch = true;
+
+  const norm = value => (value || '')
+    .toLocaleLowerCase()
+    .replace(/[ًٌٍَُِّْـٰ]/g, '')
+    .replace(/[أإآ]/g, 'ا')
+    .replace(/ى/g, 'ي')
+    .replace(/ة/g, 'ه')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const selector =
+    'a,button,[role="button"],h1,h2,h3,h4,h5,h6,p,li,article,section,[id],[data-search]';
+
+  function visibleMenu() {
+    const old = document.getElementById('alkforyMenuSearchBox');
+    if (old) return old.parentElement;
+
+    const candidates = [
+      ...document.querySelectorAll(
+        '[role="menu"],#settingsMenu,#settingsPanel,#menuPanel,' +
+        '#menuContent,#settingsContent,#sideMenu,' +
+        '.settings-menu,.settings-panel,.menu-panel,' +
+        '.settings-content,.dropdown-menu,[id*="menu" i],[class*="menu" i]'
+      )
+    ].filter(el => {
+      const r = el.getBoundingClientRect();
+      const st = getComputedStyle(el);
+      return r.width && r.height &&
+        st.display !== 'none' &&
+        st.visibility !== 'hidden' &&
+        (el.innerText || '').trim().length < 12000;
+    });
+
+    candidates.sort((a,b) =>
+      (a.innerText || '').length - (b.innerText || '').length
+    );
+
+    return candidates[0] || null;
+  }
+
+  function extract(doc, pageURL, current) {
+    const output = [];
+    const seen = new Set();
+
+    doc.querySelectorAll(selector).forEach(el => {
+      if (el.closest('#alkforyMenuSearchBox,script,style,textarea')) return;
+
+      const text = (el.innerText || el.textContent || '')
+        .replace(/\s+/g, ' ').trim();
+
+      if (!text || text.length > 250) return;
+
+      const key = norm(text);
+      if (!key || seen.has(key)) return;
+      seen.add(key);
+
+      const link = el.closest('a[href]');
+      let url = pageURL;
+
+      if (link) {
+        try { url = new URL(link.getAttribute('href'), pageURL).href; }
+        catch (_) {}
+      }
+
+      output.push({
+        text,
+        url,
+        element: current ? el : null
+      });
+    });
+
+    return output;
+  }
+
+  let index = [];
+  let indexing = false;
+  let indexed = false;
+  let indexPromise = null;
+
+  async function buildIndex() {
+    if (indexed) return index;
+    if (indexPromise) return indexPromise;
+
+    indexPromise = (async () => {
+      const origin = location.origin;
+      const queue = [location.href];
+      const visited = new Set();
+
+      while (queue.length && visited.size < 60) {
+        const page = queue.shift();
+        if (visited.has(page)) continue;
+        visited.add(page);
+
+        let doc = document;
+        let current = page === location.href;
+
+        if (!current) {
+          try {
+            const response = await fetch(page, {credentials:'same-origin'});
+            if (!response.ok) continue;
+            const html = await response.text();
+            doc = new DOMParser().parseFromString(html, 'text/html');
+          } catch (_) {
+            continue;
+          }
+        }
+
+        index.push(...extract(doc, page, current));
+
+        doc.querySelectorAll('a[href]').forEach(a => {
+          try {
+            const u = new URL(a.getAttribute('href'), page);
+            if (u.origin !== origin) return;
+            if (u.pathname.match(/\.(jpg|jpeg|png|gif|webp|svg|pdf|zip|mp4|mp3)$/i)) return;
+            u.hash = '';
+            if (!visited.has(u.href) && !queue.includes(u.href)) {
+              queue.push(u.href);
+            }
+          } catch (_) {}
+        });
+      }
+
+      indexed = true;
+      return index;
+    })();
+
+    return indexPromise;
+  }
+
+  function install() {
+    const menu = visibleMenu();
+    if (!menu) return;
+
+    if (document.getElementById('alkforyMenuSearchBox')) return;
+
+    const box = document.createElement('div');
+    box.id = 'alkforyMenuSearchBox';
+    box.innerHTML =
+      '<input id="alkforyMenuSearchInput" type="search" ' +
+      'placeholder="ابحث في الموقع..." autocomplete="off">' +
+      '<div id="alkforySearchCount">اكتب حرفًا واحدًا لبدء البحث</div>' +
+      '<div id="alkforyMenuSearchResults"></div>';
+
+    menu.insertBefore(box, menu.firstChild);
+
+    const input = box.querySelector('input');
+    const count = box.querySelector('#alkforySearchCount');
+    const results = box.querySelector('#alkforyMenuSearchResults');
+
+    let timer;
+
+    input.addEventListener('input', () => {
+      clearTimeout(timer);
+      timer = setTimeout(async () => {
+        const q = norm(input.value);
+        results.replaceChildren();
+
+        if (!q) {
+          count.textContent = 'اكتب حرفًا واحدًا لبدء البحث';
+          return;
+        }
+
+        count.textContent = 'جاري البحث في صفحات الموقع...';
+
+        const currentResults = extract(document, location.href, true);
+        const all = [...currentResults];
+
+        try {
+          const remote = await buildIndex();
+          all.push(...remote);
+        } catch (_) {}
+
+        if (norm(input.value) !== q) return;
+
+        const found = [];
+        const seen = new Set();
+
+        for (const item of all) {
+          if (!norm(item.text).includes(q)) continue;
+          const key = norm(item.text);
+          if (seen.has(key)) continue;
+          seen.add(key);
+          found.push(item);
+          if (found.length >= 70) break;
+        }
+
+        count.textContent = 'نتائج البحث: ' + found.length;
+
+        if (!found.length) {
+          results.textContent = 'لا توجد نتائج مطابقة.';
+          return;
+        }
+
+        found.forEach(item => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'alkfory-search-result';
+          btn.textContent = item.text.slice(0, 130);
+
+          btn.addEventListener('click', () => {
+            if (item.element && item.url.split('#')[0] === location.href.split('#')[0]) {
+              item.element.scrollIntoView({behavior:'smooth',block:'center'});
+              item.element.classList.add('alkfory-search-focus');
+              setTimeout(() =>
+                item.element.classList.remove('alkfory-search-focus'), 2500
+              );
+            } else {
+              location.href = item.url;
+            }
+          });
+
+          results.appendChild(btn);
+        });
+      }, 120);
+    });
+  }
+
+  const observer = new MutationObserver(() => {
+    if (!document.getElementById('alkforyMenuSearchBox')) install();
+  });
+
+  function start() {
+    install();
+    observer.observe(document.body, {childList:true,subtree:true});
+  }
+
+  document.addEventListener('click', () => {
+    setTimeout(install, 200);
+    setTimeout(install, 500);
+  }, true);
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      document.getElementById('alkforyMenuSearchBox')?.remove();
+    }
+  });
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start, {once:true});
+  } else {
+    start();
+  }
+})();
+</script>
+<!-- /ALKFORY-UNIFIED-GLOBAL-SEARCH -->
 
 </body>
 </html>

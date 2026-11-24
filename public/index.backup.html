@@ -30,6 +30,8 @@ input{width:100%;background:#171717;border:1px solid #333;color:#fff;padding:13p
 .row{display:flex;gap:8px}
 .row button{flex:1}
 </style>
+
+<link rel="stylesheet" href="/alkfory-global-theme.css">
 </head>
 <body>
 <header>
@@ -119,5 +121,7 @@ async function askAI(){
  }catch(e){answer.textContent=(english?'AI connection failed: ':'تعذر الاتصال بالذكاء الاصطناعي: ')+e.message}
 }
 </script>
+
+<script src="/alkfory-global-theme.js" defer></script>
 </body>
 </html>

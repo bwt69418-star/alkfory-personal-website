@@ -282,6 +282,21 @@ body{padding-top:65px}
 }
 </style>
 
+<style id="alkfory-messages-only">#site,#ai,#apps,#security,#developer{display:none!important}#dashboard .menu{max-width:600px;margin:25px auto}#dashboard .menu button{width:100%;margin:10px 0}</style>
+<style id="ALKFORY_MESSAGES_ONLY_PATCH">
+/* إظهار الرسائل الواردة فقط بعد تسجيل دخول المطور */
+body.alkfory-messages-only button[onclick*="openPage"]:not([onclick*="messages"]),
+body.alkfory-messages-only [data-page]:not([data-page="messages"]),
+body.alkfory-messages-only #site,
+body.alkfory-messages-only #ai,
+body.alkfory-messages-only #apps,
+body.alkfory-messages-only #security,
+body.alkfory-messages-only #developer,
+body.alkfory-messages-only #settings {
+  display: none !important;
+}
+</style>
+
 </head>
 <body><button id="saveBar" onclick="saveCurrentPage()" style="display:none">💾 حفظ</button><button id="topBack" class="back" onclick="goBack()">↩ رجوع</button>
 
@@ -292,15 +307,9 @@ body{padding-top:65px}
 
 <section id="dashboard" class="page active">
 <div class="menu">
-<h2>لوحة المطوّر الرئيسية</h2>
-<button onclick="openPage('site')">⚙️ إعدادات الموقع</button>
-<button onclick="openPage('ai')">🤖 إعدادات ALKFORY AI</button>
-<button onclick="openPage('apps')">📱 إدارة التطبيقات</button>
-<button onclick="openPage('messages')">💬 رسائل الزوار</button>
-<button onclick="openPage('security')">🔐 إعدادات الأمان</button>
-<button onclick="openPage('developer')">⚜️ معلومات المطوّر</button>
+<h2>📩 الرسائل الواردة</h2>
+<button onclick="openPage('messages')">💬 فتح الرسائل الواردة</button>
 </div>
-<button class="secondary" onclick="loadAll()">🔄 تحديث البيانات</button>
 <button class="danger" onclick="logout()">تسجيل خروج المطوّر</button>
 </section>
 
@@ -406,7 +415,11 @@ body{padding-top:65px}
   </div>
 </div>
 
-</div>
+<div id="alkforyVisitorInbox" style="margin:24px 0;padding:18px;border:1px solid #8b2635;border-radius:14px;background:#17131a;color:#fff">
+  <h2 style="margin:0 0 12px">📩 رسائل الزوار</h2>
+  <div id="alkforyVisitorInboxStatus" role="status" style="margin-bottom:12px;color:#ccc">جاري تحميل الرسائل...</div>
+  <div id="alkforyVisitorInboxList"></div>
+</div></div>
 </section>
 
 <section id="security" class="page">
@@ -896,11 +909,7 @@ loadAll();
 
 
 
-<section id="alkforyVisitorInbox" style="margin:24px 0;padding:18px;border:1px solid #8b2635;border-radius:14px;background:#17131a;color:#fff">
-  <h2 style="margin:0 0 12px">📩 رسائل الزوار</h2>
-  <div id="alkforyVisitorInboxStatus" role="status" style="margin-bottom:12px;color:#ccc">جاري تحميل الرسائل...</div>
-  <div id="alkforyVisitorInboxList"></div>
-</section>
+
 <script>
 (() => {
   if (window.alkforyVisitorInboxStarted) return;

@@ -1,0 +1,3827 @@
+
+
+========================= server.js =========================
+
+require('./alkfory-screen');
+
+require('dotenv').config();
+
+const express = require('express');
+const path = require('path');
+const session = require('express-session');
+const crypto = require('crypto');
+const fs = require('fs');
+const dataDir = process.env.DATA_DIR || require('path').join(__dirname, 'data');
+fs.mkdirSync(dataDir, { recursive: true });
+const dataFile = require('path').join(dataDir, 'alkfory-data.json');
+let store = { settings: {}, apps: [], messages: [] };
+if (fs.existsSync(dataFile)) {
+  try { store = { ...store, ...JSON.parse(fs.readFileSync(dataFile, 'utf8')) }; }
+  catch (err) { console.error('تعذر قراءة ملف البيانات:', err.message); }
+}
+function saveStore() {
+  fs.writeFileSync(dataFile, JSON.stringify(store, null, 2));
+}
+const app = express();
+app.set('trust proxy', 1);
+const PORT = process.env.PORT || 3000;
+
+if (!process.env.SESSION_SECRET || !process.env.DEVELOPER_CODE) {
+  console.error('❌ إعدادات الجلسة أو المطور ناقصة في .env');
+  process.exit(1);
+}
+
+app.disable('x-powered-by');
+app.use(express.json({ limit: '30kb' }));
+
+app.use(session({
+  name: 'alkfory.sid',
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 2 * 60 * 60 * 1000
+  }
+}));
+
+// اختيار طريقة الدخول من جديد عند فتح الصفحة الرئيسية
+app.get('/', (req, res) => {
+  req.session.allowHomeOnce = false;
+  res.sendFile(path.join(__dirname, 'public', 'entry.html'));
+});
+
+// السماح للزائر بالدخول مرة واحدة بعد اختياره
+app.post('/api/visitor-login', (req, res) => {
+  req.session.allowHomeOnce = true;
+  req.session.save(err => {
+    if (err) return res.status(500).json({ success: false });
+    res.json({ success: true });
+  });
+});
+
+// منع فتح home.html مباشرة دون المرور بشاشة الاختيار
+app.use((req, res, next) => {
+  if (req.path === '/home.html') {
+    if (req.session.allowHomeOnce === true) {
+      req.session.allowHomeOnce = false;
+      return req.session.save(err => {
+        if (err) return res.status(500).send('Session error');
+        next();
+      });
+    }
+    return res.redirect('/');
+  }
+  next();
+});
+
+app.use(express.static(path.join(__dirname, 'public'), {
+  index: false
+}));
+
+app.post('/api/developer-login', (req, res) => {
+  const code = String(req.body?.code || '');
+  const expected = String(process.env.DEVELOPER_CODE);
+
+  const a = Buffer.from(code);
+  const b = Buffer.from(expected);
+
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+    return res.status(401).json({ success: false });
+  }
+
+  req.session.isDeveloper = true;
+
+  req.session.save(err => {
+    if (err) {
+      return res.status(500).json({ success: false });
+    }
+
+    res.json({ success: true });
+  });
+});
+
+app.get('/api/developer-status', (req, res) => {
+  res.json({ authenticated: req.session.isDeveloper === true });
+});
+
+app.get('/admin', (req, res) => {
+  if (req.session.isDeveloper !== true) {
+    return res.redirect('/');
+  }
+
+  res.sendFile(path.join(__dirname, 'admin.html'));
+});
+
+app.post('/api/developer-logout', (req, res) => {
+  req.session.destroy(() => {
+    res.clearCookie('alkfory.sid');
+    res.json({ success: true });
+  });
+});
+
+
+function requireDeveloper(req, res, next) {
+  if (req.session.isDeveloper !== true) return res.status(401).json({ error: 'غير مصرح' });
+  next();
+}
+app.get('/api/site-config', (req, res) => {
+  const s = store.settings || {};
+  res.json({
+    siteName: s.siteName || 'ALKFORY',
+    welcomeText: s.welcomeText || 'مرحبًا بك في موقعي',
+    theme: s.theme || 'dark',
+    language: s.language || 'ar',
+    showVisitorCard: s.showVisitorCard !== false,
+    aiEnabled: s.aiEnabled !== false,
+    accentColor: s.accentColor || '#ed354d',
+    backgroundColor: s.backgroundColor || '#090909',
+    textColor: s.textColor || '#ffffff',
+    buttonColor: s.buttonColor || '#a71930',
+    fontFamily: s.fontFamily || 'Arial',
+    fontSize: Number(s.fontSize) || 16,
+    borderRadius: Number(s.borderRadius) || 12,
+    showApps: s.showApps !== false,
+    showAI: s.showAI !== false,
+    showWelcome: s.showWelcome !== false,
+    maintenanceMode: s.maintenanceMode === true,
+    maintenanceMessage: s.maintenanceMessage || 'الموقع تحت الصيانة',
+    announcementText: s.announcementText || '',
+    footerText: s.footerText || ''
+  });
+});
+
+app.get('/api/public/apps', (req, res) => {
+  res.json({
+    apps: (store.apps || [])
+      .filter(item => item.active === true && item.visible !== false)
+      .sort((a,b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+      .map(({ name, url, description, category, icon, sortOrder }) =>
+        ({ name, url, description, category, icon, sortOrder }))
+  });
+});
+
+app.post('/api/visitor-message', (req, res) => {
+  const name = String(req.body?.name || '').trim().slice(0, 60);
+  const message = String(req.body?.message || '').trim().slice(0, 1000);
+  if (!message) return res.status(400).json({ error: 'اكتب الرسالة أولًا.' });
+
+  store.messages ||= [];
+  store.messages.push({
+    id: Date.now() + Math.floor(Math.random() * 1000),
+    name: name || 'زائر',
+    message,
+    date: new Date().toISOString()
+  });
+  if (store.messages.length > 300) store.messages = store.messages.slice(-300);
+  saveStore();
+  res.json({ success: true });
+});
+
+app.get('/api/admin/messages', requireDeveloper, (req, res) => {
+  res.json({ messages: store.messages || [] });
+});
+
+app.delete('/api/admin/messages/:id', requireDeveloper, (req, res) => {
+  const before = (store.messages || []).length;
+  store.messages = (store.messages || []).filter(
+    item => item.id !== Number(req.params.id)
+  );
+  if (store.messages.length === before) {
+    return res.status(404).json({ error: 'الرسالة غير موجودة.' });
+  }
+  saveStore();
+  res.json({ success: true });
+});
+
+app.get('/api/admin/settings', requireDeveloper, (req, res) => res.json({ settings: store.settings }));
+app.put('/api/admin/settings', requireDeveloper, (req, res) => {
+  const allowed = ["siteName","welcomeText","theme","language","showVisitorCard","accentColor","backgroundColor","textColor","buttonColor","fontFamily","fontSize","borderRadius","showSocialLinks","showApps","showAI","showWelcome","maintenanceMode","maintenanceMessage","contactEmail","footerText","announcementText","aiEnabled","aiPersona","aiReplyLength","aiLanguage","aiTone","aiEmoji","aiGreeting","aiSignature","aiTemperature","aiMaxTokens","aiAnswerFormat","aiUseSiteContext","aiAllowCode","aiExplainSteps","aiCustomInstructions","aiFallbackMessage","aiWelcomeMessage","aiCreativity","aiFormality","aiUseExamples","aiResponseStyle"];
+  for (const key of allowed) if (Object.prototype.hasOwnProperty.call(req.body || {}, key)) store.settings[key] = req.body[key];
+  saveStore(); res.json({ success: true });
+});
+app.get('/api/admin/apps', requireDeveloper, (req, res) => res.json({ apps: store.apps }));
+app.post('/api/admin/apps', requireDeveloper, (req, res) => {
+  const name = String(req.body?.name || '').trim().slice(0, 80);
+  const url = String(req.body?.url || '').trim().slice(0, 500);
+  if (!name || !/^https:\/\//i.test(url)) return res.status(400).json({ error: 'أدخل اسمًا ورابط HTTPS صحيحًا' });
+  const body = req.body || {};
+  const app = {
+    id: Date.now(),
+    name,
+    url,
+    description: String(body.description || '').slice(0, 300),
+    category: String(body.category || '').slice(0, 60),
+    icon: String(body.icon || '').slice(0, 500),
+    sortOrder: Math.max(0, Math.min(9999, Number(body.sortOrder) || 0)),
+    visible: true,
+    active: true
+  };
+  store.apps.push(app);
+  saveStore();
+  res.json({ success: true, app });
+});
+app.patch('/api/admin/apps/:id', requireDeveloper, (req, res) => {
+  const item = store.apps.find(x => x.id === Number(req.params.id));
+  if (!item) return res.status(404).json({ success: false });
+
+  const body = req.body || {};
+  if (Object.prototype.hasOwnProperty.call(body, 'active')) item.active = !!body.active;
+  if (Object.prototype.hasOwnProperty.call(body, 'description')) item.description = String(body.description).slice(0, 300);
+  if (Object.prototype.hasOwnProperty.call(body, 'category')) item.category = String(body.category).slice(0, 60);
+  if (Object.prototype.hasOwnProperty.call(body, 'icon')) item.icon = String(body.icon).slice(0, 300);
+  if (Object.prototype.hasOwnProperty.call(body, 'sortOrder')) item.sortOrder = Math.max(0, Math.min(9999, Number(body.sortOrder) || 0));
+  if (Object.prototype.hasOwnProperty.call(body, 'visible')) item.visible = !!body.visible;
+
+  saveStore();
+  res.json({ success: true, app: item });
+});
+app.delete('/api/admin/apps/:id', requireDeveloper, (req, res) => {
+  store.apps = store.apps.filter(x => x.id !== Number(req.params.id));
+  saveStore(); res.json({ success: true });
+});
+app.post('/api/ai', async (req, res) => {
+  try {
+    if (store.settings.aiEnabled === false) {
+      return res.status(403).json({ error: 'الذكاء الاصطناعي متوقف حاليًا.' });
+    }
+    const apiKey = process.env.GEMINI_API_KEY;
+    const message = String(req.body?.message || '').trim();
+
+    if (!apiKey || apiKey === 'PUT_NEW_KEY_HERE') {
+      return res.status(503).json({
+        error: 'مفتاح ALKFORY AI يحتاج إلى الإعداد.'
+      });
+    }
+
+    if (!message || message.length > 4000) {
+      return res.status(400).json({
+        error: 'الرسالة فارغة أو طويلة جدًا.'
+      });
+    }
+
+    const response = await fetch(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': apiKey
+        },
+        body: JSON.stringify({
+          systemInstruction: {
+            parts: [{
+              text: (() => {
+                const settings = store.settings || {};
+                const persona = settings.aiPersona || 'friendly';
+                const length = settings.aiReplyLength || 'medium';
+                const personas = {
+                  friendly: 'كن ودودًا وبسيطًا.',
+                  professional: 'كن احترافيًا ومنظمًا.',
+                  concise: 'كن مختصرًا ومباشرًا.',
+                  creative: 'استخدم أفكارًا إبداعية مع الحفاظ على الدقة.',
+                  teacher: 'اشرح المعلومات تدريجيًا وبأسلوب تعليمي واضح.'
+                };
+                const lengths = {
+                  short: 'اجعل الرد قصيرًا.',
+                  medium: 'اجعل الرد متوسط الطول.',
+                  long: 'قدّم شرحًا مفصلًا عند الحاجة.'
+                };
+                const tones = {
+                  calm: 'استخدم نبرة هادئة.',
+                  enthusiastic: 'استخدم نبرة مشجعة وحيوية.',
+                  formal: 'استخدم نبرة رسمية.',
+                  simple: 'استخدم لغة سهلة ومباشرة.'
+                };
+                const language = settings.aiLanguage || 'auto';
+                const languageRule = language === 'auto'
+                  ? 'أجب بلغة المستخدم.'
+                  : 'أجب باللغة المحددة: ' + language + '.';
+                const emojiRule = settings.aiEmoji === false
+                  ? 'لا تستخدم الرموز التعبيرية.'
+                  : 'استخدم الرموز التعبيرية باعتدال عند ملاءمتها.';
+                const formatRule = {
+                  paragraphs: 'نظم الرد في فقرات واضحة.',
+                  bullets: 'استخدم نقاطًا عند عرض عدة معلومات.',
+                  direct: 'ابدأ بالإجابة مباشرة دون مقدمات طويلة.'
+                }[settings.aiAnswerFormat || 'paragraphs'];
+                const greeting = settings.aiGreeting ? 'تحية مفضلة: ' + settings.aiGreeting : '';
+                const signature = settings.aiSignature ? 'اختم الرد بهذه العبارة عند ملاءمتها: ' + settings.aiSignature : '';
+                const custom = settings.aiCustomInstructions || '';
+                return 'أنت ALKFORY AI، مساعد لموقع Ziad Alkfory. كن واضحًا ومفيدًا ولا تخترع معلومات. ' +
+                  languageRule + ' ' +
+                  (personas[persona] || personas.friendly) + ' ' +
+                  (lengths[length] || lengths.medium) + ' ' +
+                  (tones[settings.aiTone] || tones.simple) + ' ' +
+                  emojiRule + ' ' + (formatRule || '') + ' ' +
+                  greeting + ' ' + signature + ' ' + custom;
+              })()
+            }]
+          },
+          contents: [{
+            role: 'user',
+            parts: [{ text: message }]
+          }],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: Math.max(100, Math.min(2000, Number(store.settings.aiMaxTokens) || (store.settings.aiReplyLength === 'short' ? 250 : store.settings.aiReplyLength === 'long' ? 1200 : 700)))
+          }
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error('AI API error:', response.status);
+      return res.status(502).json({
+        error: 'خدمة AI غير متاحة حاليًا. حاول مرة أخرى.'
+      });
+    }
+
+    const answer = data.candidates?.[0]?.content?.parts
+      ?.map(part => part.text || '')
+      .join('')
+      .trim();
+
+    if (!answer) {
+      return res.status(502).json({
+        error: 'لم يصل رد من الذكاء الاصطناعي.'
+      });
+    }
+
+    res.json({ answer });
+  } catch (error) {
+    console.error('AI request failed:', error.message);
+    res.status(500).json({
+      error: 'حدث خطأ في الاتصال. حاول مرة أخرى.'
+    });
+  }
+});
+
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'online' });
+});
+
+
+require('./chat-routes')(app, {
+  dataDir,
+  requireDeveloper,
+  getStore: () => store,
+  saveStore
+});
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log('⚜️ Ziad Alkfory ⚜️');
+  console.log('✅ Server started on port ' + PORT);
+  console.log('🌐 http://localhost:' + PORT);
+});
+
+
+========================= chat-routes.js =========================
+const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
+const multer = require('multer');
+
+module.exports = function installChat(app, options) {
+  const { dataDir, requireDeveloper, getStore, saveStore } = options;
+
+  const uploadDir = path.join(dataDir, 'chat-uploads');
+  fs.mkdirSync(uploadDir, { recursive: true });
+
+  const storage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, uploadDir),
+    filename: (req, file, cb) => {
+      const ext = path.extname(file.originalname).slice(0, 12);
+      cb(null, crypto.randomUUID() + ext);
+    }
+  });
+
+  const upload = multer({
+    storage,
+    limits: { fileSize: 3 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+      const allowed = [
+        'image/jpeg', 'image/png', 'image/webp',
+        'image/gif', 'video/mp4', 'video/webm',
+        'application/pdf'
+      ];
+      cb(null, allowed.includes(file.mimetype));
+    }
+  });
+
+  const store = getStore();
+  store.chats ||= [];
+
+  function findChat(id) {
+    return store.chats.find(c => c.id === id);
+  }
+
+  function guestAuth(req, res, next) {
+    const chat = findChat(req.params.id);
+    const token = String(req.headers['x-chat-token'] || req.query.token || '');
+    if (!chat || !token || !chat.tokenHash) {
+      return res.status(401).json({ error: 'المحادثة غير متاحة' });
+    }
+
+    const hash = crypto.createHash('sha256').update(token).digest();
+    const saved = Buffer.from(chat.tokenHash, 'hex');
+
+    if (saved.length !== hash.length || !crypto.timingSafeEqual(saved, hash)) {
+      return res.status(401).json({ error: 'بيانات المحادثة غير صحيحة' });
+    }
+    req.chat = chat;
+    next();
+  }
+
+  function cleanMessage(m) {
+    return {
+      id: m.id,
+      sender: m.sender,
+      text: m.text || '',
+      file: m.file || null,
+      date: m.date
+    };
+  }
+
+  app.post('/api/chat/start', (req, res) => {
+    const name = String(req.body?.name || '').trim().slice(0, 60);
+    const phone = String(req.body?.phone || '').trim().slice(0, 25);
+
+    if (!name) return res.status(400).json({ error: 'اكتب اسمك أولاً' });
+
+    const token = crypto.randomBytes(32).toString('hex');
+    const chat = {
+      id: crypto.randomUUID(),
+      name,
+      phone,
+      tokenHash: crypto.createHash('sha256').update(token).digest('hex'),
+      createdAt: new Date().toISOString(),
+      messages: []
+    };
+
+    store.chats.push(chat);
+    saveStore();
+
+    res.json({ success: true, id: chat.id, token });
+  });
+
+  app.get('/api/chat/:id', guestAuth, (req, res) => {
+    res.json({
+      chat: {
+        id: req.chat.id,
+        name: req.chat.name,
+        messages: req.chat.messages.map(cleanMessage)
+      }
+    });
+  });
+
+  app.post('/api/chat/:id/messages', guestAuth, upload.single('file'), (req, res) => {
+    const text = String(req.body?.text || '').trim().slice(0, 3000);
+    if (!text && !req.file) {
+      return res.status(400).json({ error: 'اكتب رسالة أو اختر ملفًا' });
+    }
+
+    const message = {
+      id: crypto.randomUUID(),
+      sender: 'visitor',
+      text,
+      date: new Date().toISOString(),
+      file: req.file ? {
+        name: req.file.originalname.slice(0, 120),
+        type: req.file.mimetype,
+        path: req.file.filename,
+        size: req.file.size
+      } : null
+    };
+
+    req.chat.messages.push(message);
+    saveStore();
+    res.json({ success: true, message: cleanMessage(message) });
+  });
+
+  app.get('/api/admin/chats', requireDeveloper, (req, res) => {
+    res.json({
+      chats: store.chats.map(c => ({
+        id: c.id,
+        name: c.name,
+        phone: c.phone,
+        createdAt: c.createdAt,
+        lastMessage: c.messages[c.messages.length - 1] || null
+      })).reverse()
+    });
+  });
+
+  app.get('/api/admin/chats/:id', requireDeveloper, (req, res) => {
+    const chat = findChat(req.params.id);
+    if (!chat) return res.status(404).json({ error: 'المحادثة غير موجودة' });
+    res.json({
+      chat: {
+        id: chat.id,
+        name: chat.name,
+        phone: chat.phone,
+        messages: chat.messages.map(cleanMessage)
+      }
+    });
+  });
+
+  app.post('/api/admin/chats/:id/messages', requireDeveloper, upload.single('file'), (req, res) => {
+    const chat = findChat(req.params.id);
+    if (!chat) return res.status(404).json({ error: 'المحادثة غير موجودة' });
+
+    const text = String(req.body?.text || '').trim().slice(0, 3000);
+    if (!text && !req.file) {
+      return res.status(400).json({ error: 'اكتب رسالة أو اختر ملفًا' });
+    }
+
+    const message = {
+      id: crypto.randomUUID(),
+      sender: 'developer',
+      text,
+      date: new Date().toISOString(),
+      file: req.file ? {
+        name: req.file.originalname.slice(0, 120),
+        type: req.file.mimetype,
+        path: req.file.filename,
+        size: req.file.size
+      } : null
+    };
+
+    chat.messages.push(message);
+    saveStore();
+    res.json({ success: true, message: cleanMessage(message) });
+  });
+
+  app.get('/api/chat-media/:id/:messageId', (req, res, next) => {
+    const chat = findChat(req.params.id);
+    if (!chat) return res.sendStatus(404);
+
+    const isDeveloper = req.session?.isDeveloper === true;
+    const token = String(req.headers['x-chat-token'] || req.query.token || '');
+    let authorized = isDeveloper;
+
+    if (!authorized && token && chat.tokenHash) {
+      const a = crypto.createHash('sha256').update(token).digest();
+      const b = Buffer.from(chat.tokenHash, 'hex');
+      authorized = a.length === b.length && crypto.timingSafeEqual(a, b);
+    }
+
+    if (!authorized) return res.sendStatus(401);
+
+    const msg = chat.messages.find(m => m.id === req.params.messageId);
+    if (!msg?.file?.path) return res.sendStatus(404);
+
+    const filePath = path.join(uploadDir, path.basename(msg.file.path));
+    if (!fs.existsSync(filePath)) return res.sendStatus(404);
+
+    res.type(msg.file.type);
+    res.sendFile(filePath);
+  });
+
+  app.delete('/api/admin/chats/:id/messages/:messageId', requireDeveloper, (req, res) => {
+    const chat = findChat(req.params.id);
+    if (!chat) return res.sendStatus(404);
+
+    const index = chat.messages.findIndex(m => m.id === req.params.messageId);
+    if (index < 0) return res.sendStatus(404);
+
+    const [msg] = chat.messages.splice(index, 1);
+    if (msg.file?.path) {
+      fs.rmSync(path.join(uploadDir, path.basename(msg.file.path)), { force: true });
+    }
+    saveStore();
+    res.json({ success: true });
+  });
+
+  app.delete('/api/admin/chats/:id', requireDeveloper, (req, res) => {
+    const index = store.chats.findIndex(c => c.id === req.params.id);
+    if (index < 0) return res.sendStatus(404);
+
+    const [chat] = store.chats.splice(index, 1);
+    for (const msg of chat.messages) {
+      if (msg.file?.path) {
+        fs.rmSync(path.join(uploadDir, path.basename(msg.file.path)), { force: true });
+      }
+    }
+    saveStore();
+    res.json({ success: true });
+  });
+
+  app.use((err, req, res, next) => {
+    if (err instanceof multer.MulterError) {
+      return res.status(400).json({ error: 'حجم الملف الأقصى 3 ميجابايت أو الملف غير صالح' });
+    }
+    next(err);
+  });
+};
+
+
+========================= public/home.html =========================
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#050505">
+<title>Ziad Alkfory</title>
+
+<style>
+:root {
+  --red: #ff263f;
+  --green: #00ff88;
+  --bg: #050505;
+  --panel: #101010;
+  --muted: #999;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background:
+    radial-gradient(ellipse at 50% 0%, #44101955, transparent 45%),
+    var(--bg);
+  color: white;
+  font-family: Arial, sans-serif;
+  min-height: 100vh;
+}
+button, a { font: inherit; }
+a { color: inherit; text-decoration: none; }
+button { cursor: pointer; }
+header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #080808eF;
+  backdrop-filter: blur(15px);
+  border-bottom: 1px solid #242424;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 5%;
+  direction: ltr;
+}
+.brand {
+  color: white;
+  font-weight: 900;
+  letter-spacing: 2px;
+}
+.brand span { color: var(--red); }
+.lang {
+  color: white;
+  background: #151515;
+  border: 1px solid #3b2529;
+  border-radius: 10px;
+  padding: 9px 14px;
+}
+main { max-width: 850px; margin: auto; padding: 35px 20px; }
+.hero { text-align: center; padding: 30px 0 25px; }
+.emblem {
+  width: 145px;
+  height: 145px;
+  border-radius: 50%;
+  margin: 0 auto 25px;
+  display: grid;
+  place-items: center;
+  position: relative;
+  font-size: 47px;
+  font-weight: 900;
+  color: white;
+  background: linear-gradient(145deg, #1b1b1b, #080808);
+  border: 2px solid #a81d30;
+  box-shadow: 0 0 15px #ff263f44, inset 0 0 24px #ff263f12;
+  animation: float 4s ease-in-out infinite;
+}
+.emblem:after {
+  content: "";
+  position: absolute;
+  width: 13px;
+  height: 13px;
+  bottom: 8px;
+  right: 10px;
+  background: var(--green);
+  border: 3px solid #080808;
+  border-radius: 50%;
+  box-shadow: 0 0 15px var(--green);
+}
+@keyframes float {
+  0%,100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+.status {
+  color: var(--green);
+  font-size: 13px;
+  margin: 0 0 17px;
+}
+.status i {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  background: var(--green);
+  border-radius: 50%;
+  margin-left: 6px;
+  box-shadow: 0 0 9px var(--green);
+}
+h1 { font-size: clamp(30px, 6vw, 48px); margin: 8px 0 13px; }
+.red { color: var(--red); }
+.subtitle { color: #aaa; line-height: 1.9; }
+.hero-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 25px;
+}
+.btn {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 9px;
+  padding: 14px 20px;
+  border: 1px solid #383838;
+  background: #111;
+  border-radius: 12px;
+  color: white;
+  transition: .2s;
+}
+.btn:hover {
+  transform: translateY(-2px);
+  border-color: var(--red);
+  box-shadow: 0 0 18px #ff263f20;
+}
+.primary {
+  background: linear-gradient(110deg, #c8102e, #751020);
+  border-color: #ed3048;
+}
+.section-title { text-align: center; margin: 45px 0 20px; }
+.section-title h2 { margin-bottom: 8px; }
+.section-title p { color: var(--muted); font-size: 14px; }
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.card {
+  background: linear-gradient(145deg, #131313, #0a0a0a);
+  border: 1px solid #292929;
+  border-radius: 17px;
+  padding: 20px;
+  transition: .25s;
+}
+.card:hover {
+  border-color: #a51e31;
+  transform: translateY(-3px);
+}
+.card-icon { font-size: 27px; margin-bottom: 13px; }
+.card h3 { margin: 0 0 8px; font-size: 17px; }
+.card p { color: #999; font-size: 13px; line-height: 1.8; }
+.card .btn { width: 100%; margin-top: 10px; padding: 11px; }
+.ai-box {
+  border: 1px solid #49212a;
+  background: radial-gradient(ellipse at top right, #40101a55, transparent 70%), #0d0d0d;
+  border-radius: 18px;
+  padding: 22px;
+}
+.ai-box textarea {
+  width: 100%;
+  min-height: 90px;
+  resize: vertical;
+  background: #080808;
+  border: 1px solid #333;
+  border-radius: 12px;
+  color: white;
+  padding: 14px;
+  outline: none;
+  margin: 12px 0;
+  font: inherit;
+}
+.ai-box textarea:focus { border-color: var(--red); }
+#aiAnswer {
+  display: none;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: #080808;
+  padding: 14px;
+  border-radius: 12px;
+  line-height: 1.8;
+  margin-top: 14px;
+}
+footer {
+  margin-top: 50px;
+  border-top: 1px solid #242424;
+  padding: 25px 15px;
+  text-align: center;
+  color: #888;
+  font-size: 12px;
+}
+footer strong { color: #eee; }
+@media(max-width:560px) {
+  main { padding: 20px 15px; }
+  .grid { grid-template-columns: 1fr; }
+  .emblem { width: 125px; height: 125px; }
+  header { padding: 13px 15px; }
+  .hero { padding-top: 25px; }
+}
+</style>
+
+<style id="alkfory-compact-neon-cards">
+/* مربعات أصغر ومنصات رأسية */
+.grid {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 10px !important;
+  width: 100% !important;
+}
+
+.card {
+  position: relative;
+  padding: 13px 15px !important;
+  margin: 0 !important;
+  min-width: 0;
+  border: 1px solid #f21c35 !important;
+  border-radius: 13px !important;
+  background: #080808 !important;
+  box-shadow: 0 0 8px #ff002522, inset 0 0 10px #ff00250a;
+  animation: alkforyBorder 7s linear infinite;
+  overflow: hidden;
+}
+
+.card:nth-child(5n + 2) { animation-delay: -1.4s; }
+.card:nth-child(5n + 3) { animation-delay: -2.8s; }
+.card:nth-child(5n + 4) { animation-delay: -4.2s; }
+.card:nth-child(5n + 5) { animation-delay: -5.6s; }
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 16px #ff173755;
+}
+
+.card-icon {
+  font-size: 30px !important;
+  margin-bottom: 6px !important;
+  line-height: 1.2;
+}
+
+.card h3 {
+  margin: 0 0 5px !important;
+  font-size: 17px !important;
+}
+
+.card p {
+  margin: 4px 0 !important;
+  font-size: 12px !important;
+  line-height: 1.6 !important;
+}
+
+.card .btn {
+  display: block;
+  width: 100%;
+  margin-top: 8px !important;
+  padding: 9px 11px !important;
+  box-sizing: border-box;
+  border-radius: 10px;
+}
+
+@keyframes alkforyBorder {
+  0%, 100% {
+    border-color: #ff1838;
+    box-shadow: 0 0 8px #ff18382b, inset 0 0 8px #ff18380a;
+  }
+  33% {
+    border-color: #00ee88;
+    box-shadow: 0 0 9px #00ee882b, inset 0 0 8px #00ee880a;
+  }
+  66% {
+    border-color: #168bff;
+    box-shadow: 0 0 9px #168bff2b, inset 0 0 8px #168bff0a;
+  }
+}
+
+@media (max-width: 600px) {
+  main { padding: 20px 15px !important; }
+  .grid { grid-template-columns: minmax(0, 1fr) !important; }
+  .card { padding: 12px 14px !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card { animation: none !important; }
+}
+</style>
+
+
+
+
+
+<style id="alkfory-compact-chat">
+.alk-chat-message {
+  display: block !important;
+  width: fit-content !important;
+  max-width: 78% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  box-sizing: border-box !important;
+  padding: 4px 8px !important;
+  margin: 3px 0 !important;
+  border-radius: 9px !important;
+  line-height: 1.35 !important;
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
+}
+.alk-chat-visitor {
+  background: #252525 !important;
+  color: #fff !important;
+  margin-right: auto !important;
+  margin-left: 0 !important;
+}
+.alk-chat-developer {
+  background: #641b25 !important;
+  color: #fff !important;
+  margin-left: auto !important;
+  margin-right: 0 !important;
+}
+.alk-chat-message img,
+.alk-chat-message video {
+  display: block;
+  max-width: 100%;
+  max-height: 220px;
+  height: auto;
+  border-radius: 7px;
+  margin-top: 4px;
+}
+.alk-chat-message a {
+  overflow-wrap: anywhere;
+}
+#chatMessages, #alkforyAdminMessages {
+  min-height: 0 !important;
+  height: auto !important;
+}
+</style>
+
+
+<style id="alkfory-hide-old-visitor-form">
+#visitorCard { display: none !important; }
+</style>
+
+
+<style id="alkfory-chat-final-layout">
+.alk-chat-message {
+  display: inline-flex !important;
+  align-items: flex-end !important;
+  flex-wrap: wrap !important;
+  gap: 4px !important;
+  width: fit-content !important;
+  max-width: 78% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  padding: 3px 7px !important;
+  margin: 2px 0 !important;
+  box-sizing: border-box !important;
+  border-radius: 8px !important;
+  line-height: 1.25 !important;
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
+}
+.alk-chat-visitor,
+.alk-chat-developer {
+  min-height: 0 !important;
+  height: auto !important;
+}
+.alk-chat-message time,
+.alk-chat-message small,
+.alk-chat-message .time,
+.alk-chat-message .message-time,
+.alk-chat-message .alk-chat-time {
+  display: inline-block !important;
+  width: auto !important;
+  margin: 0 0 0 4px !important;
+  padding: 1px 4px !important;
+  border-radius: 4px !important;
+  background: rgba(180, 35, 50, .10) !important;
+  color: #e9bfc3 !important;
+  font-size: 10px !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
+  align-self: flex-end !important;
+}
+.alk-chat-message img,
+.alk-chat-message video {
+  max-width: 100% !important;
+  max-height: 220px !important;
+}
+#chatMessages, #alkforyAdminMessages {
+  min-height: 0 !important;
+  overflow-y: auto !important;
+}
+</style>
+
+
+
+
+
+<style id="alkfory-chat-alignment">
+#chatMessages,
+#alkforyAdminMessages {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  width: 100% !important;
+}
+
+#chatMessages .alk-chat-message,
+#alkforyAdminMessages .alk-chat-message {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 0 0 auto !important;
+  width: fit-content !important;
+  max-width: 78% !important;
+  margin-top: 7px !important;
+  margin-bottom: 7px !important;
+  float: none !important;
+}
+
+#chatMessages .alk-chat-visitor,
+#alkforyAdminMessages .alk-chat-visitor {
+  align-self: flex-end !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+#chatMessages .alk-chat-developer,
+#alkforyAdminMessages .alk-chat-developer {
+  align-self: flex-start !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+#chatMessages .alk-chat-date,
+#alkforyAdminMessages .alk-chat-date {
+  align-self: center !important;
+  width: 100% !important;
+}
+</style>
+
+
+<style id="alkfory-chat-final-design">
+/* عنوان المحادثة داخل مربع */
+.alk-chat-heading {
+  display: block !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 10px 14px !important;
+  margin: 0 0 12px !important;
+  text-align: center !important;
+  border: 1px solid rgba(255,255,255,.15) !important;
+  border-radius: 10px !important;
+}
+
+/* فقاعات قصيرة ومنظمة */
+#chatMessages .alk-chat-message,
+#alkforyAdminMessages .alk-chat-message {
+  min-height: 0 !important;
+  padding: 6px 10px !important;
+  margin-top: 4px !important;
+  margin-bottom: 4px !important;
+  line-height: 1.35 !important;
+  gap: 3px !important;
+}
+
+/* رسالة الزائر أحمر فاتح */
+#chatMessages .alk-chat-visitor,
+#alkforyAdminMessages .alk-chat-visitor {
+  background: #f3a0a8 !important;
+  color: #241014 !important;
+}
+
+/* الوقت بجانب محتوى الرسالة */
+.alk-chat-time {
+  display: inline-block !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+  margin: 2px 5px 0 !important;
+}
+
+/* التاريخ بجانب الرسالة بدل شريط عريض */
+.alk-chat-date {
+  display: inline-block !important;
+  width: fit-content !important;
+  max-width: 100% !important;
+  align-self: center !important;
+  padding: 3px 9px !important;
+  margin: 5px auto !important;
+}
+
+/* حقوق النشر في نهاية الصفحة */
+#alkforyCopyright {
+  display: block !important;
+  width: 100% !important;
+  text-align: center !important;
+  margin-top: 30px !important;
+}
+</style>
+
+
+<style id="alkfory-inline-time-glow">
+/* الرسالة والوقت في سطر واحد */
+#chatMessages .alk-chat-message,
+#alkforyAdminMessages .alk-chat-message {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 5px !important;
+  min-height: 0 !important;
+  padding: 5px 9px !important;
+}
+
+/* الوقت بجانب نص الرسالة */
+#chatMessages .alk-chat-time,
+#alkforyAdminMessages .alk-chat-time {
+  display: inline-block !important;
+  flex: 0 0 auto !important;
+  margin: 0 3px !important;
+  font-size: 10px !important;
+  white-space: nowrap !important;
+}
+
+/* إضاءة عنوان المحادثة بلونين بالتبادل */
+.alk-chat-heading {
+  animation: alkforyHeadingGlow 1.5s ease-in-out infinite alternate !important;
+}
+
+@keyframes alkforyHeadingGlow {
+  from {
+    color: #ff7777;
+    border-color: #ff7777;
+    box-shadow: 0 0 5px rgba(255,80,80,.35);
+  }
+  to {
+    color: #ffffff;
+    border-color: #ffffff;
+    box-shadow: 0 0 12px rgba(255,255,255,.65);
+  }
+}
+</style>
+
+
+
+
+
+<style id="alkfory-ecg-final-adjustment">
+*:has(> img[alt="Alkfory"])::before,
+*:has(> img[alt="Alkfory"])::after {
+  display:none !important;
+  content:none !important;
+}
+.alkfory-ecg {
+  display:block !important;
+  width:min(900px,98vw) !important;
+  max-width:98% !important;
+  height:115px !important;
+  margin:0 auto 8px;
+  overflow:visible !important;
+}
+.alkfory-ecg path {
+  stroke-width:6 !important;
+  stroke-linecap:round !important;
+  stroke-linejoin:round !important;
+}
+.alkfory-audio-bars { display:none !important; }
+</style>
+
+<style id="alkfory-ecg-size">
+.alkfory-ecg {
+  width:min(900px,98vw) !important;
+  height:150px !important;
+  margin:0 auto 8px !important;
+}
+.alkfory-ecg path {
+  stroke-width:8px !important;
+}
+</style>
+
+<style id="alkfory-name-ecg-style">
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@700;800;900&display=swap');
+
+.alkfory-ecg {
+  height:150px !important;
+  margin:0 auto 2px !important;
+}
+.alkfory-ecg path {
+  stroke-width:7px !important;
+  transform:scaleY(1.8);
+  transform-origin:center;
+  transform-box:fill-box;
+}
+.alkfory-name-highlight {
+  font-family:'Cairo',sans-serif !important;
+  font-weight:900 !important;
+  letter-spacing:1px;
+  text-shadow:0 0 12px #ff1744;
+}
+</style>
+<script id="alkfory-name-ecg-position">
+document.addEventListener('DOMContentLoaded', function(){
+  const name = [...document.querySelectorAll('body *')]
+    .find(el => el.children.length === 0 &&
+      el.textContent.includes('زياد الكفوري'));
+  const ecg = document.querySelector('.alkfory-ecg');
+  if(name) name.classList.add('alkfory-name-highlight');
+  if(name && ecg) name.parentElement.insertBefore(ecg,name);
+});
+</script>
+
+<style id="alkfory-ecg-extreme">
+.alkfory-ecg {
+  display:block !important;
+  width:min(900px,98vw) !important;
+  height:210px !important;
+  margin:0 auto -5px !important;
+  overflow:visible !important;
+}
+.alkfory-ecg path {
+  stroke-width:8px !important;
+  transform:scaleY(5) !important;
+  transform-origin:center !important;
+  transform-box:fill-box !important;
+}
+</style>
+
+<style id="alkfory-ecg-restored">
+.alkfory-ecg {
+  display:block !important;
+  width:min(900px,98vw) !important;
+  height:180px !important;
+  margin:0 auto 0 !important;
+  overflow:visible !important;
+}
+.alkfory-ecg path {
+  fill:none !important;
+  stroke:#ff1744 !important;
+  stroke-width:7 !important;
+  stroke-linecap:round !important;
+  stroke-linejoin:round !important;
+  stroke-dasharray:2000 !important;
+  stroke-dashoffset:2000;
+  filter:drop-shadow(0 0 8px #ff1744);
+  animation:alkforyECGRestore 3s linear infinite !important;
+}
+@keyframes alkforyECGRestore {
+  to { stroke-dashoffset:0; }
+}
+</style>
+</head>
+
+<body>
+<header>
+  <button class="lang" id="langBtn" onclick="toggleLang()">English</button>
+  <a class="brand" href="/">⚜️ ALK<span>FORY</span></a>
+</header>
+
+<main>
+
+<section id="alkfory-search-rating" dir="rtl"
+style="max-width:900px;margin:20px auto;padding:0 16px;position:relative;z-index:50">
+  <input id="alkforySearchInput" type="search"
+    placeholder="ابحث..."
+    autocomplete="off"
+    style="box-sizing:border-box;width:100%;height:54px;padding:0 20px;border-radius:12px;border:1px solid #a71930;background:#151515;color:white;font-size:17px;outline:none">
+  <div id="alkforySearchResults"
+    style="display:none;position:absolute;top:58px;right:16px;left:16px;max-height:300px;overflow-y:auto;background:#151515;border:1px solid #a71930;border-radius:10px;padding:6px;box-shadow:0 8px 25px #000;z-index:9999">
+  </div>
+</section>
+
+<script>
+(() => {
+  const root = document.getElementById('alkfory-search-rating');
+  const input = root.querySelector('#alkforySearchInput');
+  const results = root.querySelector('#alkforySearchResults');
+
+  function search() {
+    const query = input.value.trim().toLocaleLowerCase();
+    results.innerHTML = '';
+
+    if (!query) {
+      results.style.display = 'none';
+      return;
+    }
+
+    const elements = document.querySelectorAll(
+      'main h1, main h2, main h3, main p, main a, main button, main [data-searchable]'
+    );
+
+    const found = [];
+    elements.forEach(el => {
+      if (root.contains(el)) return;
+      const text = (el.innerText || el.textContent || '').trim();
+      if (!text || !text.toLocaleLowerCase().includes(query)) return;
+      if (found.some(item => item.el === el)) return;
+      found.push({el, text});
+    });
+
+    if (!found.length) {
+      results.innerHTML = '<div style="padding:14px;color:#bbb;text-align:center">لا توجد نتائج مطابقة</div>';
+    } else {
+      found.slice(0, 30).forEach(({el, text}) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = text.slice(0, 100);
+        button.style.cssText =
+          'display:block;width:100%;padding:13px;text-align:right;background:transparent;color:white;border:0;border-bottom:1px solid #333;cursor:pointer;font-size:15px';
+
+        button.addEventListener('click', () => {
+          el.scrollIntoView({behavior:'smooth', block:'center'});
+          const old = el.style.outline;
+          el.style.outline = '2px solid #ed354d';
+          setTimeout(() => { el.style.outline = old; }, 1800);
+          results.style.display = 'none';
+        });
+
+        results.appendChild(button);
+      });
+    }
+
+    results.style.display = 'block';
+  }
+
+  input.addEventListener('input', search);
+  input.addEventListener('focus', search);
+
+  document.addEventListener('click', event => {
+    if (!root.contains(event.target)) results.style.display = 'none';
+  });
+})();
+</script>
+<section class="hero">
+  <div class="emblem">ZA</div>
+  <div class="alkfory-profile-audio">
+    <button id="alkforyProfileAudioBtn" type="button" aria-label="الترحيب"><span class="profile-play-icon">▶</span><span>الترحيب</span></button>
+    <audio id="alkforyProfileAudio" preload="none" src="/audio/profile-recording.mp3"></audio>
+  </div>
+  <p class="status"><i></i><span id="onlineText"></span></p>
+  <h1 id="heroName">زياد <span class="red">الكفوري</span></h1>
+  <p class="subtitle" id="heroDesc">أهلًا بك في موقعي الشخصي<br>كل طرق التواصل والخدمات في مكان واحد.</p>
+  <div class="hero-actions">
+    <a class="btn" id="alkforyAppLink" href="http://127.0.0.1:3000/" target="_blank" rel="noopener">📱 لينك التطبيق</a>
+
+    <a class="btn primary" href="/contact.html" id="contactTop">✉️ تواصل معي</a>
+    <a class="btn" href="#ai" id="aiTop">✦ جرّب Ziad Alkfory AI</a>
+  </div>
+</section>
+
+<div class="section-title">
+  <h2 id="socialHeading">⚡ حساباتي وروابطي</h2>
+  <p id="socialDesc">اختار المنصة اللي تحب تتواصل من خلالها</p>
+</div>
+
+<section class="grid">
+  <article class="card">
+    <div class="card-icon">💬</div>
+    <h3>WhatsApp</h3>
+    <p id="waDesc">تواصل مباشر عبر أرقام الواتساب.</p>
+    <a class="btn" href="/contact.html" id="waBtn">عرض أرقام التواصل ←</a>
+  </article>
+  <article class="card">
+    <div class="card-icon">📘</div>
+    <h3>Facebook</h3>
+    <p id="fbDesc">زور صفحتي على فيسبوك.</p>
+    <a class="btn" href="https://www.facebook.com/share/1DSBGxXyRc/" target="_blank" rel="noopener">Open Facebook ↗</a>
+  </article>
+  <article class="card">
+    <div class="card-icon">🎵</div>
+    <h3>TikTok</h3>
+    <p id="ttDesc">تابع حسابي على تيك توك.</p>
+    <a class="btn" href="https://www.tiktok.com/@ziadalkfory" target="_blank" rel="noopener">Open TikTok ↗</a>
+  </article>
+  <article class="card">
+    <div class="card-icon">✈️</div>
+    <h3>Telegram</h3>
+    <p id="tgDesc">تواصل معي على تيليجرام.</p>
+    <a class="btn" href="https://t.me/Ziad Alkfory" target="_blank" rel="noopener">Open Telegram ↗</a>
+  </article>
+  <article class="card">
+    <div class="card-icon">📸</div>
+    <h3>Instagram</h3>
+    <p id="igDesc">افتح إنستجرام لاستكشاف الحساب.</p>
+    <a class="btn" href="https://www.instagram.com/" target="_blank" rel="noopener">Open Instagram ↗</a>
+  </article>
+  <article class="card">
+    <div class="card-icon">🌐</div>
+    <h3 id="websiteTitle">موقعي الشخصي</h3>
+    <p id="websiteDesc">كل ما يخص Ziad Alkfory في مكان واحد.</p>
+    <a class="btn" href="#top" onclick="window.scrollTo({top:0,behavior:'smooth'});return false" id="homeBtn">العودة للأعلى ↑</a>
+  </article>
+</section>
+
+<div class="section-title" id="ai">
+  <h2>🤖 Ziad Alkfory <span class="red">AI</span></h2>
+  <p id="aiDesc">اسأل المساعد الذكي — إذا كان مفتاح Gemini مضبوطًا.</p>
+</div>
+<section class="ai-box">
+  <label for="aiInput" id="aiLabel">اكتب سؤالك هنا</label>
+  <textarea id="aiInput" placeholder="اكتب رسالتك..."></textarea>
+  <button class="btn primary" style="width:100%" id="aiBtn" onclick="askAI()">إرسال إلى Ziad Alkfory AI ↗</button>
+  <div id="aiAnswer"></div>
+</section>
+
+<section id="dynamicApps" style="display:none">
+  <div class="section-title">
+    <h2>⚡ تطبيقاتي وخدماتي</h2>
+  </div>
+  <div id="publicAppsList" class="grid"></div>
+</section>
+
+<section id="visitorCard" class="ai-box" style="margin-top:25px">
+  <h2 id="visitorTitle"></h2>
+  <input id="visitorName" type="text" maxlength="60"
+    placeholder="اسمك" style="width:100%;padding:12px;margin:8px 0">
+  <textarea id="visitorMessage" maxlength="2000"
+    placeholder="اكتب رسالتك..." style="width:100%;padding:12px;margin:8px 0"></textarea>
+  <button class="btn primary" id="visitorSend" onclick="sendVisitorMessage()">
+    إرسال الرسالة
+  </button>
+  <p id="visitorResult" role="status"></p>
+</section>
+</main>
+
+<footer>
+  <strong>⚜️ 𝒁𝒊𝒂𝒅 𝑨𝒍𝒌𝒇𝒐𝒓𝒚 | المطور ⚜️</strong>
+  <p>© <span id="year"></span> Ziad Alkfory — <span id="rights">جميع الحقوق محفوظة</span></p>
+</footer>
+
+<script>
+let english = false;
+document.getElementById('year').textContent = new Date().getFullYear();
+
+function toggleLang() {
+  english = !english;
+  document.documentElement.lang = english ? 'en' : 'ar';
+  document.documentElement.dir = english ? 'ltr' : 'rtl';
+  document.getElementById('langBtn').textContent = english ? 'العربية' : 'English';
+  const text = {
+    onlineText:['','Website available'],
+    heroDesc:['أهلًا بك في موقعي الشخصي<br>كل طرق التواصل والخدمات في مكان واحد.','Welcome to my personal website.<br>All my contact links in one place.'],
+    contactTop:['✉️ تواصل معي','✉️ Contact me'],
+    aiTop:['✦ جرّب Ziad Alkfory AI','✦ Try Ziad Alkfory AI'],
+    socialHeading:['⚡ حساباتي وروابطي','⚡ My Social Links'],
+    socialDesc:['اختار المنصة اللي تحب تتواصل من خلالها','Choose your preferred platform'],
+    waDesc:['تواصل مباشر عبر أرقام الواتساب.','Contact me using WhatsApp numbers.'],
+    waBtn:['عرض أرقام التواصل ←','View contact numbers →'],
+    fbDesc:['زور صفحتي على فيسبوك.','Visit my Facebook page.'],
+    ttDesc:['تابع حسابي على تيك توك.','Follow me on TikTok.'],
+    tgDesc:['تواصل معي على تيليجرام.','Contact me on Telegram.'],
+    igDesc:['افتح إنستجرام لاستكشاف الحساب.','Open Instagram to explore accounts.'],
+    websiteTitle:['موقعي الشخصي','Personal Website'],
+    websiteDesc:['كل ما يخص Ziad Alkfory في مكان واحد.','Everything Ziad Alkfory in one place.'],
+    homeBtn:['العودة للأعلى ↑','Back to top ↑'],
+    aiDesc:['اسأل المساعد الذكي — إذا كان مفتاح Gemini مضبوطًا.','Ask the AI assistant — requires a configured Gemini key.'],
+    aiLabel:['اكتب سؤالك هنا','Enter your question'],
+    aiBtn:['إرسال إلى Ziad Alkfory AI ↗','Send to Ziad Alkfory AI ↗'],
+    rights:['جميع الحقوق محفوظة','All rights reserved']
+  };
+  for (const [id, values] of Object.entries(text))
+    document.getElementById(id).innerHTML = values[english ? 1 : 0];
+  document.getElementById('heroName').innerHTML = english
+    ? 'Ziad <span class="red">Ziad Alkfory</span>'
+    : 'زياد <span class="red">الكفوري</span>';
+  document.getElementById('aiInput').placeholder = english ? 'Type your message...' : 'اكتب رسالتك...';
+}
+
+async function askAI() {
+  const input = document.getElementById('aiInput');
+  const answer = document.getElementById('aiAnswer');
+  const message = input.value.trim();
+  if (!message) {
+    answer.style.display = 'block';
+    answer.textContent = english ? 'Please type a question first.' : 'اكتب سؤالك الأول.';
+    return;
+  }
+  answer.style.display = 'block';
+  answer.textContent = english ? 'Connecting...' : 'جاري الاتصال...';
+  try {
+    const response = await fetch('/api/ai', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({message})
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'AI request failed');
+    answer.textContent = data.answer || (english ? 'No response.' : 'لم يصل رد.');
+  } catch (error) {
+    answer.textContent = (english ? 'Connection error: ' : 'خطأ في الاتصال: ') + error.message;
+  }
+}
+
+
+// ALKFORY_PUBLIC_LINK_V1
+async function loadPublicConfig() {
+  try {
+    const response = await fetch('/api/site-config');
+    if (!response.ok) throw new Error('Config unavailable');
+    const config = await response.json();
+
+    document.title = config.siteName || 'ALKFORY';
+
+    const hero = document.getElementById('heroDesc');
+    if (hero) {
+      hero.textContent = config.welcomeText || '';
+      hero.style.display = config.showWelcome === false ? 'none' : '';
+    }
+
+    document.documentElement.lang = config.language || 'ar';
+    document.documentElement.dir = config.language === 'en' ? 'ltr' : 'rtl';
+
+    const root = document.documentElement;
+    root.style.setProperty('--accent', config.accentColor);
+    root.style.setProperty('--bg', config.backgroundColor);
+    root.style.setProperty('--text', config.textColor);
+    root.style.setProperty('--button', config.buttonColor);
+    document.body.style.backgroundColor = config.backgroundColor;
+    document.body.style.color = config.textColor;
+    document.body.style.fontFamily = config.fontFamily || 'Arial, sans-serif';
+    document.body.style.fontSize = (config.fontSize || 16) + 'px';
+
+    document.querySelectorAll('.btn, button').forEach(el => {
+      el.style.borderRadius = (config.borderRadius || 12) + 'px';
+      el.style.backgroundColor = config.buttonColor;
+    });
+
+    const ai = document.getElementById('ai');
+    if (ai) ai.style.display =
+      config.aiEnabled === false || config.showAI === false ? 'none' : '';
+
+    const visitor = document.getElementById('visitorCard');
+    if (visitor) visitor.style.display =
+      config.showVisitorCard === false ? 'none' : '';
+
+    const apps = document.getElementById('dynamicApps');
+    if (apps && config.showApps === false) apps.style.display = 'none';
+
+    if (config.maintenanceMode) {
+      document.body.replaceChildren();
+      const notice = document.createElement('main');
+      notice.style.cssText = 'min-height:100vh;display:grid;place-content:center;text-align:center;padding:25px';
+      const title = document.createElement('h1');
+      title.textContent = config.siteName || 'ALKFORY';
+      const message = document.createElement('p');
+      message.textContent = config.maintenanceMessage || 'الموقع تحت الصيانة';
+      notice.append(title, message);
+      document.body.append(notice);
+    }
+  } catch (error) {
+    console.warn('تعذر تحميل إعدادات الموقع:', error.message);
+  }
+}
+async function loadPublicApps() {
+  try {
+    const response = await fetch('/api/public/apps');
+    if (!response.ok) throw new Error('Apps unavailable');
+    const data = await response.json();
+    const apps = Array.isArray(data.apps) ? data.apps : [];
+    const section = document.getElementById('dynamicApps');
+    const list = document.getElementById('publicAppsList');
+    if (!section || !list) return;
+
+    list.replaceChildren();
+
+    for (const item of apps) {
+      if (!item.name || !item.url) continue;
+      let url;
+      try {
+        url = new URL(item.url);
+        if (url.protocol !== 'https:') continue;
+      } catch { continue; }
+
+      const card = document.createElement('article');
+      card.className = 'card';
+
+      if (item.icon) {
+        try {
+          const iconUrl = new URL(item.icon);
+          if (iconUrl.protocol === 'https:') {
+            const icon = document.createElement('img');
+            icon.src = iconUrl.href;
+            icon.alt = '';
+            icon.loading = 'lazy';
+            icon.style.cssText = 'width:55px;height:55px;object-fit:contain';
+            card.append(icon);
+          }
+        } catch {}
+      }
+
+      const title = document.createElement('h3');
+      title.textContent = item.name;
+      card.append(title);
+
+      if (item.category) {
+        const category = document.createElement('small');
+        category.textContent = item.category;
+        card.append(category);
+      }
+
+      if (item.description) {
+        const description = document.createElement('p');
+        description.textContent = item.description;
+        card.append(description);
+      }
+
+      const link = document.createElement('a');
+      link.className = 'btn';
+      link.textContent = 'فتح التطبيق ↗';
+      link.href = url.href;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      card.append(link);
+      list.append(card);
+    }
+
+    section.style.display = apps.length ? '' : 'none';
+  } catch (error) {
+    console.warn('تعذر تحميل التطبيقات:', error.message);
+  }
+}
+
+async function sendVisitorMessage() {
+  const name = document.getElementById('visitorName').value.trim();
+  const message = document.getElementById('visitorMessage').value.trim();
+  const result = document.getElementById('visitorResult');
+  const button = document.getElementById('visitorSend');
+
+  if (!message) {
+    result.textContent = 'اكتب رسالتك أولاً.';
+    return;
+  }
+
+  button.disabled = true;
+  result.textContent = 'جاري إرسال الرسالة...';
+
+  try {
+    const response = await fetch('/api/visitor-message', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({name, message})
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      throw new Error(data.error || 'تعذر إرسال الرسالة');
+    }
+    result.textContent = '✅ تم إرسال رسالتك بنجاح.';
+    document.getElementById('visitorName').value = '';
+    document.getElementById('visitorMessage').value = '';
+  } catch (error) {
+    result.textContent = '⚠️ تعذر الإرسال، حاول مرة أخرى.';
+  } finally {
+    button.disabled = false;
+  }
+}
+
+loadPublicConfig();
+loadPublicApps();
+
+</script>
+
+<section id="alkforyChat" class="ai-box" style="margin:30px auto;padding:20px;max-width:850px;background:#111;color:white;border:1px solid #8b0000;border-radius:16px">
+  <h2 style="color:#e53935"><span class="alk-chat-heading">⚜️ محادثة خاصة مع المطوّر</span></h2>
+  <div id="chatRegister">
+    <input id="chatName" maxlength="60" placeholder="اسمك" style="width:100%;padding:12px;margin:8px 0">
+    <input id="chatPhone" maxlength="25" placeholder="رقم الهاتف (اختياري)" style="width:100%;padding:12px;margin:8px 0">
+    <button class="btn primary" onclick="startAlkforyChat()">بدء المحادثة</button><p id="chatStatus" role="status"></p>
+  </div>
+  <div id="chatRoom" hidden>
+    <div id="chatMessages" style="height:360px;overflow-y:auto;background:#080808;padding:12px;border-radius:12px"></div>
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+      <input id="chatText" placeholder="اكتب رسالتك..." maxlength="3000" style="flex:1;min-width:150px;padding:12px">
+      <button onclick="sendAlkforyChat()">إرسال</button>
+      <label style="padding:10px;background:#8b0000;border-radius:8px;cursor:pointer">📎
+        <input id="chatFile" type="file" accept="image/*,video/mp4,video/webm,application/pdf" hidden onchange="sendAlkforyChat()">
+      </label>
+      <label style="padding:10px;background:#8b0000;border-radius:8px;cursor:pointer">📷
+        <input id="chatCamera" type="file" accept="image/*" capture="environment" hidden onchange="sendAlkforyChat(true)">
+      </label>
+    </div>
+    <p id="chatRoomStatus" role="status"></p>
+  </div>
+</section>
+<style>
+#alkforyChat input{box-sizing:border-box;border-radius:8px;border:1px solid #555;background:#191919;color:white}
+.alk-chat-message{padding:10px 13px;margin:9px 0;border-radius:12px;max-width:85%;overflow-wrap:anywhere}
+.alk-chat-visitor{background:#651010;margin-left:auto}
+.alk-chat-developer{background:#292929;margin-right:auto}
+.alk-chat-message small{display:block;color:#ccc;font-size:11px;margin-top:6px}
+#chatMessages img,#chatMessages video{max-width:100%;max-height:220px;border-radius:8px}
+</style>
+
+<script>
+(() => {
+ const ID_KEY='alkfory_chat_id';
+ const TOKEN_KEY='alkfory_chat_token';
+ const $=id=>document.getElementById(id);
+ let chatTimer=null;
+
+ async function chatRequest(url, options={}) {
+   const token=localStorage.getItem(TOKEN_KEY)||'';
+   const headers={...(options.headers||{}),'x-chat-token':token};
+   const response=await fetch(url,{credentials:'same-origin',...options,headers});
+   const data=await response.json().catch(()=>({}));
+   if(!response.ok) throw new Error(data.error||'تعذر تنفيذ الطلب');
+   return data;
+ }
+
+ window.startAlkforyChat=async function(){
+   const name=$('chatName').value.trim();
+   const status=document.querySelector('#chatRegister #chatStatus');
+   if(!name){
+     if(status) status.textContent='اكتب اسمك أولاً';
+     return;
+   }
+   const button=document.querySelector('#chatRegister button');
+   if(button) button.disabled=true;
+   if(status) status.textContent='جاري بدء المحادثة...';
+
+   try{
+     const response=await fetch('/api/chat/start',{
+       method:'POST',
+       credentials:'same-origin',
+       headers:{'Content-Type':'application/json'},
+       body:JSON.stringify({
+         name,
+         phone:$('chatPhone').value.trim()
+       })
+     });
+
+     const data=await response.json();
+     if(!response.ok) throw new Error(data.error||'تعذر بدء المحادثة');
+     if(!data.id || !data.token) throw new Error('بيانات المحادثة غير مكتملة');
+
+     localStorage.setItem(ID_KEY,data.id);
+     localStorage.setItem(TOKEN_KEY,data.token);
+
+     $('chatRegister').hidden=true;
+     $('chatRoom').hidden=false;
+
+     await loadAlkforyChat();
+   }catch(e){
+     if(status) status.textContent=e.message||'حدث خطأ أثناء بدء المحادثة';
+     $('chatRegister').hidden=false;
+     $('chatRoom').hidden=true;
+   }finally{
+     if(button) button.disabled=false;
+   }
+ };
+
+ async function loadAlkforyChat(){
+   const id=localStorage.getItem(ID_KEY);
+   const token=localStorage.getItem(TOKEN_KEY);
+   if(!id||!token)return;
+   try{
+     const data=await chatRequest('/api/chat/'+encodeURIComponent(id));
+     $('chatRegister').hidden=true;
+     $('chatRoom').hidden=false;
+     renderAlkforyMessages(data.chat.messages||[]);
+   }catch(e){
+     localStorage.removeItem(ID_KEY);
+     localStorage.removeItem(TOKEN_KEY);
+     $('chatRegister').hidden=false;
+     $('chatRoom').hidden=true;
+   }
+ }
+
+ function renderAlkforyMessages(messages){
+   const box=$('chatMessages');
+   box.replaceChildren();
+   let previousDay='';
+   for(const m of messages){
+     const date=new Date(m.date);
+     const day=date.toLocaleDateString('ar-EG');
+     if(day!==previousDay){
+       const divider=document.createElement('div');
+       divider.textContent=day;
+       divider.style='width:fit-content;margin:12px auto;padding:4px 12px;text-align:center;background:rgba(180,35,50,.10);color:#e9bfc3;border-radius:7px;font-size:11px';
+       box.appendChild(divider);
+       previousDay=day;
+     }
+     const item=document.createElement('div');
+     item.className='alk-chat-message '+(m.sender==='visitor'?'alk-chat-visitor':'alk-chat-developer');
+     if(m.text){
+       const text=document.createElement('div');
+       text.textContent=m.text;
+       item.appendChild(text);
+     }
+     if(m.file){
+       const link=document.createElement('a');
+       link.textContent='📎 '+m.file.name;
+       link.style='color:#ff7777;display:block;margin-top:8px';
+       link.href='/api/chat-media/'+encodeURIComponent(localStorage.getItem(ID_KEY))+'/'+encodeURIComponent(m.id)+'?token='+encodeURIComponent(localStorage.getItem(TOKEN_KEY));
+       link.target='_blank';
+       item.appendChild(link);
+       if(m.file.type.startsWith('image/')){
+         const img=document.createElement('img');
+         img.src=link.href;
+         item.appendChild(img);
+       }else if(m.file.type.startsWith('video/')){
+         const video=document.createElement('video');
+         video.src=link.href;video.controls=true;
+         item.appendChild(video);
+       }
+     }
+     const time=document.createElement('small');
+     time.className='alk-chat-time';
+     time.textContent=date.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
+     item.appendChild(time);
+     box.appendChild(item);
+   }
+   box.scrollTop=box.scrollHeight;
+ }
+
+ window.sendAlkforyChat=async function(camera=false){
+   const id=localStorage.getItem(ID_KEY);
+   const text=$('chatText').value.trim();
+   const input=$(camera?'chatCamera':'chatFile');
+   const file=input.files&&input.files[0];
+   if(!text&&!file)return;
+   if(file&&file.size>3*1024*1024){
+     $('chatStatus').textContent='الحد الأقصى لحجم الملف 3 ميجابايت';
+     input.value='';return;
+   }
+   const form=new FormData();
+   if(text)form.append('text',text);
+   if(file)form.append('file',file);
+   try{
+     $('chatStatus').textContent='جارٍ الإرسال...';
+     await chatRequest('/api/chat/'+encodeURIComponent(id)+'/messages',{method:'POST',body:form});
+     $('chatText').value='';
+     input.value='';
+     $('chatStatus').textContent='';
+     await loadAlkforyChat();
+   }catch(e){$('chatStatus').textContent=e.message;}
+ };
+
+ window.addEventListener('DOMContentLoaded',()=>{
+   const cta=document.getElementById('contactTop');
+   if(cta)cta.href='#alkforyChat';
+   loadAlkforyChat();
+   chatTimer=setInterval(loadAlkforyChat,4000);
+ });
+})();
+</script>
+
+
+
+<style id="alkfory-final-fixes">
+#alkforyCopyright {
+  display:block;
+  width:100%;
+  text-align:center;
+  margin:25px 0 0;
+  padding:15px 10px;
+  order:999999;
+}
+</style>
+
+<script id="alkfory-contact-to-chat">
+(function () {
+  function goToChat(e) {
+    const el = e.target.closest('a,button,[role="button"]');
+    if (!el) return;
+
+    const label = (el.innerText || el.textContent || '')
+      .replace(/\s+/g, ' ').trim();
+
+    if (!label.includes('تواصل معي')) return;
+
+    const chat = document.getElementById('alkforyChat');
+    if (!chat) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+
+    history.replaceState(null, '', '#alkforyChat');
+    chat.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  document.addEventListener('click', goToChat, true);
+
+  function fixCopyright() {
+    // حذف n أو \n إذا كانا نصًا منفصلًا في نهاية الصفحة فقط
+    const walker = document.createTreeWalker(
+      document.body, NodeFilter.SHOW_TEXT
+    );
+    const nodes = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+
+    for (const node of nodes) {
+      const value = node.nodeValue.trim();
+      if (value === 'n' || value === '\\n') {
+        const parent = node.parentElement;
+        if (parent && !parent.closest('script,style,textarea,input')) {
+          node.remove();
+        }
+      }
+    }
+
+    // نقل حقوق النشر إلى آخر الصفحة
+    const candidates = [...document.body.querySelectorAll('p,small,div,span')]
+      .filter(el => {
+        const t = (el.innerText || '').trim();
+        return t.length < 180 &&
+          (t.includes('حقوق النشر') ||
+           t.includes('جميع الحقوق محفوظة') ||
+           t.includes('All rights reserved'));
+      });
+
+    let copyright = candidates.find(el =>
+      ![...el.children].some(child =>
+        (child.innerText || '').includes('حقوق النشر')
+      )
+    ) || candidates[0];
+
+    if (copyright) {
+      copyright.id = 'alkforyCopyright';
+      const footer = document.querySelector('footer') ||
+        document.body.appendChild(document.createElement('footer'));
+      footer.appendChild(copyright);
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', fixCopyright);
+  } else {
+    fixCopyright();
+  }
+})();
+</script>
+
+
+
+\n
+<script id="alkfory-copyright-years">
+document.addEventListener('DOMContentLoaded', function () {
+  const el = document.getElementById('alkforyCopyright');
+  if (!el) return;
+  el.textContent = el.textContent
+    .replace(/\b2026\b\s*[-–]?\s*\b2027\b/g, '')
+    .trim() + ' | 2026 - 2027';
+});
+</script>
+\n
+<script id="alkfory-profile-photo">
+document.addEventListener('DOMContentLoaded', function () {
+  const candidates = [...document.querySelectorAll('body *')]
+    .filter(el => el.children.length === 0 && el.textContent.trim() === 'ZA');
+
+  for (const el of candidates) {
+    const img = document.createElement('img');
+    img.src = '/alkfory-profile.jpg';
+    img.alt = 'Alkfory';
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;';
+    el.replaceChildren(img);
+  }
+});
+</script>
+
+
+
+
+
+
+
+
+
+
+<style id="alkfory-profile-ecg">
+.alkfory-ecg {
+  display:block;
+  width:min(1100px,98vw);
+  max-width:98%;
+  height:90px;
+  margin:0 auto 8px;
+  overflow:visible;
+}
+.alkfory-ecg path {
+  fill:none;
+  stroke:#ff1744;
+  stroke-width:3.5;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  filter:drop-shadow(0 0 7px #ff1744);
+  stroke-dasharray:1500;
+  stroke-dashoffset:1500;
+  animation:alkforyECGDraw 2.4s linear infinite !important;
+}
+@keyframes alkforyECGDraw {
+  0% { stroke-dashoffset:1500; }
+  100% { stroke-dashoffset:0; }
+}
+</style>
+
+
+
+
+
+
+
+
+<style id="alkfory-ecg-big-pulse">
+.alkfory-ecg {
+  width:min(900px,98vw) !important;
+  height:190px !important;
+  margin:0 auto -8px !important;
+  display:block !important;
+  overflow:visible !important;
+}
+.alkfory-ecg path {
+  stroke-width:8px !important;
+  transform:scaleY(3) !important;
+  transform-origin:center !important;
+  transform-box:fill-box !important;
+}
+</style>
+
+
+
+
+<script id="alkfory-ecg-restored-script">
+(function(){
+ function place(){
+  const img=document.querySelector('img[alt="Alkfory"]');
+  if(!img) return false;
+
+  let svg=document.querySelector('.alkfory-ecg');
+  if(!svg){
+   svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+   svg.setAttribute('viewBox','0 0 900 180');
+   svg.classList.add('alkfory-ecg');
+   const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+   path.setAttribute('d','M0 90 H90 L110 90 L130 65 L150 120 L180 5 L210 170 L240 90 H330 L350 90 L370 65 L390 120 L420 5 L450 170 L480 90 H570 L590 90 L610 65 L630 120 L660 5 L690 170 L720 90 H810 L830 90 L850 65 L870 120 L885 5 L900 90');
+   svg.appendChild(path);
+  }
+  img.insertAdjacentElement('afterend',svg);
+  return true;
+ }
+ if(document.readyState==='loading')
+  document.addEventListener('DOMContentLoaded',place);
+ else place();
+ setTimeout(place,500);
+ setTimeout(place,1500);
+})();
+</script>
+
+<style id="alkfory-hide-name">
+.alkfory-name-highlight { display:none !important; }
+</style>
+<script id="alkfory-remove-name">
+document.addEventListener('DOMContentLoaded', function(){
+  document.querySelectorAll('body *').forEach(function(el){
+    if(el.children.length === 0 &&
+       el.textContent.trim() === 'زياد الكفوري'){
+      el.style.setProperty('display','none','important');
+    }
+  });
+});
+</script>
+
+<script id="alkfory-real-app-icons">
+document.addEventListener('DOMContentLoaded', function () {
+  const brands = [
+    { names: ['facebook','فيسبوك'], slug: 'facebook', color: '1877F2' },
+    { names: ['whatsapp','واتساب'], slug: 'whatsapp', color: '25D366' },
+    { names: ['instagram','انستجرام','إنستجرام'], slug: 'instagram', color: 'E4405F' },
+    { names: ['telegram','تيليجرام'], slug: 'telegram', color: '26A5E4' },
+    { names: ['youtube','يوتيوب'], slug: 'youtube', color: 'FF0000' },
+    { names: ['tiktok','تيك توك'], slug: 'tiktok', color: 'FFFFFF' },
+    { names: ['github','جيت هاب'], slug: 'github', color: 'FFFFFF' },
+    { names: ['google','جوجل'], slug: 'google', color: '4285F4' },
+    { names: ['messenger','ماسنجر'], slug: 'messenger', color: '00B2FF' },
+    { names: ['x.com','twitter','تويتر'], slug: 'x', color: 'FFFFFF' },
+    { names: ['snapchat','سناب شات'], slug: 'snapchat', color: 'FFFC00' }
+  ];
+
+  document.querySelectorAll('body *').forEach(el => {
+    if (el.children.length !== 0) return;
+
+    const text = el.textContent || '';
+    if (!/[📘📚📖]/u.test(text)) return;
+
+    let card = el;
+    for (let i = 0; i < 5 && card.parentElement; i++) {
+      card = card.parentElement;
+      const info = (card.innerText || '').toLowerCase();
+      const brand = brands.find(b => b.names.some(n => info.includes(n)));
+      if (!brand) continue;
+
+      const img = document.createElement('img');
+      img.src = 'https://cdn.simpleicons.org/' + brand.slug + '/' + brand.color;
+      img.alt = brand.slug;
+      img.style.cssText = 'width:28px;height:28px;object-fit:contain;vertical-align:middle;';
+
+      el.textContent = text.replace(/[📘📚📖]/u, '');
+      el.prepend(img);
+      break;
+    }
+  });
+});
+</script>
+
+
+<script id="alkfory-fix-all-app-icons">
+document.addEventListener('DOMContentLoaded', function () {
+  const icons = [
+    [/facebook\.com/i, 'facebook', '1877F2'],
+    [/whatsapp\.com/i, 'whatsapp', '25D366'],
+    [/instagram\.com/i, 'instagram', 'E4405F'],
+    [/telegram\.(me|org)/i, 'telegram', '26A5E4'],
+    [/youtube\.com|youtu\.be/i, 'youtube', 'FF0000'],
+    [/tiktok\.com/i, 'tiktok', 'FFFFFF'],
+    [/github\.com/i, 'github', 'FFFFFF'],
+    [/snapchat\.com/i, 'snapchat', 'FFFC00'],
+    [/twitter\.com|x\.com/i, 'x', 'FFFFFF'],
+    [/discord\.(com|gg)/i, 'discord', '5865F2'],
+    [/linkedin\.com/i, 'linkedin', '0A66C2'],
+    [/t\.me/i, 'telegram', '26A5E4'],
+    [/messenger\.com/i, 'messenger', '00B2FF']
+  ];
+
+  document.querySelectorAll('a[href]').forEach(a => {
+    const href = a.href || '';
+    const item = icons.find(x => x[0].test(href));
+    if (!item) return;
+
+    const old = a.querySelector('img.alkfory-brand-icon');
+    if (old) return;
+
+    const img = document.createElement('img');
+    img.className = 'alkfory-brand-icon';
+    img.src = 'https://cdn.simpleicons.org/' + item[1] + '/' + item[2];
+    img.alt = item[1];
+    img.style.cssText = 'width:28px;height:28px;object-fit:contain;display:inline-block;vertical-align:middle;';
+
+    const book = [...a.querySelectorAll('*')].find(el =>
+      el.children.length === 0 && /[📘📚📖]/u.test(el.textContent || '')
+    );
+
+    if (book) {
+      book.replaceChildren(img);
+    } else {
+      const first = a.querySelector('i,svg');
+      if (first) first.replaceWith(img);
+      else a.prepend(img);
+    }
+  });
+});
+</script>
+
+
+
+
+<script>
+(() => {
+  if (!('Notification' in window)) return;
+  if (sessionStorage.getItem('alkforyNoticeAsked')) return;
+  sessionStorage.setItem('alkforyNoticeAsked', '1');
+
+  setTimeout(async () => {
+    if (Notification.permission !== 'default') return;
+    const accepted = confirm('⚜️ ALKFORY ⚜️\nهل تريد تفعيل إشعارات الموقع؟');
+    if (!accepted) return;
+    const permission = await Notification.requestPermission();
+    if (permission === 'granted') {
+      new Notification('⚜️ ALKFORY ⚜️', {
+        body: 'أهلاً بك في موقع ALKFORY!'
+      });
+    }
+  }, 1800);
+})();
+</script>
+
+
+<style id="alkfory-profile-audio-style">
+.alkfory-profile-audio{display:flex;justify-content:center;margin:16px auto 22px}
+#alkforyProfileAudioBtn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:125px;min-height:42px;border:1px solid #ff1744;background:linear-gradient(135deg,#25000b,#171717);color:#fff;border-radius:24px;padding:7px 15px;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 0 12px rgba(255,23,68,.22);transition:.2s}
+.profile-play-icon{font-size:27px;line-height:1}
+#alkforyProfileAudioBtn:active{transform:scale(.96)}
+#alkforyProfileAudioBtn:disabled{opacity:.6;cursor:wait}
+</style>
+<script id="alkfory-profile-audio-script">
+(() => {
+  const btn = document.getElementById('alkforyProfileAudioBtn');
+  const audio = document.getElementById('alkforyProfileAudio');
+  if (!btn || !audio || btn.dataset.ready) return;
+
+  btn.dataset.ready = '1';
+
+  const show = (icon, label) => {
+    btn.innerHTML = `<span class="profile-play-icon">${icon}</span><span>${label}</span>`;
+  };
+
+  btn.addEventListener('click', async () => {
+    if (!audio.paused) {
+      audio.pause();
+      return;
+    }
+
+    try {
+      if (audio.ended) audio.currentTime = 0;
+      audio.load();
+      await audio.play();
+    } catch (error) {
+      console.error('Profile audio error:', error);
+      show('▶', 'الترحيب');
+    }
+  });
+
+  audio.addEventListener('play', () => show('Ⅱ', 'إيقاف'));
+  audio.addEventListener('pause', () => show('▶', 'الترحيب'));
+  audio.addEventListener('ended', () => show('↻', 'الترحيب'));
+  audio.addEventListener('error', () => show('▶', 'الترحيب'));
+  // محاولة تشغيل الترحيب تلقائيًا عند دخول الزائر
+  window.addEventListener('load', () => {
+    audio.play().catch(() => {
+      show('▶', 'اضغط لتشغيل الترحيب');
+    });
+  }, { once: true });
+
+})();
+</script>
+
+
+<!-- ALKFORY-WELCOME-NOTIFICATION -->
+<style>
+#alkforyWelcomeNotice {
+  position:fixed;
+  top:16px;
+  left:50%;
+  transform:translate(-50%,-150%);
+  width:min(92%,430px);
+  box-sizing:border-box;
+  z-index:999999;
+  background:linear-gradient(135deg,#090909,#1b080c);
+  border:1px solid #a71930;
+  border-radius:15px;
+  padding:17px 14px;
+  text-align:center;
+  color:#fff;
+  box-shadow:0 8px 30px #0009;
+  opacity:0;
+  transition:transform .45s ease,opacity .45s ease;
+  font-family:Arial,sans-serif;
+}
+#alkforyWelcomeNotice.show {
+  transform:translate(-50%,0);
+  opacity:1;
+}
+#alkforyWelcomeNotice .brand {
+  color:#ed354d;
+  font-size:19px;
+  font-weight:bold;
+  margin-bottom:9px;
+}
+#alkforyWelcomeNotice .message {
+  font-size:15px;
+  line-height:1.8;
+}
+@media(prefers-reduced-motion:reduce) {
+  #alkforyWelcomeNotice {transition:none}
+}
+</style>
+
+<div id="alkforyWelcomeNotice" dir="rtl" role="status" aria-live="polite">
+  <div class="brand">⚜️ ALKFORY ⚜️</div>
+  <div class="message">مش أي موقع يتزار.. ومش أي زائر ينور المكان.. نورتنا 🔥</div>
+</div>
+
+<script>
+(() => {
+  const notice = document.getElementById('alkforyWelcomeNotice');
+  if (!notice) return;
+
+  requestAnimationFrame(() => {
+    notice.classList.add('show');
+  });
+
+  setTimeout(() => {
+    notice.classList.remove('show');
+    setTimeout(() => notice.remove(), 500);
+  }, 5000);
+})();
+</script>
+<!-- END ALKFORY-WELCOME-NOTIFICATION -->
+
+</body>
+</html>
+
+
+========================= public/entry.html =========================
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#080808">
+<title>Ziad Alkfory</title>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;min-height:100vh;display:flex;align-items:center;
+  justify-content:center;padding:20px;background:#080808;color:#fff;
+  font-family:Arial,sans-serif
+}
+.box{
+  width:100%;max-width:390px;text-align:center;padding:32px 22px;
+  border:1px solid #501414;border-radius:20px;
+  background:linear-gradient(145deg,#151515,#090909);
+  box-shadow:0 0 30px #7c101022
+}
+.logo{
+  width:90px;height:90px;margin:0 auto 18px;border:2px solid #a71919;
+  border-radius:50%;display:grid;place-items:center;font-size:32px;
+  font-weight:bold;color:#fff;text-shadow:0 0 15px #e11;
+  box-shadow:0 0 20px #a719192b
+}
+h1{font-size:24px;margin:8px 0;color:#fff}
+p{color:#aaa;font-size:14px;line-height:1.8}
+button{
+  width:100%;padding:14px;margin-top:12px;border:1px solid #a71919;
+  border-radius:10px;background:#170b0b;color:#fff;font-size:16px;
+  cursor:pointer
+}
+button:hover{background:#351010}
+input{
+  width:100%;padding:13px;margin-top:14px;border-radius:9px;
+  border:1px solid #444;background:#111;color:white;font-size:17px;
+  text-align:center
+}
+.hidden{display:none}
+.error{color:#ff6868;min-height:22px}
+.online{color:#55e58a;font-size:12px}
+</style>
+
+<style id="alkfory-entry-glow">
+/* شعار جديد واسم المطور */
+.logo {
+  width: 130px !important;
+  height: 130px !important;
+  border: 2px solid #ff1738 !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 auto 12px !important;
+  font-size: 58px !important;
+  color: #ff233f !important;
+  background: radial-gradient(circle, #26070c, #050505 72%) !important;
+  text-shadow: 0 0 15px #ff1738;
+  animation: logoPulse 2.4s ease-in-out infinite;
+}
+.brand-name {
+  text-align: center;
+  margin: 8px 0 22px;
+  font-weight: 800;
+  font-size: clamp(24px, 6vw, 32px);
+  letter-spacing: 1px;
+  color: #f5f5f5;
+  text-shadow: 0 0 10px #ff173855;
+}
+.brand-name span { color: #ff233f; }
+
+/* مربعات الاختيار: تنور وتطفي */
+button, .choice, .option, a.choice, .entry-btn {
+  animation: choiceGlow 2.2s ease-in-out infinite !important;
+  transition: box-shadow .3s, border-color .3s, background .3s;
+}
+button:nth-of-type(2), .choice:nth-of-type(2), .option:nth-of-type(2) {
+  animation-delay: 1.1s !important;
+}
+@keyframes logoPulse {
+  0%, 100% { box-shadow: 0 0 8px #ff173833; }
+  50% { box-shadow: 0 0 25px #ff1738aa, inset 0 0 16px #ff173822; }
+}
+@keyframes choiceGlow {
+  0%, 100% {
+    border-color: #65121f;
+    box-shadow: 0 0 3px #ff173822;
+  }
+  50% {
+    border-color: #ff233f;
+    box-shadow: 0 0 18px #ff173866, inset 0 0 12px #ff17381c;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .logo, button, .choice, .option, a.choice, .entry-btn {
+    animation: none !important;
+  }
+}
+</style>
+
+
+<!-- ALKFORY_PWA_INSTALL_V1 -->
+<meta name="theme-color" content="#080808">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icons/alkfory.svg" type="image/svg+xml">
+
+</head>
+<body>
+<main class="box">
+  <div class="logo">👑</div>
+<div class="brand-name">Ziad <span>Alkfory</span></div>
+  <div class="online">● Ziad Alkfory</div>
+  <h1>مرحبًا بك</h1>
+  <p>اختر طريقة الدخول إلى الموقع</p>
+
+  <section id="choices">
+    <button onclick="visitor()">👤 زائر عادي</button>
+    <button onclick="showDeveloper()">⚜️ مطور</button>
+  
+    <button id="alkforyInstallBtn" type="button"
+      style="width:100%;margin-top:12px;background:#171017;border:1px solid #b52b45;color:#fff">
+      📲 تنزيل تطبيق ALKFORY
+    </button>
+
+    <button id="alkforyUpdateBtn" type="button"
+      style="width:100%;margin-top:10px;background:#25151a;border:1px solid #d12b48;color:#fff;padding:12px;border-radius:10px">
+      🔄 تحديث التطبيق
+    </button>
+    <p id="alkforyUpdateHint" style="font-size:13px;color:#aaa;line-height:1.7"></p>
+    <p id="alkforyInstallHint" style="font-size:13px;color:#aaa;line-height:1.7"></p>
+
+  </section>
+
+  <section id="developer" class="hidden">
+    <p>أدخل رمز المطور للمتابعة</p>
+    <form id="loginForm">
+      <input id="code" type="password" inputmode="numeric"
+        autocomplete="current-password" placeholder="رمز المطور" required>
+      <button type="submit">دخول لوحة المطور</button>
+    </form>
+    <p class="error" id="error"></p>
+    <button onclick="back()">رجوع</button>
+  </section>
+</main>
+
+<script>
+async function visitor(){
+  try {
+    const r = await fetch('/api/visitor-login', { method: 'POST' });
+    const data = await r.json();
+    if (data.success) location.href = '/home.html';
+    else alert('تعذر الدخول، حاول مرة أخرى.');
+  } catch {
+    alert('تعذر الاتصال بالسيرفر.');
+  }
+}
+function showDeveloper(){
+  document.getElementById('choices').classList.add('hidden');
+  document.getElementById('developer').classList.remove('hidden');
+}
+function back(){
+  document.getElementById('developer').classList.add('hidden');
+  document.getElementById('choices').classList.remove('hidden');
+}
+document.getElementById('loginForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const error=document.getElementById('error');
+  error.textContent='';
+  try{
+    const r=await fetch('/api/developer-login',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({code:document.getElementById('code').value})
+    });
+    const data=await r.json();
+    if(data.success){
+      location.href='/admin';
+    }else{
+      error.textContent='الرمز غير صحيح';
+    }
+  }catch{
+    error.textContent='تعذر الاتصال بالسيرفر';
+  }
+});
+</script>
+
+<script>
+/* ALKFORY_PWA_INSTALL_V1 */
+(() => {
+  let installPrompt = null;
+  const btn = document.getElementById('alkforyInstallBtn');
+  const hint = document.getElementById('alkforyInstallHint');
+  if (!btn || !hint) return;
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    });
+  }
+
+  const isInstalled = () =>
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true;
+
+  if (isInstalled()) {
+    btn.textContent = '✅ تطبيق ALKFORY مثبت بالفعل';
+    hint.textContent = 'يمكنك فتح ALKFORY من الشاشة الرئيسية.';
+    btn.disabled = true;
+  }
+
+  window.addEventListener('beforeinstallprompt', event => {
+    event.preventDefault();
+    installPrompt = event;
+    btn.textContent = '📲 تثبيت تطبيق ALKFORY';
+  });
+
+  btn.addEventListener('click', async () => {
+    if (isInstalled()) {
+      hint.textContent = 'التطبيق مثبت بالفعل على جهازك.';
+      return;
+    }
+
+    if (installPrompt) {
+      installPrompt.prompt();
+      const result = await installPrompt.userChoice;
+      installPrompt = null;
+      hint.textContent = result.outcome === 'accepted'
+        ? 'بدأ تثبيت التطبيق.'
+        : 'يمكنك التثبيت في أي وقت من جديد.';
+      return;
+    }
+
+    hint.textContent =
+      'لتثبيت ALKFORY: افتح الموقع من Chrome، ثم قائمة ⋮ واختر "تثبيت التطبيق" أو "إضافة إلى الشاشة الرئيسية". يلزم فتح الموقع عبر HTTPS أو localhost.';
+  });
+
+  window.addEventListener('appinstalled', () => {
+    btn.textContent = '✅ تم تثبيت ALKFORY';
+    hint.textContent = 'يمكنك فتح التطبيق من الشاشة الرئيسية.';
+    installPrompt = null;
+  });
+})();
+</script>
+
+
+<script>
+/* ALKFORY_OFFLINE_NOTICE */
+(() => {
+  let box;
+  function showOffline() {
+    if (!box) {
+      box = document.createElement('div');
+      box.id = 'alkfory-offline-notice';
+      box.style.cssText = `
+        position:fixed;z-index:999999;top:15px;left:5%;width:90%;
+        box-sizing:border-box;padding:16px;border-radius:14px;
+        background:#641b25;color:white;text-align:center;
+        font: bold 15px Arial;box-shadow:0 5px 20px #0005;
+      `;
+      document.body.appendChild(box);
+    }
+    box.textContent = '⚠️ لا يوجد اتصال بالإنترنت أو أن السيرفر غير متاح. تأكد من الاتصال وحاول مرة أخرى.';
+    box.style.display = 'block';
+  }
+  function hideOffline() {
+    if (box) box.style.display = 'none';
+  }
+  window.addEventListener('offline', showOffline);
+  window.addEventListener('online', hideOffline);
+
+  const originalFetch = window.fetch.bind(window);
+  window.fetch = async (...args) => {
+    try {
+      const response = await originalFetch(...args);
+      if (response.ok) hideOffline();
+      return response;
+    } catch (error) {
+      showOffline();
+      throw error;
+    }
+  };
+
+  if (!navigator.onLine) showOffline();
+})();
+</script>
+
+
+<script>
+/* ALKFORY_APP_UPDATE_V2 */
+(() => {
+  const btn = document.getElementById('alkforyUpdateBtn');
+  const hint = document.getElementById('alkforyUpdateHint');
+  if (!btn || !hint || !('serviceWorker' in navigator)) return;
+
+  let refreshing = false;
+
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (refreshing) return;
+    refreshing = true;
+    hint.textContent = '✅ تم تفعيل التحديث، جاري فتح النسخة الجديدة...';
+    location.reload();
+  });
+
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    hint.textContent = '⏳ جاري فحص وتحميل آخر تحديث...';
+
+    try {
+      let reg = await navigator.serviceWorker.getRegistration('/');
+
+      if (!reg) {
+        reg = await navigator.serviceWorker.register('/sw.js');
+      }
+
+      await reg.update();
+
+      if (reg.waiting) {
+        hint.textContent = '✅ تم العثور على تحديث، جاري التفعيل...';
+        reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+        return;
+      }
+
+      if (reg.installing) {
+        hint.textContent = '⏳ يتم تثبيت التحديث...';
+        reg.installing.addEventListener('statechange', () => {
+          if (reg.installing && reg.installing.state === 'installed') {
+            if (reg.waiting) {
+              reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+            }
+          }
+        });
+        return;
+      }
+
+      hint.textContent = '✅ التطبيق يستخدم أحدث نسخة منشورة.';
+    } catch (error) {
+      console.error('ALKFORY update error:', error);
+      hint.textContent = '⚠️ فشل التحديث. تحقق من الإنترنت وحاول مجددًا.';
+    } finally {
+      btn.disabled = false;
+    }
+  });
+})();
+</script>
+
+
+
+
+
+
+<style>
+#alkfory-welcome {
+ position:fixed;z-index:999999;bottom:22px;left:16px;right:16px;
+ background:#171717;color:white;border:1px solid #a90030;
+ border-radius:18px;padding:18px;text-align:center;
+ box-shadow:0 0 22px #a9003055;font-size:17px;
+}
+#alkfory-welcome button {
+ background:#a90030;color:white;border:0;border-radius:10px;
+ padding:10px 20px;margin:10px 5px;font-weight:bold;
+}
+</style>
+
+<div id="alkfory-welcome" hidden>
+ <div style="font-size:30px;color:#ff233f;font-weight:bold">Z</div>
+ <div>⚜️ أهلاً بيك في موقع ALKFORY ⚜️</div>
+ <div>نورت الموقع، نتمنى لك تجربة ممتعة ❤️</div>
+ <button id="alkfory-start">تفعيل الإشعار والصوت</button>
+ <button id="alkfory-close">إغلاق</button>
+</div>
+
+<script>
+(() => {
+ const box = document.getElementById('alkfory-welcome');
+ const start = document.getElementById('alkfory-start');
+ const close = document.getElementById('alkfory-close');
+ if (!box || !start || !close) return;
+
+ const seenKey = 'alkfory_welcome_seen_v2';
+ const noticeKey = 'alkfory_notice_shown_v2';
+
+ const firstAudio = new Audio('/audio/entry-1.mp3');
+ firstAudio.preload = 'auto';
+
+ let audioStarted = false;
+
+ async function playEntryAudio() {
+   if (audioStarted) return;
+   audioStarted = true;
+   try {
+     await firstAudio.play();
+     await new Promise(resolve => {
+       firstAudio.addEventListener('ended', resolve, { once: true });
+       firstAudio.addEventListener('error', resolve, { once: true });
+     });
+   } catch (e) {
+     audioStarted = false;
+     console.log('تعذر تشغيل تسجيلات الترحيب:', e);
+   }
+ }
+
+ if (!localStorage.getItem(seenKey)) {
+   box.hidden = false;
+ } else {
+   playEntryAudio();
+ }
+
+ close.addEventListener('click', () => {
+   box.hidden = true;
+ });
+
+ async function handleNotification() {
+   if (!('Notification' in window)) return;
+   if (Notification.permission === 'default') {
+     try {
+       await Notification.requestPermission();
+     } catch (e) {
+       console.log('Notification permission unavailable:', e);
+     }
+   }
+
+   if (Notification.permission !== 'granted') return;
+   if (sessionStorage.getItem(noticeKey)) return;
+
+   const options = {
+     body: 'أهلاً بيك! نورت موقع ALKFORY ❤️',
+     icon: '/icons/z-notification.svg',
+     badge: '/icons/z-notification.svg',
+     tag: 'alkfory-visitor-welcome',
+     renotify: false
+   };
+
+   try {
+     if ('serviceWorker' in navigator) {
+       const reg = await navigator.serviceWorker.ready;
+       await reg.showNotification('Z | ALKFORY', options);
+     } else {
+       new Notification('Z | ALKFORY', options);
+     }
+     sessionStorage.setItem(noticeKey, '1');
+   } catch (e) {
+     console.log('Notification unavailable:', e);
+   }
+ }
+
+ start.addEventListener('click', async () => {
+   localStorage.setItem(seenKey, '1');
+   box.hidden = true;
+   await playEntryAudio();
+   await handleNotification();
+ });
+})();
+</script>
+
+</body>
+</html>
+
+
+========================= admin.html =========================
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ALKFORY DEVELOPER</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;padding:16px;background:#090909;color:#fff;font-family:Arial}
+header,.card,.menu{background:#171717;border:1px solid #383838;border-radius:15px;padding:17px;margin-bottom:14px}
+h1,h2{color:#ed354d}
+h1{text-align:center;font-size:23px}
+button,input,select,textarea{width:100%;padding:13px;margin:7px 0;border:1px solid #444;border-radius:9px;background:#242424;color:white}
+button{background:#a71930;border:0;font-weight:bold;cursor:pointer}
+button.secondary{background:#333}
+button.danger{background:#721525}
+.menu button{text-align:right;background:#202020;border:1px solid #51303a;font-size:16px;padding:17px}
+.page{display:none}
+.page.active{display:block}
+.back{background:#333}
+small,.muted{color:#aaa}
+.status{color:#80e8a0}
+.item{border:1px solid #444;border-radius:10px;padding:13px;margin:10px 0;overflow-wrap:anywhere}
+footer{text-align:center;color:#aaa;padding:20px}
+
+#saveBar{position:fixed;top:10px;left:10px;z-index:9999;width:auto;padding:10px 18px;box-shadow:0 3px 15px #000;display:none}
+#topBack{position:fixed;top:10px;right:10px;z-index:10000;padding:10px 18px;box-shadow:0 3px 15px #000}
+body{padding-top:65px}
+.field{margin:12px 0;padding:10px;background:#202020;border-radius:10px}
+.field label{display:block;color:#ddd;font-size:14px}
+</style>
+
+
+
+
+<style id="alkfory-compact-chat">
+.alk-chat-message {
+  display: block !important;
+  width: fit-content !important;
+  max-width: 78% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  box-sizing: border-box !important;
+  padding: 4px 8px !important;
+  margin: 3px 0 !important;
+  border-radius: 9px !important;
+  line-height: 1.35 !important;
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
+}
+.alk-chat-visitor {
+  background: #252525 !important;
+  color: #fff !important;
+  margin-right: auto !important;
+  margin-left: 0 !important;
+}
+.alk-chat-developer {
+  background: #641b25 !important;
+  color: #fff !important;
+  margin-left: auto !important;
+  margin-right: 0 !important;
+}
+.alk-chat-message img,
+.alk-chat-message video {
+  display: block;
+  max-width: 100%;
+  max-height: 220px;
+  height: auto;
+  border-radius: 7px;
+  margin-top: 4px;
+}
+.alk-chat-message a {
+  overflow-wrap: anywhere;
+}
+#chatMessages, #alkforyAdminMessages {
+  min-height: 0 !important;
+  height: auto !important;
+}
+</style>
+
+
+<style id="alkfory-chat-final-layout">
+.alk-chat-message {
+  display: inline-flex !important;
+  align-items: flex-end !important;
+  flex-wrap: wrap !important;
+  gap: 4px !important;
+  width: fit-content !important;
+  max-width: 78% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  padding: 3px 7px !important;
+  margin: 2px 0 !important;
+  box-sizing: border-box !important;
+  border-radius: 8px !important;
+  line-height: 1.25 !important;
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
+}
+.alk-chat-visitor,
+.alk-chat-developer {
+  min-height: 0 !important;
+  height: auto !important;
+}
+.alk-chat-message time,
+.alk-chat-message small,
+.alk-chat-message .time,
+.alk-chat-message .message-time,
+.alk-chat-message .alk-chat-time {
+  display: inline-block !important;
+  width: auto !important;
+  margin: 0 0 0 4px !important;
+  padding: 1px 4px !important;
+  border-radius: 4px !important;
+  background: rgba(180, 35, 50, .10) !important;
+  color: #e9bfc3 !important;
+  font-size: 10px !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
+  align-self: flex-end !important;
+}
+.alk-chat-message img,
+.alk-chat-message video {
+  max-width: 100% !important;
+  max-height: 220px !important;
+}
+#chatMessages, #alkforyAdminMessages {
+  min-height: 0 !important;
+  overflow-y: auto !important;
+}
+</style>
+
+
+
+
+
+<style id="alkfory-chat-alignment">
+#chatMessages,
+#alkforyAdminMessages {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  width: 100% !important;
+}
+
+#chatMessages .alk-chat-message,
+#alkforyAdminMessages .alk-chat-message {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 0 0 auto !important;
+  width: fit-content !important;
+  max-width: 78% !important;
+  margin-top: 7px !important;
+  margin-bottom: 7px !important;
+  float: none !important;
+}
+
+#chatMessages .alk-chat-visitor,
+#alkforyAdminMessages .alk-chat-visitor {
+  align-self: flex-end !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+#chatMessages .alk-chat-developer,
+#alkforyAdminMessages .alk-chat-developer {
+  align-self: flex-start !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+#chatMessages .alk-chat-date,
+#alkforyAdminMessages .alk-chat-date {
+  align-self: center !important;
+  width: 100% !important;
+}
+</style>
+
+
+<style id="alkfory-chat-final-design">
+/* عنوان المحادثة داخل مربع */
+.alk-chat-heading {
+  display: block !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 10px 14px !important;
+  margin: 0 0 12px !important;
+  text-align: center !important;
+  border: 1px solid rgba(255,255,255,.15) !important;
+  border-radius: 10px !important;
+}
+
+/* فقاعات قصيرة ومنظمة */
+#chatMessages .alk-chat-message,
+#alkforyAdminMessages .alk-chat-message {
+  min-height: 0 !important;
+  padding: 6px 10px !important;
+  margin-top: 4px !important;
+  margin-bottom: 4px !important;
+  line-height: 1.35 !important;
+  gap: 3px !important;
+}
+
+/* رسالة الزائر أحمر فاتح */
+#chatMessages .alk-chat-visitor,
+#alkforyAdminMessages .alk-chat-visitor {
+  background: #f3a0a8 !important;
+  color: #241014 !important;
+}
+
+/* الوقت بجانب محتوى الرسالة */
+.alk-chat-time {
+  display: inline-block !important;
+  font-size: 10px !important;
+  line-height: 1 !important;
+  margin: 2px 5px 0 !important;
+}
+
+/* التاريخ بجانب الرسالة بدل شريط عريض */
+.alk-chat-date {
+  display: inline-block !important;
+  width: fit-content !important;
+  max-width: 100% !important;
+  align-self: center !important;
+  padding: 3px 9px !important;
+  margin: 5px auto !important;
+}
+
+/* حقوق النشر في نهاية الصفحة */
+#alkforyCopyright {
+  display: block !important;
+  width: 100% !important;
+  text-align: center !important;
+  margin-top: 30px !important;
+}
+</style>
+
+
+<style id="alkfory-inline-time-glow">
+/* الرسالة والوقت في سطر واحد */
+#chatMessages .alk-chat-message,
+#alkforyAdminMessages .alk-chat-message {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 5px !important;
+  min-height: 0 !important;
+  padding: 5px 9px !important;
+}
+
+/* الوقت بجانب نص الرسالة */
+#chatMessages .alk-chat-time,
+#alkforyAdminMessages .alk-chat-time {
+  display: inline-block !important;
+  flex: 0 0 auto !important;
+  margin: 0 3px !important;
+  font-size: 10px !important;
+  white-space: nowrap !important;
+}
+
+/* إضاءة عنوان المحادثة بلونين بالتبادل */
+.alk-chat-heading {
+  animation: alkforyHeadingGlow 1.5s ease-in-out infinite alternate !important;
+}
+
+@keyframes alkforyHeadingGlow {
+  from {
+    color: #ff7777;
+    border-color: #ff7777;
+    box-shadow: 0 0 5px rgba(255,80,80,.35);
+  }
+  to {
+    color: #ffffff;
+    border-color: #ffffff;
+    box-shadow: 0 0 12px rgba(255,255,255,.65);
+  }
+}
+</style>
+
+<style id="alkfory-messages-only">#site,#ai,#apps,#security,#developer{display:none!important}#dashboard .menu{max-width:600px;margin:25px auto}#dashboard .menu button{width:100%;margin:10px 0}</style></head>
+<body><button id="saveBar" onclick="saveCurrentPage()" style="display:none">💾 حفظ</button><button id="topBack" class="back" onclick="goBack()">↩ رجوع</button>
+
+<header>
+<h1>⚜️ ALKFORY DEVELOPER ⚜️</h1>
+<p id="status">جارٍ الاتصال...</p>
+</header>
+
+<section id="dashboard" class="page active">
+<div class="menu">
+<h2>📩 الرسائل الواردة</h2>
+<button onclick="openPage('messages')">💬 فتح الرسائل الواردة</button>
+</div>
+<button class="danger" onclick="logout()">تسجيل خروج المطوّر</button>
+</section>
+
+<section id="site" class="page">
+<div class="card">
+<button class="back" onclick="openPage('dashboard')">← رجوع للرئيسية</button>
+<h2>⚙️ إعدادات الموقع</h2>
+<label>اسم الموقع</label><input id="siteName">
+<label>رسالة الترحيب</label><textarea id="welcomeText"></textarea>
+<label>لون الموقع</label><select id="theme"><option value="dark">داكن</option><option value="red">أحمر</option><option value="blue">أزرق</option></select>
+<label>لغة الموقع</label><select id="language"><option value="ar">العربية</option><option value="en">English</option></select>
+<label>إظهار نموذج رسائل الزوار</label><select id="showVisitorCard"><option value="true">تشغيل</option><option value="false">إيقاف</option></select>
+<h2>إعدادات المظهر والعرض</h2>
+<div class="field"><label>لون التمييز</label><input id="accentColor" type="color" ></div>
+<div class="field"><label>لون الخلفية</label><input id="backgroundColor" type="color" ></div>
+<div class="field"><label>لون النص</label><input id="textColor" type="color" ></div>
+<div class="field"><label>لون الأزرار</label><input id="buttonColor" type="color" ></div>
+<div class="field"><label>نوع الخط</label><select id="fontFamily"><option value="Arial">Arial</option><option value="Tahoma">Tahoma</option><option value="Cairo">Cairo</option></select></div>
+<div class="field"><label>حجم الخط</label><input id="fontSize" type="number" step="any"></div>
+<div class="field"><label>استدارة الحواف</label><input id="borderRadius" type="number" step="any"></div>
+<div class="field"><label>إظهار روابط التواصل</label><select id="showSocialLinks"><option value="true">تشغيل</option><option value="false">إيقاف</option></select></div>
+<div class="field"><label>إظهار التطبيقات</label><select id="showApps"><option value="true">تشغيل</option><option value="false">إيقاف</option></select></div>
+<div class="field"><label>إظهار قسم AI</label><select id="showAI"><option value="true">تشغيل</option><option value="false">إيقاف</option></select></div>
+<div class="field"><label>إظهار الترحيب</label><select id="showWelcome"><option value="true">تشغيل</option><option value="false">إيقاف</option></select></div>
+<div class="field"><label>وضع الصيانة</label><select id="maintenanceMode"><option value="true">تشغيل</option><option value="false">إيقاف</option></select></div>
+<div class="field"><label>رسالة الصيانة</label><input id="maintenanceMessage" type="text" ></div>
+<div class="field"><label>بريد التواصل</label><input id="contactEmail" type="email" ></div>
+<div class="field"><label>نص أسفل الموقع</label><input id="footerText" type="text" ></div>
+<div class="field"><label>الإعلان العلوي</label><input id="announcementText" type="text" ></div>
+<p id="siteResult"></p>
+</div></section>
+
+<section id="ai" class="page">
+<div class="card">
+<button class="back" onclick="openPage('dashboard')">← رجوع للرئيسية</button>
+<h2>🤖 إعدادات ALKFORY AI</h2>
+<label>حالة الذكاء الاصطناعي</label><select id="aiEnabled"><option value="true">تشغيل</option><option value="false">إيقاف</option></select>
+<label>شخصية الرد</label><select id="aiPersona"><option value="friendly">ودود</option><option value="professional">احترافي</option><option value="concise">مختصر</option><option value="creative">إبداعي</option><option value="teacher">تعليمي</option></select>
+<label>طول الرد</label><select id="aiReplyLength"><option value="short">قصير</option><option value="medium">متوسط</option><option value="long">مفصل</option></select>
+<h2>إعدادات الرد المتقدمة</h2>
+<div class="field"><label>لغة الرد</label><select id="aiLanguage"><option value="auto">تلقائي</option><option value="ar">العربية</option><option value="en">English</option></select></div>
+<div class="field"><label>نبرة الرد</label><select id="aiTone"><option value="simple">بسيط</option><option value="calm">هادئ</option><option value="enthusiastic">مشجع</option><option value="formal">رسمي</option></select></div>
+<div class="field"><label>استخدام الإيموجي</label><select id="aiEmoji"><option value="true">تشغيل</option><option value="false">إيقاف</option></select></div>
+<div class="field"><label>التحية</label><input id="aiGreeting" type="text" ></div>
+<div class="field"><label>التوقيع</label><input id="aiSignature" type="text" ></div>
+<div class="field"><label>درجة الإبداع</label><input id="aiTemperature" type="number" step="any"></div>
+<div class="field"><label>الحد الأقصى للرد</label><input id="aiMaxTokens" type="number" step="any"></div>
+<div class="field"><label>تنسيق الإجابة</label><select id="aiAnswerFormat"><option value="paragraphs">فقرات</option><option value="bullets">نقاط</option><option value="direct">مباشر</option></select></div>
+<div class="field"><label>استخدام سياق الموقع</label><select id="aiUseSiteContext"><option value="true">تشغيل</option><option value="false">إيقاف</option></select></div>
+<div class="field"><label>السماح بالأكواد</label><select id="aiAllowCode"><option value="true">تشغيل</option><option value="false">إيقاف</option></select></div>
+<div class="field"><label>شرح الخطوات</label><select id="aiExplainSteps"><option value="true">تشغيل</option><option value="false">إيقاف</option></select></div>
+<div class="field"><label>تعليمات إضافية</label><textarea id="aiCustomInstructions" rows="4"></textarea></div>
+<div class="field"><label>رسالة عند تعطل AI</label><input id="aiFallbackMessage" type="text" ></div>
+<div class="field"><label>رسالة بداية المحادثة</label><input id="aiWelcomeMessage" type="text" ></div>
+<div class="field"><label>مستوى الإبداع</label><select id="aiCreativity"><option value="low">منخفض</option><option value="normal">متوسط</option><option value="high">مرتفع</option></select></div>
+<div class="field"><label>درجة الرسمية</label><select id="aiFormality"><option value="low">بسيط</option><option value="normal">متوسط</option><option value="high">رسمي</option></select></div>
+<div class="field"><label>استخدام الأمثلة</label><select id="aiUseExamples"><option value="true">تشغيل</option><option value="false">إيقاف</option></select></div>
+<div class="field"><label>أسلوب الإجابة</label><select id="aiResponseStyle"><option value="balanced">متوازن</option><option value="detailed">مفصل</option><option value="direct">مباشر</option></select></div>
+<p id="aiResult"></p>
+<p class="muted">مفتاح Gemini يظل محفوظًا في الخادم ولا يظهر هنا.</p>
+</div></section>
+
+<section id="apps" class="page">
+<div class="card">
+<button class="back" onclick="openPage('dashboard')">← رجوع للرئيسية</button>
+<h2>📱 إدارة التطبيقات</h2>
+<label>اسم التطبيق</label><input id="appName" placeholder="اسم التطبيق">
+<label>رابط التطبيق HTTPS</label><input id="appUrl" type="url" placeholder="https://example.com">
+<label>وصف التطبيق</label><textarea id="appDescription" maxlength="300"></textarea>
+<label>تصنيف التطبيق</label><input id="appCategory" placeholder="أدوات، ألعاب، خدمات...">
+<label>رابط الأيقونة</label><input id="appIcon" type="url" placeholder="https://example.com/icon.png">
+<label>ترتيب العرض</label><input id="appSortOrder" type="number" min="0" max="9999" value="0">
+<button onclick="addApp()">➕ إضافة تطبيق</button>
+<div id="appsList">جارٍ التحميل...</div>
+<p class="muted">سيتم استكمال أدوات إدارة التطبيقات العشرين وربطها بوظائفها.</p>
+</div>
+</section>
+
+<section id="messages" class="page">
+<div class="card">
+<button class="back" onclick="openPage('dashboard')">← رجوع للرئيسية</button>
+<h2>💬 رسائل الزوار</h2>
+<button onclick="loadMessages()">🔄 تحديث الرسائل</button>
+
+<div id="alkforyAdminChats">
+  <div id="alkforyChatList"></div>
+  <div id="alkforyAdminRoom" hidden style="margin-top:20px">
+    <button type="button" onclick="backToAlkforyChats()">← كل المحادثات</button>
+    <h3 id="alkforyAdminTitle"></h3>
+    <div id="alkforyAdminMessages" style="height:380px;overflow-y:auto;background:#090909;padding:12px;border:1px solid #8b0000;border-radius:12px"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+      <input id="alkforyAdminText" maxlength="3000" placeholder="اكتب ردك..." style="flex:1;min-width:150px;padding:12px">
+      <button type="button" onclick="sendAlkforyAdminMessage()">إرسال</button>
+      <label style="padding:10px;background:#8b0000;border-radius:8px;cursor:pointer">📎
+        <input id="alkforyAdminFile" type="file" accept="image/*,video/mp4,video/webm,application/pdf" hidden onchange="sendAlkforyAdminMessage()">
+      </label>
+      <label style="padding:10px;background:#8b0000;border-radius:8px;cursor:pointer">📷
+        <input id="alkforyAdminCamera" type="file" accept="image/*" capture="environment" hidden onchange="sendAlkforyAdminMessage(true)">
+      </label>
+    </div>
+    <p id="alkforyAdminStatus" role="status"></p>
+    <button type="button" onclick="deleteAlkforyConversation()" style="background:#8b0000;color:white;margin-top:12px">🗑️ حذف المحادثة بالكامل</button>
+  </div>
+</div>
+
+<div id="alkforyVisitorInbox" style="margin:24px 0;padding:18px;border:1px solid #8b2635;border-radius:14px;background:#17131a;color:#fff">
+  <h2 style="margin:0 0 12px">📩 رسائل الزوار</h2>
+  <div id="alkforyVisitorInboxStatus" role="status" style="margin-bottom:12px;color:#ccc">جاري تحميل الرسائل...</div>
+  <div id="alkforyVisitorInboxList"></div>
+</div></div>
+</section>
+
+<section id="security" class="page">
+<div class="card">
+<button class="back" onclick="openPage('dashboard')">← رجوع للرئيسية</button>
+<h2>🔐 إعدادات الأمان</h2>
+<p>تسجيل الدخول محمي بجلسة المطوّر، ومفتاح Gemini ورمز المطوّر لا يظهران في الصفحة.</p>
+</div>
+</section>
+
+<section id="developer" class="page">
+<div class="card">
+<button class="back" onclick="openPage('dashboard')">← رجوع للرئيسية</button>
+<h2>⚜️ ALKFORY DEVELOPER</h2>
+<p>⚜️ 𝒁𝒊𝒂𝒅 𝑨𝒍𝒌𝒇𝒐𝒓𝒚 | المطور ⚜️</p>
+</div>
+</section>
+
+<footer>⚜️ ALKFORY ⚜️</footer>
+
+<script>
+async function api(url,options={}){
+ const response=await fetch(url,{
+  credentials:'same-origin',
+  headers:{'Content-Type':'application/json',...(options.headers||{})},
+  ...options
+ });
+ if(response.status===401){location.href='/';throw Error('انتهت جلسة الدخول');}
+ const data=await response.json();
+ if(!response.ok)throw Error(data.error||'حدث خطأ');
+ return data;
+}
+
+const pageHistory = [];
+function openPage(id){
+ const current = document.querySelector('.page.active');
+ if (!document.getElementById(id)) return;
+ if (current && current.id !== id) pageHistory.push(current.id);
+ document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+ document.getElementById(id).classList.add('active');
+ if(id==='messages')loadMessages();
+ if(id==='apps')loadApps();
+}
+function goBack(){
+ const previous = pageHistory.pop();
+ if(previous && document.getElementById(previous)){
+   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+   document.getElementById(previous).classList.add('active');
+   if(previous==='messages')loadMessages();
+   if(previous==='apps')loadApps();
+ } else {
+   openPage('dashboard');
+ }
+}
+
+
+const siteKeys = ["siteName","welcomeText","theme","language","showVisitorCard","accentColor","backgroundColor","textColor","buttonColor","fontFamily","fontSize","borderRadius","showSocialLinks","showApps","showAI","showWelcome","maintenanceMode","maintenanceMessage","contactEmail","footerText","announcementText"];
+const aiKeys = ["aiEnabled","aiPersona","aiReplyLength","aiLanguage","aiTone","aiEmoji","aiGreeting","aiSignature","aiTemperature","aiMaxTokens","aiAnswerFormat","aiUseSiteContext","aiAllowCode","aiExplainSteps","aiCustomInstructions","aiFallbackMessage","aiWelcomeMessage","aiCreativity","aiFormality","aiUseExamples","aiResponseStyle"];
+
+function setField(id,value){
+ const el=document.getElementById(id);
+ if(!el || value===undefined || value===null)return;
+ el.value=String(value);
+}
+
+function readFields(keys){
+ const out={};
+ for(const id of keys){
+  const el=document.getElementById(id);
+  if(!el)continue;
+  if(el.tagName==='SELECT' && ['true','false'].includes(el.value))out[id]=el.value==='true';
+  else if(el.type==='number')out[id]=el.value===''?'':Number(el.value);
+  else out[id]=el.value;
+ }
+ return out;
+}
+
+async function loadAll(){
+ try{
+  const data=await api('/api/admin/settings');
+  const values=data.settings||{};
+  [...siteKeys,...aiKeys].forEach(k=>setField(k,values[k]));
+  if(values.aiEnabled===undefined)setField('aiEnabled',true);
+  if(values.showVisitorCard===undefined)setField('showVisitorCard',true);
+  document.getElementById('status').innerHTML='<span class="status">● لوحة المطوّر متصلة</span>';
+ }catch(e){document.getElementById('status').textContent=e.message;}
+}
+
+async function saveSite(){
+ try{
+  await api('/api/admin/settings',{method:'PUT',body:JSON.stringify(readFields(siteKeys))});
+  document.getElementById('siteResult').textContent='✅ تم حفظ إعدادات الموقع'; hideSaveButton();
+ }catch(e){document.getElementById('siteResult').textContent='❌ '+e.message;}
+}
+
+async function saveAI(){
+ try{
+  await api('/api/admin/settings',{method:'PUT',body:JSON.stringify(readFields(aiKeys))});
+  document.getElementById('aiResult').textContent='✅ تم حفظ إعدادات AI'; hideSaveButton();
+ }catch(e){document.getElementById('aiResult').textContent='❌ '+e.message;}
+}
+
+
+function showSaveButton(){
+ const page = document.querySelector('.page.active');
+ const bar = document.getElementById('saveBar');
+ if(bar) bar.style.display = page && ['site','ai'].includes(page.id) ? 'block' : 'none';
+}
+function hideSaveButton(){
+ const bar = document.getElementById('saveBar');
+ if(bar) bar.style.display = 'none';
+}
+document.addEventListener('input', e=>{
+ const page = e.target.closest('.page');
+ if(page && ['site','ai'].includes(page.id)) showSaveButton();
+});
+document.addEventListener('change', e=>{
+ const page = e.target.closest('.page');
+ if(page && ['site','ai'].includes(page.id)) showSaveButton();
+});
+
+async function saveCurrentPage(){
+ const page=document.querySelector('.page.active');
+ if(!page)return;
+ if(page.id==='site')return saveSite();
+ if(page.id==='ai')return saveAI();
+ alert('استخدم أدوات الحفظ داخل صفحة إدارة التطبيقات والرسائل.');
+}
+
+
+
+async function loadApps(){
+ try{
+  const data=await api('/api/admin/apps');
+  const box=document.getElementById('appsList');
+  box.replaceChildren();
+  if(!data.apps.length){box.textContent='لا توجد تطبيقات مضافة.';return;}
+  data.apps.forEach(app=>{
+   const item=document.createElement('div');item.className='item';
+   const title=document.createElement('strong');title.textContent=app.name;
+   const link=document.createElement('p');link.textContent=app.url;
+   const fields=[
+    ['description','الوصف',app.description||''],
+    ['category','التصنيف',app.category||''],
+    ['icon','رابط الأيقونة',app.icon||''],
+    ['sortOrder','ترتيب العرض',app.sortOrder??0]
+   ];
+   const controls={};
+   fields.forEach(([key,label,value])=>{
+    const caption=document.createElement('label');caption.textContent=label;
+    const input=document.createElement('input');
+    input.value=value;
+    if(key==='sortOrder'){input.type='number';input.min='0';input.max='9999';}
+    controls[key]=input;
+    item.append(caption,input);
+   });
+   const visibleLabel=document.createElement('label');visibleLabel.textContent='إظهار التطبيق';
+   const visible=document.createElement('select');
+   visible.innerHTML='<option value="true">ظاهر</option><option value="false">مخفي</option>';
+   visible.value=String(app.visible!==false);
+   const state=document.createElement('p');
+   state.textContent=app.active?'🟢 نشط':'🔴 متوقف';
+   const toggle=document.createElement('button');
+   toggle.textContent=app.active?'إيقاف التطبيق':'تشغيل التطبيق';
+   toggle.onclick=()=>changeApp(app.id,!app.active);
+   const save=document.createElement('button');
+   save.textContent='💾 حفظ بيانات التطبيق';
+   save.onclick=()=>saveAppDetails(app.id,{
+    description:controls.description.value,
+    category:controls.category.value,
+    icon:controls.icon.value,
+    sortOrder:Number(controls.sortOrder.value)||0,
+    visible:visible.value==='true'
+   });
+   const del=document.createElement('button');del.className='danger';del.textContent='حذف التطبيق';
+   del.onclick=()=>deleteApp(app.id);
+   item.append(visibleLabel,visible,state,save,toggle,del);
+   box.append(item);
+  });
+ }catch(e){document.getElementById('appsList').textContent=e.message;}
+}
+
+async function saveAppDetails(id,details){
+ try{
+  await api('/api/admin/apps/'+id,{method:'PATCH',body:JSON.stringify(details)});
+  alert('✅ تم حفظ بيانات التطبيق');
+  await loadApps();
+ }catch(e){alert('❌ '+e.message);}
+}
+
+async function addApp(){
+ try{
+  await api('/api/admin/apps',{method:'POST',body:JSON.stringify({
+   name:document.getElementById('appName').value,
+   url:document.getElementById('appUrl').value,
+   description:document.getElementById('appDescription').value,
+   category:document.getElementById('appCategory').value,
+   icon:document.getElementById('appIcon').value,
+   sortOrder:Number(document.getElementById('appSortOrder').value)||0
+  })});
+  document.getElementById('appName').value='';
+  document.getElementById('appUrl').value='';
+  document.getElementById('appDescription').value='';
+  document.getElementById('appCategory').value='';
+  document.getElementById('appIcon').value='';
+  document.getElementById('appSortOrder').value='0';
+  await loadApps();
+ }catch(e){alert(e.message);}
+}
+
+async function changeApp(id,active){
+ try{await api('/api/admin/apps/'+id,{method:'PATCH',body:JSON.stringify({active})});await loadApps();}
+ catch(e){alert(e.message);}
+}
+
+async function deleteApp(id){
+ if(!confirm('هل تريد حذف التطبيق؟'))return;
+ try{await api('/api/admin/apps/'+id,{method:'DELETE'});await loadApps();}
+ catch(e){alert(e.message);}
+}
+
+async function loadMessages(){
+ const box=document.getElementById('messagesList');
+ box.textContent='جارٍ تحميل الرسائل...';
+ try{
+  const data=await api('/api/admin/messages');
+  box.replaceChildren();
+  if(!data.messages?.length){box.textContent='لا توجد رسائل زوار حتى الآن.';return;}
+  data.messages.slice().reverse().forEach(msg=>{
+   const item=document.createElement('div');item.className='item';
+   const name=document.createElement('strong');name.textContent=msg.name||'زائر';
+   const date=document.createElement('small');date.textContent=' — '+new Date(msg.date).toLocaleString('ar-EG');
+   const text=document.createElement('p');text.textContent=msg.message;
+   const del=document.createElement('button');del.className='danger';del.textContent='حذف الرسالة';
+   del.onclick=()=>deleteMessage(msg.id);
+   item.append(name,date,text,del);box.append(item);
+  });
+ }catch(e){box.textContent='تعذر تحميل الرسائل: '+e.message;}
+}
+
+async function deleteMessage(id){
+ if(!confirm('هل تريد حذف هذه الرسالة؟'))return;
+ try{await api('/api/admin/messages/'+id,{method:'DELETE'});await loadMessages();}
+ catch(e){alert(e.message);}
+}
+
+async function logout(){
+ try{await api('/api/developer-logout',{method:'POST'});location.href='/';}
+ catch(e){alert(e.message);}
+}
+loadAll();
+</script>
+
+<script>
+(() => {
+ let selectedChat = null;
+ const $ = id => document.getElementById(id);
+
+ async function adminChatApi(url, options={}) {
+   const response = await fetch(url, {
+     credentials:'same-origin',
+     ...options,
+     headers:{...(options.headers||{})}
+   });
+   const data = await response.json().catch(()=>({}));
+   if(response.status===401){location.href='/';throw new Error('انتهت جلسة الدخول');}
+   if(!response.ok)throw new Error(data.error||'حدث خطأ');
+   return data;
+ }
+
+ window.loadAlkforyChats = async function(){
+   try {
+     const data = await adminChatApi('/api/admin/chats');
+     const box = $('alkforyChatList');
+     box.replaceChildren();
+
+     if(!data.chats.length){
+       box.textContent='لا توجد محادثات حتى الآن';
+       return;
+     }
+
+     data.chats.forEach(chat=>{
+       const row=document.createElement('div');
+       row.style='display:flex;gap:10px;align-items:center;justify-content:space-between;padding:13px;margin:8px 0;background:#171717;border:1px solid #8b0000;border-radius:10px';
+
+       const info=document.createElement('div');
+       const name=document.createElement('strong');
+       name.textContent=chat.name;
+
+       if (chat.phone) {
+         const phone=document.createElement('div');
+         phone.style='margin-top:6px;direction:ltr;text-align:right;color:#ddd;font-size:13px';
+         phone.textContent='📞 '+chat.phone+' ';
+
+         const call=document.createElement('a');
+         call.href='tel:'+chat.phone;
+         call.textContent='اتصال';
+         call.style='color:#ff7777;margin:0 6px';
+         phone.appendChild(call);
+
+         const copy=document.createElement('button');
+         copy.type='button';
+         copy.textContent='نسخ الرقم';
+         copy.onclick=async()=>{
+           try {
+             await navigator.clipboard.writeText(chat.phone);
+             copy.textContent='تم النسخ ✓';
+           } catch(e) {
+             prompt('انسخ رقم الهاتف:', chat.phone);
+           }
+         };
+         phone.appendChild(copy);
+         info.append(name,phone);
+       } else {
+         info.append(name);
+       }
+
+       const last=document.createElement('p');
+       last.style='margin:5px 0;color:#bbb';
+       last.textContent=chat.lastMessage?.text || (chat.lastMessage?.file ? '📎 مرفق' : 'لا توجد رسائل');
+       info.append(name,last);
+
+       const open=document.createElement('button');
+       open.textContent='فتح المحادثة';
+       open.onclick=()=>openAlkforyAdminChat(chat.id,chat.name);
+
+       row.append(info,open);
+       box.appendChild(row);
+     });
+   } catch(e) {
+     $('alkforyChatList').textContent=e.message;
+   }
+ };
+
+ window.openAlkforyAdminChat = async function(id,name){
+   selectedChat=id;
+   $('alkforyAdminTitle').textContent='💬 '+name;
+   $('alkforyChatList').hidden=true;
+   $('alkforyAdminRoom').hidden=false;
+   await refreshAlkforyAdminChat();
+ };
+
+ async function refreshAlkforyAdminChat(){
+   if(!selectedChat)return;
+   try{
+     const data=await adminChatApi('/api/admin/chats/'+encodeURIComponent(selectedChat));
+     const box=$('alkforyAdminMessages');
+     box.replaceChildren();
+     let previousDay='';
+
+     for(const m of data.chat.messages){
+       const date=new Date(m.date);
+       const day=date.toLocaleDateString('ar-EG');
+       if(day!==previousDay){
+         const divider=document.createElement('div');
+         divider.textContent=day;
+         divider.style='width:fit-content;margin:12px auto;padding:4px 12px;text-align:center;background:rgba(180,35,50,.10);color:#e9bfc3;border-radius:7px;font-size:11px';
+         box.appendChild(divider);
+         previousDay=day;
+       }
+
+       const item=document.createElement('div');
+       item.className='alk-chat-message '+(m.sender==='visitor'?'alk-chat-visitor':'alk-chat-developer');
+
+       if(m.text){
+         const text=document.createElement('div');
+         text.textContent=m.text;
+         item.appendChild(text);
+       }
+
+       if(m.file){
+         const url='/api/chat-media/'+encodeURIComponent(selectedChat)+'/'+encodeURIComponent(m.id);
+         if(m.file.type.startsWith('image/')){
+           const img=document.createElement('img');
+           img.src=url;
+           img.style='max-width:100%;max-height:220px;border-radius:8px;display:block';
+           item.appendChild(img);
+         }else if(m.file.type.startsWith('video/')){
+           const video=document.createElement('video');
+           video.src=url;
+           video.controls=true;
+           video.style='max-width:100%;max-height:220px';
+           item.appendChild(video);
+         }
+         const link=document.createElement('a');
+         link.href=url;
+         link.textContent='📎 '+m.file.name;
+         link.style='display:block;color:#ff7777;margin-top:8px';
+         link.target='_blank';
+         item.appendChild(link);
+       }
+
+       const time=document.createElement('small');
+       time.textContent=date.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
+       time.style='display:block;color:#ccc;margin-top:6px';
+       item.appendChild(time);
+
+
+       const time=document.createElement('small');
+      time.className='alk-chat-time';
+      time.textContent=date.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
+      item.appendChild(time);
+      box.appendChild(item);
+     }
+     box.scrollTop=box.scrollHeight;
+   }catch(e){
+     $('alkforyAdminStatus').textContent=e.message;
+   }
+ }
+
+ window.sendAlkforyAdminMessage = async function(camera=false){
+   if(!selectedChat)return;
+   const input=$(camera?'alkforyAdminCamera':'alkforyAdminFile');
+   const text=$('alkforyAdminText').value.trim();
+   const file=input.files&&input.files[0];
+   if(!text&&!file)return;
+
+   if(file&&file.size>3*1024*1024){
+     $('alkforyAdminStatus').textContent='الحد الأقصى 3 ميجابايت';
+     input.value='';
+     return;
+   }
+
+   const form=new FormData();
+   if(text)form.append('text',text);
+   if(file)form.append('file',file);
+
+   try{
+     $('alkforyAdminStatus').textContent='جارٍ الإرسال...';
+     await adminChatApi('/api/admin/chats/'+encodeURIComponent(selectedChat)+'/messages',{
+       method:'POST',
+       body:form
+     });
+     $('alkforyAdminText').value='';
+     input.value='';
+     $('alkforyAdminStatus').textContent='';
+     await refreshAlkforyAdminChat();
+     loadAlkforyChats();
+   }catch(e){
+     $('alkforyAdminStatus').textContent=e.message;
+   }
+ };
+
+ window.deleteAlkforyMessage = async function(messageId){
+   if(!confirm('هل تريد حذف هذه الرسالة؟'))return;
+   try{
+     await adminChatApi('/api/admin/chats/'+encodeURIComponent(selectedChat)+'/messages/'+encodeURIComponent(messageId),{method:'DELETE'});
+     await refreshAlkforyAdminChat();
+   }catch(e){alert(e.message);}
+ };
+
+ window.deleteAlkforyConversation = async function(){
+   if(!selectedChat||!confirm('سيتم حذف المحادثة ورسائلها ومرفقاتها. هل تريد المتابعة؟'))return;
+   try{
+     await adminChatApi('/api/admin/chats/'+encodeURIComponent(selectedChat),{method:'DELETE'});
+     selectedChat=null;
+     backToAlkforyChats();
+     loadAlkforyChats();
+   }catch(e){alert(e.message);}
+ };
+
+ window.backToAlkforyChats = function(){
+   selectedChat=null;
+   $('alkforyAdminRoom').hidden=true;
+   $('alkforyChatList').hidden=false;
+   loadAlkforyChats();
+ };
+
+ document.addEventListener('DOMContentLoaded',()=>{
+   if($('messages'))loadAlkforyChats();
+   setInterval(()=>{
+     if(selectedChat&&!$('alkforyAdminRoom').hidden)refreshAlkforyAdminChat();
+     else if($('messages')?.classList.contains('active'))loadAlkforyChats();
+   },4000);
+ });
+
+ const oldOpenPage=window.openPage;
+ if(typeof oldOpenPage==='function'){
+   window.openPage=function(id){
+     oldOpenPage(id);
+     if(id==='messages')loadAlkforyChats();
+   };
+ }
+})();
+</script>
+\n
+
+
+
+
+<script>
+(() => {
+  if (window.alkforyVisitorInboxStarted) return;
+  window.alkforyVisitorInboxStarted = true;
+
+  const list = document.getElementById('alkforyVisitorInboxList');
+  const status = document.getElementById('alkforyVisitorInboxStatus');
+
+  async function loadVisitorMessages() {
+    try {
+      const response = await fetch('/api/admin/messages', {
+        credentials: 'same-origin',
+        cache: 'no-store',
+        headers: { Accept: 'application/json' }
+      });
+
+      if (response.status === 401 || response.status === 403) {
+        status.textContent = 'سجّل دخولك كمطوّر لعرض الرسائل.';
+        return;
+      }
+      if (!response.ok) throw new Error('HTTP ' + response.status);
+
+      const data = await response.json();
+      const messages = Array.isArray(data.messages) ? data.messages : [];
+
+      list.replaceChildren();
+
+      if (!messages.length) {
+        status.textContent = 'لا توجد رسائل من الزوار حاليًا.';
+        return;
+      }
+
+      status.textContent = 'عدد الرسائل: ' + messages.length;
+
+      [...messages].reverse().forEach(message => {
+        const card = document.createElement('article');
+        card.style.cssText = 'padding:13px;margin:10px 0;border:1px solid #51404a;border-radius:10px;background:#211b23';
+
+        const name = document.createElement('strong');
+        name.textContent = message.name || 'زائر';
+
+        const date = document.createElement('div');
+        date.style.cssText = 'font-size:12px;color:#bbb;margin:5px 0 10px';
+        date.textContent = message.date
+          ? new Date(message.date).toLocaleString('ar-EG')
+          : '';
+
+        const body = document.createElement('p');
+        body.style.cssText = 'white-space:pre-wrap;overflow-wrap:anywhere;margin:0';
+        body.textContent = message.message || '';
+
+        card.append(name, date, body);
+        list.append(card);
+      });
+    } catch (error) {
+      status.textContent = 'تعذر تحميل الرسائل. تأكد من اتصال الخادم.';
+    }
+  }
+
+  loadVisitorMessages();
+  setInterval(loadVisitorMessages, 5000);
+})();
+</script>
+
+</body>
+</html>
+
+
+========================= public/sw.js =========================
+
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
+const CACHE_NAME = 'alkfory-shell-v4';
+const APP_SHELL = [
+  '/',
+  '/entry.html',
+  '/manifest.json',
+  '/icons/alkfory.svg',
+  '/audio/entry-1.mp3',
+  '/audio/entry-2.mp3',
+  '/audio/profile-recording.mp3'
+];
+
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => cache.addAll(APP_SHELL))
+      .then(() => self.skipWaiting())
+  );
+});
+
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys
+        .filter(key => key.startsWith('alkfory-shell-') && key !== CACHE_NAME)
+        .map(key => caches.delete(key))
+      )
+    ).then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener('fetch', event => {
+  const request = event.request;
+  const url = new URL(request.url);
+
+  if (request.method !== 'GET' || url.origin !== self.location.origin) return;
+
+  // لا نخزّن API أو صفحات خاصة أو ردود تسجيل الدخول.
+  if (url.pathname.startsWith('/api/') ||
+      url.pathname === '/admin' ||
+      url.pathname === '/home.html' ||
+      url.pathname.startsWith('/api')) return;
+
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request).catch(() =>
+        caches.match('/entry.html')
+      )
+    );
+  }
+});
+
+
+========================= public/manifest.json =========================
+{
+  "id": "/",
+  "name": "ALKFORY",
+  "short_name": "ALKFORY",
+  "description": "⚜️ ALKFORY Personal Website",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#080808",
+  "theme_color": "#080808",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icons/alkfory.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

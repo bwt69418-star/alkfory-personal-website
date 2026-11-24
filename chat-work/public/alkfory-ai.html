@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#090909">
 <link rel="manifest" href="/manifest.json">
-
+<title>ALKFORY AI</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#090909;color:#f5f5f5;font-family:Arial,sans-serif}
 header{padding:12px 17px;border-bottom:1px solid #292929;color:#ff4545;font-weight:bold;display:flex;align-items:center;gap:11px}
@@ -468,61 +468,72 @@ main {
 </style>
 
 
-<style id="ALKFORY_UI_FINAL">
-body > header {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  width: 100% !important;
-  z-index: 9999 !important;
-  margin: 0 !important;
-  padding-top: 5px !important;
-  padding-bottom: 5px !important;
+<style id="ALKFORY-GLOBAL-THEME">
+#alkMenu aside {
+  width:min(245px,82%)!important;
+  padding:12px!important;
 }
-body > main {
-  padding-top: 76px !important;
+#alkMenu aside button {
+  padding:8px!important;
+  margin:4px 0!important;
+  font-size:13px!important;
+  border-radius:9px!important;
 }
-#status {
-  display: none !important;
+#alkMenu aside h3 {font-size:17px!important;margin:8px 0}
+body[data-theme] :is(button,a,input:focus,textarea:focus,select:focus) {
+  border-color:var(--accent)!important;
 }
-#text::placeholder {
-  opacity: 1 !important;
-  color: #aaa !important;
+body[data-theme] :is(h1,h2,h3,.alk-usage-card b) {
+  color:var(--accent2)!important;
+}
+body[data-theme] :is(.alk-usage-card,.alk-color-box) {
+  border-color:var(--accent)!important;
 }
 </style>
 
 
-<title>زياد الكفوري | الموقع الرسمي ALKFORY</title>
-<meta name="description" content="الموقع الرسمي لزياد الكفوري ALKFORY. اكتشف المنصة الشخصية والتطبيقات والخدمات ومساعد الذكاء الاصطناعي.">
-<meta name="keywords" content="زياد الكفوري, موقع زياد الكفوري, منصة زياد الكفوري, ALKFORY, Ziad Alkfory">
-<meta name="author" content="Ziad Alkfory">
-<meta name="robots" content="index, follow">
-<link rel="canonical" href="https://alkfory-personal-website.onrender.com/">
-<meta property="og:type" content="website">
-<meta property="og:title" content="زياد الكفوري | الموقع الرسمي ALKFORY">
-<meta property="og:description" content="الموقع الرسمي لزياد الكفوري ALKFORY. اكتشف المنصة الشخصية والتطبيقات والخدمات ومساعد الذكاء الاصطناعي.">
-<meta property="og:url" content="https://alkfory-personal-website.onrender.com/">
-<meta property="og:site_name" content="ALKFORY">
-<meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="زياد الكفوري | الموقع الرسمي ALKFORY">
-<meta name="twitter:description" content="الموقع الرسمي لزياد الكفوري ALKFORY. اكتشف المنصة الشخصية والتطبيقات والخدمات ومساعد الذكاء الاصطناعي.">
+<style id="ALKFORY-PLATFORM-HIDE-TOPBAR">
+body > header#alkforyTopBar,
+#alkforyTopBar{
+  display:none !important;
+}
+</style>
 
+
+<link rel="stylesheet" href="/alkfory-global-theme.css">
 </head>
 <body>
-<header><button id="menuOpen" type="button" aria-label="القائمة" style="margin-right:auto;background:#292929">☰</button><img src="/alkfory-profile.jpg" alt="صورة المطور" style="width:42px;height:42px;border-radius:50%;object-fit:cover;border:2px solid #a81717"><span>⚜️ ALKFORY AI</span></header>
+<header id="alkforyTopBar">
+  <button id="menuOpen" type="button" aria-label="الإعدادات" title="الإعدادات">⋮</button>
+  <span>ALKFORY</span>
+  <img src="/alkfory-profile.jpg" alt="صورة المطور">
+  <div id="alkforyDeveloperTicker">
+    <span>تم إنشاء الموقع بواسطة المطور <strong class="alkfory-dev-name">زياد الكفوري</strong></span>
+  </div>
+</header>
 
-<div id="alkMenu" hidden style="position:fixed;inset:0;z-index:20;background:#000b">
- <aside style="position:absolute;right:0;top:0;bottom:0;width:min(300px,85%);background:#111;border-left:1px solid #8b0000;padding:18px;overflow:auto">
-  <button id="menuClose" type="button">إغلاق ✕</button>
+<div id="alkMenu" hidden style="position:fixed;inset:0;z-index:100003;background:#000b">
+ <aside style="position:absolute;left:0;right:auto;top:0;bottom:0;width:min(245px,82%);background:#111;border-right:1px solid #8b0000;border-left:0;padding:12px;overflow:auto">
+  <button id="menuClose" type="button" style="width:100%;padding:11px;margin-bottom:15px">إغلاق ✕</button>
   <h3 style="color:#ff4545">⚜️ قائمة ALKFORY</h3>
   <hr>
-  <h4>إعدادات التطبيق</h4>
-  <button id="themeToggle" type="button" style="width:100%;margin:5px 0">تغيير الألوان والثيم</button>
-  <button id="languageToggle" type="button" style="width:100%;margin:5px 0">العربية / English</button>
+  
+<!-- ALKFORY-MAIN-MENU-SEARCH-V2 -->
+<div id="alkfory-main-search-box" style="margin:12px 0">
+  <input id="alkfory-main-search" type="search"
+    placeholder="🔎 ابحث في الموقع..."
+    autocomplete="off"
+    style="width:100%;box-sizing:border-box;padding:12px;border:1px solid #b00035;border-radius:10px;background:#191919;color:white;font-size:15px;outline:none">
+  <div id="alkfory-main-search-results" style="margin-top:7px"></div>
+</div>
+<!-- /ALKFORY-MAIN-MENU-SEARCH-V2 -->
+
+  <button id="alkfory-open-colors" type="button" style="width:100%;margin:5px 0">🎨 تغيير المظهر والألوان</button>
+  <button id="alkfory-platform-link" type="button" style="width:100%;margin:5px 0">⚜️ منصة الكفوري</button>
+  <button id="alkfory-usage-open" type="button" style="width:100%;margin:5px 0">📖 الاستخدام</button>
   <hr>
-  <button id="developerOpen" type="button" style="width:100%;margin:5px 0">رسائل المطور الواردة</button>
-  <button id="platformOpen" type="button" style="width:100%;margin:5px 0">منصة الكفوري</button>
+  <button id="languageToggle" type="button" style="width:100%;margin:5px 0">العربية / English</button>
+  
  </aside>
 </div>
 
@@ -531,7 +542,7 @@ body > main {
 <div id="messages" aria-live="polite"></div>
 <p id="status">مساعدك جاهز. اكتب سؤالك.</p>
 <form id="form">
-<textarea id="text" placeholder="اكتب رسالتك هنا..." maxlength="4000" rows="1" aria-label="اكتب رسالتك"></textarea>
+<textarea id="text" placeholder="" maxlength="4000" rows="1" aria-label="اكتب رسالتك"></textarea>
 <label id="attachButton" title="إرفاق صورة أو فيديو أو ملف" aria-label="إرفاق صورة أو فيديو أو ملف">📎<input id="image" type="file" accept="image/*,audio/*,video/*,.pdf,.txt,.doc,.docx,.ppt,.pptx,.xls,.xlsx" hidden></label>
 <button id="alkCallButton" type="button" aria-label="مكالمة" title="مكالمة">📞</button>
 <button id="alkMicButton" type="button" aria-label="تحدث" title="تحدث">🎙️</button>
@@ -678,6 +689,7 @@ alkMenu.addEventListener('click',e=>{if(e.target===alkMenu)alkMenu.hidden=true;}
 
 function applyAlkTheme(){
  const dark=localStorage.getItem('alkfory_theme')!=='light';
+ document.body.classList.toggle('alk-theme-light',!dark);
  document.body.style.background=dark?'#090909':'#f3f3f3';
  document.body.style.color=dark?'#f5f5f5':'#171717';
  document.querySelectorAll('.msg.user').forEach(x=>x.style.background=dark?'#252525':'#dedede');
@@ -710,8 +722,8 @@ document.getElementById('languageToggle').addEventListener('click',()=>{
  applyAlkLanguage();
 });
 
-document.getElementById('developerOpen').addEventListener('click',()=>location.href='/admin');
-document.getElementById('platformOpen').addEventListener('click',()=>location.href='/platforms');
+
+
 
 form.addEventListener('submit',async e=>{
  e.preventDefault();
@@ -817,7 +829,7 @@ form.addEventListener('submit',async e=>{
   const input = document.getElementById('text');
   const status = document.getElementById('status');
 
-
+  
 
   mic?.addEventListener('click', () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -1521,93 +1533,516 @@ form.addEventListener('submit',async e=>{
 </script>
 
 
-<script id="ALKFORY_MIC_REPAIR">
+<style id="ALKFORY-HEADER-VISIBLE-FIX">
+body > header span {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+body > header img[alt="صورة المطور"] {
+  display: block !important;
+  visibility: visible !important;
+}
+body > header #menuOpen {
+  display: flex !important;
+  visibility: visible !important;
+  position: fixed !important;
+  top: 10px !important;
+  right: 12px !important;
+  width: 44px !important;
+  height: 44px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 26px !important;
+}
+</style>
+
+
+<style id="ALKFORY-HEADER-DESIGN-V2">
+body > header#alkforyTopBar {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  height: 84px !important;
+  min-height: 84px !important;
+  box-sizing: border-box !important;
+  padding: 7px 12px 25px !important;
+  display: flex !important;
+  flex-direction: row !important;
+  direction: ltr !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 10px !important;
+  background: #080808 !important;
+  border: 0 !important;
+  z-index: 99999 !important;
+  overflow: hidden !important;
+}
+
+/* زر الثلاث نقاط أقصى الشمال */
+body > header#alkforyTopBar #menuOpen {
+  display: flex !important;
+  position: relative !important;
+  inset: auto !important;
+  order: 1 !important;
+  flex: 0 0 30px !important;
+  width: 30px !important;
+  min-width: 30px !important;
+  height: 30px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: 1px solid #8b0000 !important;
+  border-radius: 8px !important;
+  background: #191919 !important;
+  color: #fff !important;
+  font-size: 19px !important;
+  line-height: 1 !important;
+  z-index: 100002 !important;
+}
+
+/* الاسم بجوار الزر */
+body > header#alkforyTopBar > span {
+  display: block !important;
+  order: 2 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  color: #a80000 !important;
+  font-size: 22px !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+  text-shadow: 0 0 8px #600000 !important;
+}
+body > header#alkforyTopBar > span::before,
+body > header#alkforyTopBar > span::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* الصورة أقصى اليمين والإطار */
+body > header#alkforyTopBar > img[alt="صورة المطور"] {
+  display: block !important;
+  order: 3 !important;
+  width: 47px !important;
+  height: 47px !important;
+  min-width: 47px !important;
+  object-fit: cover !important;
+  border-radius: 50% !important;
+  margin: 0 0 0 auto !important;
+  border: 3px solid #a80000 !important;
+  outline: 1px solid #ff3333 !important;
+  box-shadow: 0 0 10px #a80000 !important;
+}
+
+/* إطار متعدد الألوان عند تغيير الثيم */
+body.alk-theme-light > header#alkforyTopBar > img {
+  border: 3px solid transparent !important;
+  background:
+    linear-gradient(#080808,#080808) padding-box,
+    conic-gradient(red,orange,yellow,lime,cyan,blue,violet,red) border-box !important;
+  outline: 1px solid #fff !important;
+  box-shadow: 0 0 12px #b000ff !important;
+}
+
+/* الجملة المتحركة */
+#alkforyDeveloperTicker {
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 3px !important;
+  height: 18px !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+  direction: ltr !important;
+  white-space: nowrap !important;
+}
+#alkforyDeveloperTicker span {
+  display: inline-block !important;
+  position: absolute !important;
+  right: -100% !important;
+  color: #d0d0d0 !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  animation: alkforyTickerMove 12s linear infinite !important;
+}
+@keyframes alkforyTickerMove {
+  0% { right: -100%; }
+  65% { right: 110%; }
+  65.01% { right: 110%; }
+  100% { right: -100%; }
+}
+</style>
+
+
+<style id="ALKFORY-MENU-FINAL-V3">
+/* إزالة الزخارف والخطوط من الاسم */
+body > header#alkforyTopBar > span {
+  display:block!important;
+  color:#a80000!important;
+  font-size:22px!important;
+  font-weight:900!important;
+  text-shadow:0 0 7px #600000!important;
+}
+body > header#alkforyTopBar > span::before,
+body > header#alkforyTopBar > span::after {
+  content:none!important;
+  display:none!important;
+}
+
+/* إطار الصورة بلون واحد حسب لون الموقع */
+body > header#alkforyTopBar > img[alt="صورة المطور"] {
+  display:block!important;
+  border:3px solid var(--alkfory-accent,#b00035)!important;
+  outline:none!important;
+  background:none!important;
+  box-shadow:0 0 9px var(--alkfory-accent,#b00035)!important;
+}
+
+/* إظهار الجملة المتحركة */
+body > header#alkforyTopBar > #alkforyDeveloperTicker {
+  display:block!important;
+}
+
+/* القائمة تفتح من الشمال */
+#alkMenu:not([hidden]) {
+  display:block!important;
+}
+#alkMenu aside {
+  left:0!important;
+  right:auto!important;
+  border-right:1px solid var(--alkfory-accent,#b00035)!important;
+  border-left:0!important;
+  animation:alkMenuEnter .25s ease-out;
+}
+@keyframes alkMenuEnter {
+  from {transform:translateX(-100%)}
+  to {transform:translateX(0)}
+}
+
+/* صفحات الإعدادات */
+#alkfory-color-page,
+#alkfory-usage-page-v3 {
+  position:fixed!important;
+  inset:0!important;
+  z-index:100010!important;
+  box-sizing:border-box!important;
+  background:#090909!important;
+  color:#fff!important;
+  padding:20px 14px!important;
+  overflow-y:auto!important;
+  direction:rtl!important;
+  font-family:inherit!important;
+}
+#alkfory-color-page.alk-open {
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+}
+#alkfory-usage-page-v3.alk-open {
+  display:block!important;
+}
+#alkfory-color-page .alk-color-box {
+  width:min(440px,100%);
+  max-height:90vh;
+  overflow:auto;
+  padding:18px;
+  border:1px solid var(--alkfory-accent,#b00035);
+  border-radius:16px;
+  background:#111;
+  box-sizing:border-box;
+}
+#alkfory-color-page h2,
+#alkfory-usage-page-v3 h2 {
+  color:var(--alkfory-accent,#ff4778);
+  text-align:center;
+}
+#alkfory-color-page .alk-colors-grid {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+  margin:18px 0;
+}
+#alkfory-color-page button,
+#alkfory-usage-page-v3 button {
+  cursor:pointer;
+  border-radius:10px;
+}
+#alkfory-color-page .alk-color-choice {
+  padding:13px 8px;
+  background:#1b1b1b;
+  color:#fff;
+  border:1px solid #444;
+  font-size:14px;
+}
+#alkfory-color-page .alk-color-dot {
+  display:inline-block;
+  width:13px;
+  height:13px;
+  border-radius:50%;
+  margin-left:8px;
+  vertical-align:middle;
+}
+#alkfory-color-page .alk-close,
+#alkfory-usage-page-v3 .alk-close {
+  width:100%;
+  padding:13px;
+  border:0;
+  background:var(--alkfory-accent,#b00035);
+  color:white;
+  font-size:16px;
+}
+#alkfory-usage-page-v3 .alk-usage-card {
+  background:#191919;
+  border:1px solid #632020;
+  border-right:4px solid var(--alkfory-accent,#b00035);
+  border-radius:13px;
+  padding:14px;
+  margin:12px 0;
+}
+#alkfory-usage-page-v3 .alk-usage-card b {
+  color:var(--alkfory-accent,#ff4778);
+}
+#alkfory-usage-page-v3 .alk-usage-card p {
+  color:#ddd;
+  line-height:1.8;
+  font-size:14px;
+}
+</style>
+
+
+<script id="ALKFORY-MENU-FINAL-JS-V3">
 (() => {
-  if (window.__alkMicRepairLoaded) return;
-  window.__alkMicRepairLoaded = true;
+  const menu = document.getElementById('alkMenu');
+  const colorPage = document.createElement('div');
+  colorPage.id = 'alkfory-color-page';
+  colorPage.style.display = 'none';
 
-  const input = document.getElementById('text');
-  const mic = document.getElementById('alkMicButton');
-  const status = document.getElementById('status');
-  const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const colors = [
+    ["الأساسي","default","#b00035","#ff4778"],
+    ["الأخضر","green","#00b86b","#42bfff"],
+    ["الأزرق","blue","#087cf0","#53c7ff"],
+    ["البنفسجي","purple","#923be0","#e0b5ff"],
+    ["الذهبي","gold","#c69b20","#ffe082"],
+    ["البرتقالي","orange","#e87516","#ffc078"],
+    ["السماوي","cyan","#009eae","#80f0ff"],
+    ["الوردي","pink","#df438b","#ffadd5"],
+    ["الأحمر","red","#e32636","#ff8b94"],
+    ["التركواز","teal","#008f83","#72e5d8"]
+  ];
 
-  if (!input || !mic) return;
+  colorPage.innerHTML = `
+    <div class="alk-color-box">
+      <h2>🎨 اختار لون الموقع</h2>
+      <div class="alk-colors-grid"></div>
+      <button class="alk-close" type="button">إغلاق</button>
+    </div>`;
+  document.body.appendChild(colorPage);
 
-  let recognition = null;
-  let listening = false;
-
-  function showStatus(message) {
-    if (status) {
-      status.hidden = false;
-      status.textContent = message;
-    }
+  function applyColor(item) {
+    document.body.dataset.theme = item[1];
+    localStorage.setItem('alkfory-theme', item[1]);
+    document.documentElement.style.setProperty('--accent', item[2]);
+    document.documentElement.style.setProperty('--accent2', item[2]);
+    document.documentElement.style.setProperty('--text-accent', item[3]);
+    document.documentElement.style.setProperty('--border-accent', item[2]);
+    document.documentElement.style.setProperty('--alkfory-accent', item[2]);
   }
 
-  mic.addEventListener('click', () => {
-    if (!Recognition) {
-      showStatus('المتصفح لا يدعم تحويل الكلام إلى نص. جرّب Chrome.');
+  const grid = colorPage.querySelector('.alk-colors-grid');
+  colors.forEach(item => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'alk-color-choice';
+    button.innerHTML = `<span class="alk-color-dot" style="background:${item[2]}"></span>${item[0]}`;
+    button.addEventListener('click', () => {
+      applyColor(item);
+      colorPage.classList.remove('alk-open');
+      colorPage.style.display = 'none';
+    });
+    grid.appendChild(button);
+  });
+
+  const saved = localStorage.getItem('alkfory-theme') || 'default';
+  applyColor(colors.find(c => c[1] === saved) || colors[0]);
+
+  colorPage.querySelector('.alk-close').onclick = () => {
+    colorPage.classList.remove('alk-open');
+    colorPage.style.display = 'none';
+  };
+
+  document.getElementById('alkfory-open-colors').onclick = () => {
+    menu.hidden = true;
+    colorPage.style.display = 'flex';
+    colorPage.classList.add('alk-open');
+  };
+
+  document.getElementById('alkfory-platform-link').onclick = () => {
+    menu.hidden = true;
+    window.location.href = '/platforms';
+  };
+
+  const usage = document.createElement('div');
+  usage.id = 'alkfory-usage-page-v3';
+  usage.style.display = 'none';
+  usage.innerHTML = `
+    <div style="max-width:520px;margin:15px auto 35px">
+      <div style="text-align:center;padding:15px">
+        <div style="font-size:35px;color:var(--alkfory-accent)">⚜️</div>
+        <h2>دليل الاستخدام</h2>
+        <p style="color:#bbb">اتبع الخطوات بالترتيب للاستفادة من الموقع</p>
+      </div>
+      <div class="alk-usage-card"><b>01 — تسجيل البيانات</b><p>أدخل معرف الطالب (ID) وكلمة المرور الخاصة بحسابك.</p></div>
+      <div class="alk-usage-card"><b>02 — اختيار المستوى</b><p>اختر المستوى الدراسي المطلوب.</p></div>
+      <div class="alk-usage-card"><b>03 — اختيار الدرس</b><p>حدد الدرس الذي تريد العمل عليه.</p></div>
+      <div class="alk-usage-card"><b>04 — عرض المحتوى</b><p>اضغط على زر عرض المحتوى لمشاهدة المواد المتاحة للمراجعة.</p></div>
+      <div class="alk-usage-card"><b>05 — الثقافة المالية</b><p>اضغط على زر الثقافة المالية لنسخ رابط المنصة.</p></div>
+      <div class="alk-usage-card"><b>06 — تسجيل الدخول</b><p>افتح الرابط الرسمي، وسجّل الدخول بحسابك، ثم اختر المستوى والدرس المطلوبين.</p></div>
+      <div class="alk-usage-card"><b>07 — متابعة الدراسة</b><p>ارجع إلى الموقع وتابع الدرس واستخدم المحتوى للمراجعة والفهم.</p></div>
+      <div class="alk-usage-card"><p>⚠️ استخدم حسابك الشخصي والرابط الرسمي فقط.</p></div>
+      <button class="alk-close" type="button">إغلاق</button>
+      <div style="text-align:center;color:#777;margin-top:18px;font-size:12px">⚜️ ALKFORY ⚜️</div>
+    </div>`;
+  document.body.appendChild(usage);
+
+  document.getElementById('alkfory-usage-open').onclick = () => {
+    menu.hidden = true;
+    usage.style.display = 'block';
+    usage.classList.add('alk-open');
+  };
+
+  usage.querySelector('.alk-close').onclick = () => {
+    usage.classList.remove('alk-open');
+    usage.style.display = 'none';
+  };
+})();
+</script>
+
+
+<!-- ALKFORY-INSTALL-IN-SETTINGS -->
+<script id="ALKFORY-INSTALL-IN-SETTINGS">
+(function(){
+ function moveInstall(){
+   const area=document.getElementById('alkInstallArea');
+   const btn=document.getElementById('alkInstallBtn');
+   const menu=document.getElementById('menuOpen');
+   if(!area || !btn || !menu) return;
+
+   const selectors=[
+     '#settingsMenu','#settingsPanel','#menuPanel',
+     '#menuContent','#settingsContent','#sideMenu',
+     '.settings-menu','.settings-panel','.menu-panel',
+     '.settings-content','[role="menu"]'
+   ];
+   let target=null;
+   for(const selector of selectors){
+     const el=document.querySelector(selector);
+     if(el && el!==area && (el.contains(menu) || el!==menu)){
+       target=el;
+       break;
+     }
+   }
+
+   if(!target){
+     let node=menu.parentElement;
+     for(let i=0;node && i<4;i++,node=node.parentElement){
+       if(node.querySelectorAll('button,a').length>=2){
+         target=node;
+         break;
+       }
+     }
+   }
+   if(!target || area.parentElement===target) return;
+
+   area.style.cssText='padding:10px 12px;text-align:center;margin:8px 0;';
+   btn.hidden=false;
+   btn.style.cssText='display:block!important;width:100%;padding:12px;border-radius:12px;background:#850000;color:white;border:1px solid #ff3333;font-weight:bold;';
+   target.appendChild(area);
+ }
+ if(document.readyState==='loading')
+   document.addEventListener('DOMContentLoaded',moveInstall);
+ else moveInstall();
+
+ document.addEventListener('click',()=>setTimeout(moveInstall,150));
+ setTimeout(moveInstall,500);
+ setTimeout(moveInstall,1500);
+})();
+</script>
+<!-- /ALKFORY-INSTALL-IN-SETTINGS -->
+
+
+<style id="ALKFORY-MAIN-MENU-SEARCH-V2-STYLE">
+#alkforyTopBar > img[alt="صورة المطور"] { order:1!important; }
+#alkforyTopBar > #alkforyDeveloperTicker { order:2!important; }
+#alkforyTopBar > span { order:3!important; }
+#alkforyDeveloperTicker .alkfory-dev-name {
+  color:#ff315f!important;
+  font-weight:900!important;
+  text-shadow:0 0 9px #ff174f!important;
+}
+#alkfory-main-search-results button {
+  display:block;width:100%;text-align:right;
+  padding:10px;margin:5px 0;border-radius:8px;
+  border:1px solid #8b1738;background:#202020;
+  color:white;font-size:14px;cursor:pointer;
+}
+#alkfory-main-search-results button:active {
+  background:#650d2a;
+}
+#alkfory-main-search-results:empty { display:none; }
+</style>
+
+<script id="ALKFORY-MAIN-MENU-SEARCH-V2-SCRIPT">
+(() => {
+  const input = document.getElementById('alkfory-main-search');
+  const results = document.getElementById('alkfory-main-search-results');
+  const menu = document.getElementById('alkMenu');
+  if (!input || !results || input.dataset.ready) return;
+  input.dataset.ready = '1';
+
+  const searchable = 'h1,h2,h3,h4,p,button,a,label,li';
+  input.addEventListener('input', () => {
+    const q = input.value.trim().toLocaleLowerCase('ar');
+    results.replaceChildren();
+    if (!q) return;
+
+    const found = [...document.querySelectorAll(searchable)]
+      .filter(el =>
+        !el.closest('#alkMenu') &&
+        !el.closest('script,style') &&
+        el.getClientRects().length &&
+        (el.innerText || el.textContent || '').trim()
+          .toLocaleLowerCase('ar').includes(q)
+      )
+      .slice(0, 12);
+
+    if (!found.length) {
+      const msg = document.createElement('div');
+      msg.textContent = 'لا توجد نتائج مطابقة.';
+      msg.style.cssText = 'color:#ccc;padding:10px;text-align:center';
+      results.appendChild(msg);
       return;
     }
 
-    if (listening && recognition) {
-      recognition.stop();
-      return;
-    }
-
-    recognition = new Recognition();
-    recognition.lang = document.documentElement.lang === 'en' ? 'en-US' : 'ar-EG';
-    recognition.continuous = false;
-    recognition.interimResults = true;
-
-    let finalText = '';
-
-    recognition.onstart = () => {
-      listening = true;
-      mic.style.color = '#ff4545';
-      showStatus('🎙️ بتكلم الآن... اضغط الميكروفون للإيقاف.');
-    };
-
-    recognition.onresult = event => {
-      let interim = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const text = event.results[i][0].transcript;
-        if (event.results[i].isFinal) finalText += text;
-        else interim += text;
-      }
-      input.value = (input.value ? input.value + ' ' : '') + '';
-      input.dataset.voiceDraft = finalText + interim;
-      input.placeholder = finalText + interim || 'اكتب رسالتك هنا...';
-    };
-
-    recognition.onerror = event => {
-      showStatus(event.error === 'not-allowed'
-        ? 'اسمح للمتصفح باستخدام الميكروفون من إعدادات الموقع.'
-        : 'تعذر تشغيل الميكروفون: ' + event.error);
-    };
-
-    recognition.onend = () => {
-      listening = false;
-      mic.style.color = '';
-      const spoken = (input.dataset.voiceDraft || finalText).trim();
-      if (spoken) {
-        input.value = (input.value.trim() ? input.value.trim() + ' ' : '') + spoken;
-        input.dataset.voiceDraft = '';
-        input.focus();
-        showStatus('تم تحويل كلامك إلى نص. اضغط إرسال.');
-      }
-      input.placeholder = 'اكتب رسالتك هنا...';
-    };
-
-    try {
-      recognition.start();
-    } catch (e) {
-      listening = false;
-      showStatus('الميكروفون مشغول أو لم يبدأ. حاول مرة أخرى.');
-    }
+    found.forEach(el => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = (el.innerText || el.textContent).trim()
+        .replace(/\s+/g, ' ').slice(0, 100);
+      btn.addEventListener('click', () => {
+        if (menu) menu.hidden = true;
+        el.scrollIntoView({behavior:'smooth', block:'center'});
+      });
+      results.appendChild(btn);
+    });
   });
 })();
 </script>
 
+
+<script src="/alkfory-global-theme.js" defer></script>
 </body>
 </html>
 <style>
@@ -1619,5 +2054,295 @@ button[aria-label="المزيد"],button[aria-label="More options"],
 header,.topbar,.navbar,.app-header{
  padding-top:5px!important;padding-bottom:5px!important;
  min-height:0!important;
+}
+</style>
+
+<style id="ALKFORY-CLEAN-PAGE">
+#messages,
+form:has(#text),
+#attachButton,
+#text,
+#sendButton,
+#voiceButton,
+#callButton {
+  display: none !important;
+}
+body > header {
+  margin-top: 0 !important;
+  padding-top: 5px !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 10 !important;
+}
+body > header span {
+  font-size: 0 !important;
+}
+body > header span::after {
+  content: "⚜️ ALKFORY";
+  font-size: 27px;
+  color: #ff4545;
+}
+</style>
+
+<style id="ALKFORY-FINAL-CLEAN">
+/* إخفاء المحادثات */
+#messages,
+#messages *,
+.message,
+.msg,
+.chat-messages,
+#chatMessages,
+#chat-messages {
+  display: none !important;
+}
+
+/* إخفاء شريط الكتابة السفلي */
+form:has(#text),
+form:has(#message),
+#text,
+#message,
+#attachButton,
+#image,
+#sendButton,
+#voiceButton,
+#callButton,
+#form,
+.composer,
+.chat-input,
+.input-area,
+.bottom-bar,
+.chat-footer {
+  display: none !important;
+}
+
+/* رفع الشريط العلوي */
+body > header {
+  position: sticky !important;
+  top: 0 !important;
+  margin: 0 !important;
+  padding: 8px 17px !important;
+  z-index: 15 !important;
+}
+
+/* الاسم بدون AI */
+body > header span {
+  font-size: 0 !important;
+}
+body > header span::after {
+  content: "⚜️ ALKFORY";
+  font-size: 27px;
+  color: #ff4545;
+}
+
+/* إخفاء أي كتابة زائدة أعلى الصفحة دون المساس بالقائمة */
+</style>
+
+<style id="ALKFORY-HEADER-FINAL">
+html, body {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+body > header {
+  position: sticky !important;
+  top: 0 !important;
+  margin: 0 !important;
+  padding: 6px 12px !important;
+  min-height: 65px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+body > header img {
+  order: -1 !important;
+  margin: 0 auto 0 0 !important;
+  width: 48px !important;
+  height: 48px !important;
+  flex-shrink: 0 !important;
+}
+body > header #menuOpen {
+  order: 3 !important;
+  margin: 0 0 0 auto !important;
+  flex-shrink: 0 !important;
+}
+body > header span {
+  order: 2 !important;
+  font-size: 25px !important;
+  color: #ff4545 !important;
+  white-space: nowrap !important;
+}
+body > header span::after {
+  content: none !important;
+}
+</style>
+
+<style id="ALKFORY-ONLY-PHOTO-SETTINGS">
+html, body {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+  min-height: 100% !important;
+  background: #080808 !important;
+  overflow: hidden !important;
+}
+
+/* إخفاء كل محتوى الصفحة */
+body > * {
+  display: none !important;
+}
+
+/* إبقاء الشريط العلوي فقط */
+body > header {
+  display: flex !important;
+  position: fixed !important;
+  inset: 0 0 auto 0 !important;
+  height: 66px !important;
+  padding: 5px 12px !important;
+  box-sizing: border-box !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  background: #080808 !important;
+  border: 0 !important;
+  z-index: 99999 !important;
+}
+
+/* إخفاء كل عناصر الشريط ما عدا الصورة وزر الإعدادات */
+body > header > * {
+  display: none !important;
+}
+body > header img[alt="صورة المطور"],
+body > header img[src*="alkfory-profile"] {
+  display: block !important;
+  width: 48px !important;
+  height: 48px !important;
+  object-fit: cover !important;
+  border-radius: 50% !important;
+  margin: 0 auto 0 0 !important;
+}
+
+/* إبقاء زر القائمة/الإعدادات */
+body > header #menuOpen,
+#settingsButton,
+#settingsBtn,
+#alkSettingsButton,
+button[aria-label*="الإعدادات"],
+button[aria-label*="Settings"],
+button[title*="الإعدادات"],
+button[title*="Settings"],
+.more-options,
+.more-menu {
+  display: none !important;
+}
+
+/* إظهار زر الثلاث نقاط إن كان موجودًا كزر عائم */
+button[aria-label*="المزيد"],
+button[aria-label*="More"],
+button[title*="المزيد"],
+button[title*="More"],
+#moreButton,
+#moreBtn,
+#settings,
+.settings-button {
+  display: flex !important;
+  position: fixed !important;
+  top: 12px !important;
+  right: 12px !important;
+  z-index: 100000 !important;
+}
+
+/* إزالة أي نص زائد أعلى الصفحة */
+body {
+  font-size: 0 !important;
+}
+</style>
+
+<style id="ALKFORY-RESTORE-SETTINGS">
+body > header #menuOpen {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: fixed !important;
+  top: 12px !important;
+  right: 12px !important;
+  width: 44px !important;
+  height: 44px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 100001 !important;
+  font-size: 22px !important;
+  color: #fff !important;
+  background: #292929 !important;
+  border: 1px solid #a81717 !important;
+}
+</style>
+
+<style id="ALKFORY-RESTORE-OLD-MENU-FUNCTION">
+body > header #menuOpen {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  z-index: 100002 !important;
+}
+
+body > #alkMenu,
+#alkMenu:not([hidden]) {
+  display: block !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  z-index: 100003 !important;
+}
+
+#alkMenu[hidden] {
+  display: none !important;
+}
+</style>
+
+<style id="ALKFORY_TRACKER_FRAME_STYLE">
+#alkfory-tracker-frame {
+  position: fixed;
+  top: 62px;
+  left: 0;
+  width: 100%;
+  height: calc(100dvh - 62px);
+  border: 0;
+  background: #080808;
+  z-index: 5;
+}
+body > header { z-index: 10010 !important; }
+#alkMenu { z-index: 10020 !important; }
+</style>
+<script id="ALKFORY_TRACKER_FRAME">
+document.addEventListener("DOMContentLoaded", function () {
+  if (document.getElementById("alkfory-tracker-frame")) return;
+  const frame = document.createElement("iframe");
+  frame.id = "alkfory-tracker-frame";
+  frame.src = "/financial-tracker/index.html";
+  frame.title = "ALKFORY FINANCIAL TRACKER";
+  document.body.appendChild(frame);
+});
+</script>
+
+<style id="ALKFORY_TRACKER_DISPLAY_FIX">
+body > iframe#alkfory-tracker-frame {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: fixed !important;
+  top: 62px !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: calc(100dvh - 62px) !important;
+  border: 0 !important;
+  background: #080808 !important;
+  z-index: 100 !important;
+  pointer-events: auto !important;
+}
+body > header {
+  display: flex !important;
+  z-index: 10010 !important;
+}
+#alkMenu {
+  z-index: 10020 !important;
 }
 </style>

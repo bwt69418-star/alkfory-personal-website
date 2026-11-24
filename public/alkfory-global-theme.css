@@ -1,0 +1,85 @@
+
+:root {
+  --alkfory-accent: #b00035;
+  --alkfory-accent2: #ff4778;
+  --alkfory-border: #b00035;
+  --alkfory-glow: rgba(176,0,53,.35);
+}
+button, .btn, a.button, [role="button"], input[type="submit"],
+input[type="button"], .button, .theme-button {
+  border-color: var(--alkfory-accent) !important;
+}
+button:not(.alkfory-back-button), .btn, a.button, [role="button"],
+input[type="submit"], input[type="button"], .button {
+  accent-color: var(--alkfory-accent);
+}
+a:not(.alkfory-back-button) {
+  text-decoration-color: var(--alkfory-accent);
+}
+header, nav, .navbar, .topbar, .top-bar {
+  border-color: var(--alkfory-border);
+}
+input:focus, textarea:focus, select:focus {
+  border-color: var(--alkfory-accent) !important;
+  outline-color: var(--alkfory-accent) !important;
+  box-shadow: 0 0 0 2px var(--alkfory-glow) !important;
+}
+.alkfory-back-button {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin-inline-start: 12px !important;
+  padding: 9px 15px !important;
+  border: 1px solid var(--alkfory-accent) !important;
+  border-radius: 12px !important;
+  background: linear-gradient(135deg,var(--alkfory-accent),var(--alkfory-accent2)) !important;
+  color: white !important;
+  font-weight: 900 !important;
+  text-decoration: none !important;
+  cursor: pointer;
+  vertical-align: middle;
+  box-shadow: 0 0 12px var(--alkfory-glow);
+}
+
+
+/* ALKFORY CUSTOM ALERT */
+#alkfory-alert-overlay {
+  position: fixed; inset: 0; z-index: 2147483647;
+  display: none; align-items: center; justify-content: center;
+  padding: 20px; box-sizing: border-box;
+  background: rgba(0,0,0,.82); backdrop-filter: blur(7px);
+}
+#alkfory-alert-overlay.alk-show { display: flex; }
+#alkfory-alert-box {
+  width: min(420px, 100%); box-sizing: border-box;
+  padding: 25px 20px; text-align: center; direction: rtl;
+  background: linear-gradient(145deg,#171717,#080808);
+  border: 1px solid #d0003b; border-radius: 20px;
+  box-shadow: 0 0 22px rgba(220,0,60,.35), inset 0 0 20px #24000c;
+  animation: alkAlertIn .22s ease-out;
+}
+#alkfory-alert-box .alk-alert-symbol {
+  width: 55px; height: 55px; margin: 0 auto 13px;
+  display: grid; place-items: center; border-radius: 50%;
+  color: #ff315f; font-size: 27px; font-weight: 900;
+  border: 1px solid #ff315f; box-shadow: 0 0 15px #9b002e;
+}
+#alkfory-alert-box .alk-alert-title {
+  color: #ff315f; font-size: 21px; font-weight: 900;
+  margin: 0 0 12px;
+}
+#alkfory-alert-box .alk-alert-message {
+  color: #f2f2f2; font-size: 15px; line-height: 1.9;
+  overflow-wrap: anywhere; margin: 0 0 20px;
+}
+#alkfory-alert-box .alk-alert-ok {
+  width: 100%; padding: 12px; border: 0; border-radius: 11px;
+  color: white; font-size: 16px; font-weight: 900;
+  background: linear-gradient(100deg,#a90032,#f02c59);
+  box-shadow: 0 0 13px rgba(220,0,60,.3); cursor: pointer;
+}
+@keyframes alkAlertIn {
+  from { opacity: 0; transform: translateY(12px) scale(.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}

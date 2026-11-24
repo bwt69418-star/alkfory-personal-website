@@ -1,0 +1,89 @@
+{
+  "settings": {},
+  "apps": [],
+  "messages": [],
+  "chats": [
+    {
+      "id": "439bf584-af51-4ebb-b011-c78f0a23053c",
+      "name": "ALKFORY TEST",
+      "phone": "",
+      "tokenHash": "1d9a86455ea73196fcb21cd64c86060a3af875e512794992a0e1cf2ce668cf75",
+      "createdAt": "2026-10-30T15:34:56.682Z",
+      "messages": []
+    },
+    {
+      "id": "0ec1d508-a50a-4984-adbb-20baa92fcb48",
+      "name": "زياد",
+      "phone": "01031808795",
+      "tokenHash": "dce2da0447c1c1d3215bff3f18e40c6db3ec76609d1b9f11dc8fb346de0149bd",
+      "createdAt": "2026-10-30T15:36:43.574Z",
+      "messages": [
+        {
+          "id": "fc65be5b-64a8-482e-99b3-c36ce1ccb791",
+          "sender": "visitor",
+          "text": "بقلك",
+          "date": "2026-10-30T15:36:53.514Z",
+          "file": null
+        },
+        {
+          "id": "a33424ba-8337-4efd-baa2-b381c868d274",
+          "sender": "visitor",
+          "text": "عامل ايه",
+          "date": "2026-10-30T15:38:41.720Z",
+          "file": null
+        },
+        {
+          "id": "bfa47838-07b7-4d90-afb0-e9c0dc169127",
+          "sender": "developer",
+          "text": "الحمدلله",
+          "date": "2026-10-30T15:39:09.930Z",
+          "file": null
+        },
+        {
+          "id": "0c06ac78-4476-4c99-8fda-7151507bd12a",
+          "sender": "visitor",
+          "text": "بقلك",
+          "date": "2026-10-30T15:52:38.489Z",
+          "file": null
+        },
+        {
+          "id": "64e9e3d6-19f5-4fbc-ba2d-b69bfe805006",
+          "sender": "visitor",
+          "text": "ها",
+          "date": "2026-10-30T18:12:34.462Z",
+          "file": null
+        },
+        {
+          "id": "a0a89fe4-5fe4-46ab-a63a-50133a79a55c",
+          "sender": "developer",
+          "text": "اي يا كسمك",
+          "date": "2026-10-30T18:14:58.746Z",
+          "file": null
+        },
+        {
+          "id": "a4b00e46-36ef-44a4-9ab7-11f27517eb6c",
+          "sender": "visitor",
+          "text": "بقلك",
+          "date": "2026-10-30T18:46:42.111Z",
+          "file": null
+        }
+      ]
+    },
+    {
+      "id": "76b6b538-ecf3-46b1-b03e-0e3c9fbd0dc9",
+      "name": "Test Visitor",
+      "phone": "",
+      "tokenHash": "33561a18b07b2a4f16873494e3b256dbcbcb9a50ef1992da40371f4fcdf71366",
+      "createdAt": "2026-10-30T18:38:05.456Z",
+      "messages": []
+    },
+    {
+      "id": "097d7bb8-46d1-4a5f-89e8-4b2e6ed163d0",
+      "name": "Test Visitor",
+      "phone": "",
+      "tokenHash": "5ddb1217c0bd2dd9819970dfe52bcfbed5a36742fcb64bd3404ddf9c7c36f70d",
+      "createdAt": "2026-10-30T18:38:30.632Z",
+      "messages": []
+    }
+  ]
+}
