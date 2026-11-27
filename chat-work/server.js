@@ -44,12 +44,168 @@ app.use(session({
   }
 }));
 
+// ALKFORY REAL VISITOR ANALYTICS
+function alkforyToday() {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Africa/Cairo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(new Date());
+}
+
+app.use((req, res, next) => {
+  const ignored =
+    req.path === '/api/health' ||
+    req.path === '/admin' ||
+    req.path.startsWith('/api/admin/') ||
+    req.path.startsWith('/api/developer-');
+
+  if (ignored || req.session?.isDeveloper === true) return next();
+
+  const cookies = String(req.headers.cookie || '').split(';');
+  const savedCookie = cookies.find(v => v.trim().startsWith('alkfory.vid='));
+  let visitorId = savedCookie ? savedCookie.trim().slice('alkfory.vid='.length) : '';
+
+  if (!/^[a-f0-9-]{36}$/i.test(visitorId)) {
+    visitorId = crypto.randomUUID();
+    res.cookie('alkfory.vid', visitorId, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 365 * 24 * 60 * 60 * 1000
+    });
+  }
+
+  const pageView = req.method === 'GET' &&
+    (req.path === '/' || req.path.endsWith('.html') ||
+     ['/ai', '/platforms'].includes(req.path));
+
+  const activity = pageView || req.path.startsWith('/api/');
+
+  if (!pageView && !activity) return next();
+
+  store.analytics ||= { visitors: {}, days: {}, firstSeenAt: new Date().toISOString() };
+  store.analytics.visitors ||= {};
+  store.analytics.days ||= {};
+
+  let changed = false;
+  if (!store.analytics.visitors[visitorId]) {
+    store.analytics.visitors[visitorId] = new Date().toISOString();
+    changed = true;
+  }
+
+  const day = alkforyToday();
+  store.analytics.days[day] ||= { visitors: [], active: [] };
+  const record = store.analytics.days[day];
+
+  if (pageView && !record.visitors.includes(visitorId)) {
+    record.visitors.push(visitorId);
+    changed = true;
+  }
+
+  if (activity && !record.active.includes(visitorId)) {
+    record.active.push(visitorId);
+    changed = true;
+  }
+
+  if (changed) saveStore();
+  next();
+});
+
 // اختيار طريقة الدخول من جديد عند فتح الصفحة الرئيسية
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'alkfory-ai.html'));
 });
 
 // السماح للزائر بالدخول مرة واحدة بعد اختياره
+
+// ALKFORY REAL VISITOR ANALYTICS V2
+app.use((req, res, next) => {
+  try {
+    if (req.session?.isDeveloper === true) return next();
+
+    const path = req.path || "/";
+    if (
+      path === "/api/health" ||
+      path.startsWith("/api/admin/") ||
+      path.startsWith("/api/developer-")
+    ) return next();
+
+    const cookies = {};
+    String(req.headers.cookie || "").split(";").forEach(part => {
+      const i = part.indexOf("=");
+      if (i > 0) cookies[part.slice(0, i).trim()] =
+        decodeURIComponent(part.slice(i + 1).trim());
+    });
+
+    const crypto = require("crypto");
+    let visitorId = cookies["alkfory.vid2"];
+
+    if (!visitorId || !/^[a-f0-9-]{20,60}$/i.test(visitorId)) {
+      visitorId = crypto.randomUUID();
+      res.cookie("alkfory.vid2", visitorId, {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: req.secure || req.headers["x-forwarded-proto"] === "https",
+        maxAge: 365 * 24 * 60 * 60 * 1000
+      });
+    }
+
+    const now = new Date();
+    const nowISO = now.toISOString();
+    const today = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Africa/Cairo",
+      year: "numeric", month: "2-digit", day: "2-digit"
+    }).format(now);
+
+    const isPageView =
+      req.method === "GET" &&
+      !path.startsWith("/api/") &&
+      !/\.(css|js|png|jpg|jpeg|webp|svg|ico|woff2?|map|txt|json)$/i.test(path);
+
+    const analytics = store.analyticsV2 ||= {
+      visitors: {},
+      days: {},
+      pages: {},
+      lastVisitAt: null
+    };
+
+    const visitor = analytics.visitors[visitorId] ||= {
+      firstSeenAt: nowISO,
+      lastSeenAt: null
+    };
+
+    visitor.lastSeenAt = nowISO;
+
+    if (isPageView) {
+      const day = analytics.days[today] ||= {
+        visitors: [],
+        pageViews: 0
+      };
+
+      if (!day.visitors.includes(visitorId)) {
+        day.visitors.push(visitorId);
+      }
+
+      day.pageViews = (day.pageViews || 0) + 1;
+      analytics.pages[path] = (analytics.pages[path] || 0) + 1;
+      analytics.lastVisitAt = nowISO;
+    }
+
+    const lastSave = Number(analytics.lastSavedAt || 0);
+    if (isPageView || Date.now() - lastSave > 30000) {
+      analytics.lastSavedAt = Date.now();
+      saveStore();
+    }
+  } catch (error) {
+    console.error("ALKFORY analytics error:", error.message);
+  }
+
+  next();
+});
+// END ALKFORY REAL VISITOR ANALYTICS V2
+
 app.post('/api/visitor-login', (req, res) => {
   req.session.allowHomeOnce = true;
   req.session.save(err => {
@@ -309,16 +465,72 @@ app.post('/api/ai', async (req, res) => {
     let data;
     try {
       response = await fetch(url, {
-        method: 'GET',
-        headers: { 'Accept': 'application/json' },
-        signal: controller.signal
-      });
-      data = await response.json();
-    } finally {
-      clearTimeout(timer);
+        method: 
+// ALKFORY ADMIN ANALYTICS V2
+app.get("/api/admin/analytics-v2", requireDeveloper, (req, res) => {
+  try {
+    const a = store.analyticsV2 || {
+      visitors: {}, days: {}, pages: {}, lastVisitAt: null
+    };
+
+    const dateKey = (date) => new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Africa/Cairo",
+      year: "numeric", month: "2-digit", day: "2-digit"
+    }).format(date);
+
+    const now = new Date();
+    const todayKey = dateKey(now);
+    const yesterdayKey = dateKey(new Date(Date.now() - 86400000));
+
+    const today = a.days?.[todayKey] || { visitors: [], pageViews: 0 };
+    const yesterday = a.days?.[yesterdayKey] || { visitors: [], pageViews: 0 };
+
+    const activeCutoff = Date.now() - 5 * 60 * 1000;
+    const weekCutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+
+    const visitors = Object.entries(a.visitors || {});
+    const activeNow = visitors.filter(([, v]) =>
+      v.lastSeenAt && new Date(v.lastSeenAt).getTime() >= activeCutoff
+    ).length;
+
+    const visitorsLast7Days = visitors.filter(([, v]) =>
+      v.lastSeenAt && new Date(v.lastSeenAt).getTime() >= weekCutoff
+    ).length;
+
+    let pageViewsLast7Days = 0;
+    for (let i = 0; i < 7; i++) {
+      const key = dateKey(new Date(Date.now() - i * 86400000));
+      pageViewsLast7Days += Number(a.days?.[key]?.pageViews || 0);
     }
 
-    if (!response.ok || !data?.success) {
+    const topPages = Object.entries(a.pages || {})
+      .sort((x, y) => y[1] - x[1])
+      .slice(0, 5)
+      .map(([page, views]) => ({ page, views }));
+
+    res.json({
+      success: true,
+      timezone: "Africa/Cairo",
+      trackingSince: visitors.length
+        ? visitors.map(([, v]) => v.firstSeenAt).sort()[0]
+        : null,
+      totalUsers: visitors.length,
+      visitorsToday: today.visitors.length,
+      visitorsYesterday: yesterday.visitors.length,
+      activeNow,
+      visitorsLast7Days,
+      pageViewsToday: today.pageViews || 0,
+      pageViewsYesterday: yesterday.pageViews || 0,
+      pageViewsLast7Days,
+      topPages,
+      lastVisitAt: a.lastVisitAt || null
+    });
+  } catch (error) {
+    console.error("ALKFORY analytics API:", error);
+    res.status(500).json({ success: false });
+  }
+});
+// END ALKFORY ADMIN ANALYTICS V2    if (!response.ok || !data?.success) {
       const detail = data?.error || data?.message || ('HTTP ' + response.status);
       console.error('ALKFORY AI provider error:', detail);
       return res.status(502).json({ error: 'خدمة الذكاء الاصطناعي لم تتمكن من الرد حاليًا.' });
@@ -357,6 +569,22 @@ app.post('/api/ai', async (req, res) => {
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'online' });
+});
+
+// إحصائيات الموقع - للمطور المسجل فقط
+app.get('/api/admin/analytics', requireDeveloper, (req, res) => {
+  const analytics = store.analytics || { visitors: {}, days: {} };
+  const today = analytics.days?.[alkforyToday()] || { visitors: [], active: [] };
+
+  res.json({
+    success: true,
+    trackingSince: analytics.firstSeenAt || null,
+    totalUsers: Object.keys(analytics.visitors || {}).length,
+    visitorsToday: (today.visitors || []).length,
+    activeToday: (today.active || []).length,
+    date: alkforyToday(),
+    timezone: 'Africa/Cairo'
+  });
 });
 
 

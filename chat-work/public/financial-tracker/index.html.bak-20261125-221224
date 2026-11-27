@@ -1,0 +1,1438 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ALKFORY</title>
+<link rel="stylesheet" href="css/style.css?v=20">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#080808;color:#fff;font-family:Arial,sans-serif}
+header{padding:15px 12px;text-align:center}
+#alkfory-brand{display:flex;align-items:center;justify-content:center;gap:12px}
+#alkfory-brand img{width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid #b00035}
+#alkfory-brand h1{font-size:25px;margin:0;color:#ff2020 !important;letter-spacing:2px}
+main{width:100%;padding:10px 12px}
+#login{display:block!important}
+#login .card{width:100%;max-width:390px;margin:12px auto;padding:20px 17px;background:#151515;border:1px solid #8f002b;border-radius:16px;box-shadow:0 5px 25px #000}
+#login h2{text-align:center;margin:0 0 8px;color:#fff;font-size:22px}
+#login .subtitle{text-align:center;color:#aaa;margin:0 0 20px;font-size:14px}
+#loginForm{display:flex;flex-direction:column;gap:12px}
+#loginForm input,#loginForm select{width:100%;padding:13px 12px;background:#090909;color:#fff;border:1px solid #444;border-radius:9px;font-size:15px;outline:none}
+#loginForm input:focus,#loginForm select:focus{border-color:#e00046}
+#loginForm select{
+  appearance:none;
+  -webkit-appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:left 13px center;
+  padding-left:38px;
+}
+#loginForm button:disabled{
+  opacity:.4;
+  cursor:not-allowed;
+  filter:grayscale(1);
+}
+#loginForm button{padding:14px;border:0;border-radius:10px;background:#b00035;color:white;font-size:17px;font-weight:bold;cursor:pointer}
+#alkfory-loading-status{display:none}
+#alkfory-answer-results{display:none;width:100%;max-width:700px;margin:18px auto;padding:18px;background:#151515;color:#fff;border:1px solid #b00035;border-radius:14px}
+#alkfory-answer-results h2,#alkfory-answer-results h3{color:#ff4778}
+#alkfory-copyright{text-align:center;padding:18px 10px;margin:25px auto 10px;color:#aaa;font-size:13px;border-top:1px solid #333}
+
+.alkfory-creator-ticker{
+  width:180px; max-width:42vw; height:28px;
+  overflow:hidden; position:relative; flex-shrink:1;
+  display:flex; align-items:center; direction:ltr;
+}
+.alkfory-creator-ticker span{
+  position:absolute; white-space:nowrap;
+  color:#ff2020; font-size:14px; font-weight:bold;
+  animation:alkforyTicker 6s linear infinite;
+}
+@keyframes alkforyTicker{
+  0%{transform:translateX(110%)}
+  20%{transform:translateX(0)}
+  53%{transform:translateX(0)}
+  100%{transform:translateX(-120%)}
+}
+
+
+.alkfory-creator-ticker span{font-size:9px !important}
+.alkfory-creator-ticker .ticker-dev{
+  color:#00e676 !important;
+  font-weight:900;
+}
+
+
+.alkfory-creator-ticker span{
+  font-size:9px !important;
+}
+.alkfory-creator-ticker .ticker-dev{
+  font-size:9px !important;
+}
+
+
+.alkfory-subtitle{
+  color:#00e676 !important;
+  font-weight:800;
+}
+#alkfory-hint{
+  position:fixed; inset:0; z-index:99999;
+  display:none; align-items:center; justify-content:center;
+  background:#000b; padding:20px;
+}
+#alkfory-hint .hint-box{
+  width:100%; max-width:310px; padding:22px;
+  border:1px solid #00e676; border-radius:14px;
+  background:#111; color:white; text-align:center;
+  box-shadow:0 0 20px #00e67333;
+  font-size:15px; line-height:1.8;
+}
+#alkfory-hint button{
+  margin-top:14px; padding:8px 25px;
+  border:0; border-radius:8px;
+  background:#00e676; color:#000; font-weight:bold;
+}
+
+
+#alkfory-menu-button{
+  order:3; border:1px solid #b00035; background:#151515;
+  color:#ff3030; border-radius:9px; width:34px;height:34px;
+  font-size:25px;cursor:pointer;line-height:20px;
+}
+#alkfory-menu-panel{
+  display:none;position:absolute;z-index:10000;top:48px;left:8px;
+  width:190px;background:#151515;border:1px solid var(--accent,#b00035);
+  border-radius:12px;padding:9px;box-shadow:0 8px 25px #000b;
+}
+#alkfory-menu-panel button{
+  display:block;width:100%;margin:5px 0;padding:11px;
+  background:#222;color:white;border:1px solid #333;
+  border-radius:8px;text-align:right;font-size:14px;
+}
+#alkfory-settings{
+  display:none;position:fixed;inset:0;z-index:10001;
+  background:#000c;align-items:center;justify-content:center;padding:18px;
+}
+#alkfory-settings .settings-box{
+  width:100%;max-width:340px;max-height:85vh;overflow:auto;
+  background:#151515;color:white;border:1px solid var(--accent,#b00035);
+  border-radius:15px;padding:18px;text-align:center;
+}
+#alkfory-settings h3{color:var(--accent,#ff3030)}
+#alkfory-settings button{
+  width:100%;padding:11px;margin:5px 0;border-radius:8px;
+  background:#242424;color:white;border:1px solid #444;
+}
+#alkfory-settings .close-settings{background:var(--accent,#b00035)}
+body[data-theme="green"]{--accent:#00c878;--text-accent:#39a9ff}
+body[data-theme="blue"]{--accent:#168cff;--text-accent:#53c7ff}
+body[data-theme="purple"]{--accent:#a855f7;--text-accent:#d8a5ff}
+body[data-theme="default"]{--accent:#b00035;--text-accent:#ff4778}
+body[data-theme] #alkfory-brand h1{color:var(--accent)!important}
+body[data-theme] .alkfory-subtitle{color:var(--text-accent)!important}
+body[data-theme] button:not(#alkfory-menu-button){border-color:var(--accent)}
+body[data-theme] #alkfory-copyright{border-color:var(--accent)}
+
+</style>
+<style>
+/* ALKFORY GLOBAL THEMES */
+body[data-theme="default"]{
+ --accent:#b00035;--accent2:#ff3030;--text-accent:#ff4778;
+ --soft-accent:#35101c;--border-accent:#b00035;
+}
+body[data-theme="green"]{
+ --accent:#00b86b;--accent2:#00e676;--text-accent:#42bfff;
+ --soft-accent:#092b20;--border-accent:#00b86b;
+}
+body[data-theme="blue"]{
+ --accent:#087cf0;--accent2:#168cff;--text-accent:#53c7ff;
+ --soft-accent:#0b2038;--border-accent:#087cf0;
+}
+body[data-theme="purple"]{
+ --accent:#923be0;--accent2:#c084fc;--text-accent:#e0b5ff;
+ --soft-accent:#281438;--border-accent:#923be0;
+}
+
+/* ألوان الموقع بالكامل */
+body[data-theme]{
+ --main-color:var(--accent);
+}
+body[data-theme] #alkfory-brand h1,
+body[data-theme] h1,
+body[data-theme] h2,
+body[data-theme] h3{
+ color:var(--accent2)!important;
+}
+body[data-theme] .alkfory-subtitle,
+body[data-theme] a,
+body[data-theme] .ticker-dev{
+ color:var(--text-accent)!important;
+}
+body[data-theme] button,
+body[data-theme] input:focus,
+body[data-theme] select:focus{
+ border-color:var(--accent)!important;
+}
+body[data-theme] button[type="submit"],
+body[data-theme] #loginForm button,
+body[data-theme] .close-settings{
+ background:var(--accent)!important;
+}
+body[data-theme] input,
+body[data-theme] select,
+body[data-theme] textarea{
+ accent-color:var(--accent);
+}
+body[data-theme] #alkfory-brand img{
+ border-color:var(--accent)!important;
+}
+body[data-theme] main,
+body[data-theme] section,
+body[data-theme] .card,
+body[data-theme] #alkfory-answer-results,
+body[data-theme] .settings-box{
+ border-color:var(--border-accent)!important;
+}
+body[data-theme] #alkfory-answer-results h2,
+body[data-theme] #alkfory-answer-results h3{
+ color:var(--accent2)!important;
+}
+body[data-theme] #alkfory-copyright{
+ border-color:var(--accent)!important;
+}
+body[data-theme] .alkfory-creator-ticker span{
+ color:var(--accent2)!important;
+}
+body[data-theme] .alkfory-creator-ticker .ticker-dev{
+ color:var(--text-accent)!important;
+}
+body[data-theme] #alkfory-menu-button{
+ color:var(--accent2)!important;
+ border-color:var(--accent)!important;
+}
+body[data-theme] #alkfory-menu-panel button,
+body[data-theme] #alkfory-settings button{
+ border-color:var(--accent)!important;
+}
+body[data-theme] .hint-box,
+body[data-theme] #alkfory-hint .hint-box{
+ border-color:var(--accent)!important;
+}
+</style><style>
+/* إصلاح قائمة الإعدادات وصفحة الألوان */
+#alkfory-menu-button{
+  font-size:27px!important;
+  line-height:20px!important;
+  width:34px!important;
+  height:34px!important;
+  padding:0!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+}
+#alkfory-theme-page{
+  display:none!important;
+  position:fixed!important;
+  inset:0!important;
+  z-index:100002!important;
+  background:#080808!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:18px!important;
+  overflow-y:auto!important;
+}
+#alkfory-theme-page.alkfory-theme-open{
+  display:flex!important;
+}
+#alkfory-theme-page .settings-box{
+  width:100%!important;
+  max-width:360px!important;
+  max-height:85vh!important;
+  overflow-y:auto!important;
+}
+.alkfory-color-grid{
+  display:grid!important;
+  grid-template-columns:1fr 1fr!important;
+  gap:10px!important;
+  margin:18px 0!important;
+}
+.alkfory-color-choice{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+  gap:10px!important;
+  padding:13px!important;
+}
+.alkfory-color-dot{
+  width:20px!important;
+  height:20px!important;
+  border-radius:50%!important;
+  flex-shrink:0!important;
+}
+</style>
+<style id='ALKFORY-HEADER-COLORS-FIX'>
+#alkfory-menu-button{
+  font-size:25px!important;
+  transform:none!important;
+  font-family:Arial,sans-serif!important;
+  font-weight:bold!important;
+  letter-spacing:0!important;
+}
+body[data-theme="default"] #alkfory-brand h1{
+  color:#ff2020!important;
+}
+body[data-theme="default"] .alkfory-subtitle{
+  color:#00e676!important;
+}
+body[data-theme="default"] .alkfory-creator-ticker .ticker-dev{
+  color:#00e676!important;
+}
+</style>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<style id="ALKFORY-HEADER-FINAL">
+html, body {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+body > header {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: auto !important;
+  width: 100% !important;
+  height: 62px !important;
+  margin: 0 !important;
+  padding: 4px 10px !important;
+  box-sizing: border-box !important;
+  transform: none !important;
+  z-index: 999999 !important;
+  background: #080808 !important;
+  border-bottom: 1px solid #8f002b !important;
+}
+#alkfory-brand {
+  direction: ltr !important;
+  display: grid !important;
+  grid-template-columns: auto auto 1fr auto !important;
+  align-items: center !important;
+  gap: 8px !important;
+  width: 100% !important;
+  height: 54px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+#alkfory-menu-button {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+}
+#alkfory-brand h1 {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  margin: 0 !important;
+}
+.alkfory-creator-ticker {
+  grid-column: 3 !important;
+  grid-row: 1 !important;
+}
+#alkfory-brand img {
+  grid-column: 4 !important;
+  grid-row: 1 !important;
+  justify-self: end !important;
+}
+body > main {
+  margin-top: 0 !important;
+  padding-top: 62px !important;
+  box-sizing: border-box !important;
+}
+#login {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+#login .card {
+  margin-top: 0 !important;
+}
+</style>
+
+
+<link rel="stylesheet" href="/alkfory-global-theme.css">
+</head>
+<body>
+
+
+<main>
+<section id="login" class="page active-page">
+  <div class="card">
+    <button type="button" id="alkfory-copy-financial-link" style="display:flex;align-items:center;justify-content:center;gap:7px;width:100%;border:0;background:transparent;color:inherit;font:inherit;font-size:inherit;font-weight:inherit;padding:0;margin:0 0 0.83em;cursor:pointer"><span>الثقافة المالية</span><span aria-hidden="true" style="display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;border:1px solid currentColor;border-radius:2px;box-sizing:border-box"><span style="width:6px;height:8px;border:1px solid currentColor;border-radius:1px"></span></span><span aria-hidden="true" style="font-size:15px;line-height:1">⧉</span></button>
+    <p class="subtitle"><span class="alkfory-subtitle">اختر المستوى والدرس لعرض الإجابات</span></p>
+
+    <form id="loginForm" novalidate>
+      <input id="studentId" type="text" placeholder="معرف الطالب ID" inputmode="numeric" pattern="[0-9]*" required>
+      <input id="password" type="password" placeholder="كلمة المرور" required>
+
+      <select id="study-unit" required>
+      <option value="">اختر المستوى</option>
+      <option value="1">المستوى 1: دور المال</option>
+      <option value="2">المستوى 2: التمويل في المجتمع</option>
+      <option value="3">المستوى 3: البنية الأساسية للاقتصاد</option>
+      <option value="4">المستوى 4: الزكاة</option>
+      <option value="5">المستوى 5: ما هو المشروع التجاري؟</option>
+      <option value="6">المستوى 6: عمليات الأعمال والاقتصاد</option>
+      <option value="7">المستوى 7: الدخل والنفقات والسلوك الاقتصادي</option>
+      <option value="8">المستوى 8: محاكاة حياة العمل – العمل والكسب والحياة</option>
+      <option value="9">المستوى 9: التمويل الشخصي والائتمان واتخاذ القرار</option>
+      <option value="10">المستوى 10: الادخار والاستقرار والتخطيط للمستقبل</option>
+      <option value="11">المستوى 11: المستوى الحادي عشر</option>
+      <option value="12">المستوى 12: محاكاة رحلة الحياة – النجاة المالية</option>
+      <option value="13">المستوى 13: ما هي ريادة الأعمال؟</option>
+      <option value="14">المستوى 14: نماذج الأعمال وهياكل الإيرادات</option>
+      <option value="15">المستوى 15: التكاليف والأرباح وإعادة الاستثمار</option>
+      <option value="16">المستوى 16: محاكاة رائد الأعمال – من الفكرة إلى المشروع</option>
+      <option value="17">المستوى 17: المستوى السابع عشر</option>
+      <option value="18">المستوى 18: ما هي الأسهم؟</option>
+      <option value="19">المستوى 19: المستوى التاسع عشر</option>
+      <option value="20">المستوى 20: محاكاة حياة المستثمر – بناء الثروة للمستقبل</option>
+      <option value="21">المستوى 21: شركات الذكاء الاصطناعي ونماذج الأعمال</option>
+      <option value="22">المستوى 22: الذكاء الاصطناعي والثقافة الرقمية</option>
+    </select>
+
+      <select id="study-lesson" required>
+        <option value="">اختر الدرس</option>
+      </select>
+
+      <button type="submit">اختراق المنصة</button>
+    </form>
+    <div id="message" style="display:none"></div>
+  </div>
+  
+
+<div id="alkfory-education-links" dir="rtl"
+style="width:100%;max-width:650px;margin:18px auto 25px;padding:0 12px;box-sizing:border-box;text-align:center">
+
+  <h3 style="color:#ff174f;font-size:19px;margin:12px 0 16px">
+    ⚜️ منصاتك التعليمية ⚜️
+  </h3>
+
+  <a href="https://egy.app.spx-learning-square.com/login"
+     target="_blank" rel="noopener"
+     style="display:block;margin:12px auto;padding:16px 10px;
+     background:linear-gradient(120deg,#100008,#65001f);
+     border:1px solid #ff174f;border-radius:13px;
+     color:white;text-decoration:none;font-weight:bold;
+     font-size:16px;box-shadow:0 0 14px #ff174f33">
+     📚 منصة الثقافة المالية - تانية بكالوريا
+  </a>
+
+  <a href="https://me-portal.qureo.education/login"
+     target="_blank" rel="noopener"
+     style="display:block;margin:12px auto;padding:16px 10px;
+     background:linear-gradient(120deg,#100008,#65001f);
+     border:1px solid #ff174f;border-radius:13px;
+     color:white;text-decoration:none;font-weight:bold;
+     font-size:16px;box-shadow:0 0 14px #ff174f33">
+     🇯🇵 منصة كيريو اليابانية
+  </a>
+
+
+
+<style>
+#alkfory-educational-platforms {
+  max-width:760px;
+  margin:30px auto 24px;
+  padding:18px 14px;
+  direction:rtl;
+  text-align:center;
+  box-sizing:border-box;
+}
+#alkfory-educational-platforms h2 {
+  color:var(--accent,#b00035);
+  font-size:25px;
+  margin:0 0 8px;
+}
+#alkfory-educational-platforms .alk-edu-intro {
+  color:var(--text,#aaa);
+  margin:0 0 18px;
+}
+#alkfory-educational-platforms .alk-edu-list {
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+#alkfory-educational-platforms .alk-edu-card {
+  background:rgba(120,120,120,.08);
+  border:1px solid var(--accent,#b00035);
+  border-radius:13px;
+  padding:14px;
+  text-align:right;
+}
+#alkfory-educational-platforms .alk-edu-card h3 {
+  color:var(--accent,#b00035);
+  margin:0 0 6px;
+  font-size:17px;
+}
+#alkfory-educational-platforms .alk-edu-card p {
+  margin:0 0 12px;
+  font-size:13px;
+  line-height:1.7;
+}
+#alkfory-educational-platforms .alk-edu-card a {
+  display:block;
+  text-align:center;
+  padding:10px;
+  border:1px solid var(--accent,#b00035);
+  border-radius:9px;
+  color:var(--text,#fff);
+  text-decoration:none;
+  font-weight:bold;
+}
+#alkfory-educational-platforms .alk-edu-card a:hover {
+  background:var(--accent,#b00035);
+  color:white;
+}
+</style>
+
+<section id="alkfory-educational-platforms">
+  <h2>🎓 المنصات التعليمية</h2>
+  <p class="alk-edu-intro">كل منصاتك التعليمية في مكان واحد</p>
+  <div class="alk-edu-list">
+    
+      <article class="alk-edu-card">
+        <h3>كيريو اليابانية QUREO</h3>
+        <p>البرمجة والذكاء الاصطناعي</p>
+        <a href="https://me-portal.qureo.education/login" target="_blank" rel="noopener noreferrer">افتح المنصة ←</a>
+      </article>
+
+      <article class="alk-edu-card">
+        <h3>بسطتهالك – محمد صلاح</h3>
+        <p>شرح اللغة العربية والنحو والمراجعات</p>
+        <a href="https://2026.bassthalk.com/" target="_blank" rel="noopener noreferrer">افتح المنصة ←</a>
+      </article>
+
+      <article class="alk-edu-card">
+        <h3>منصة محمد عبد المعبود</h3>
+        <p>شرح الفيزياء للثانوية والبكالوريا</p>
+        <a href="https://abdelmaaboud.com/" target="_blank" rel="noopener noreferrer">افتح المنصة ←</a>
+      </article>
+
+      <article class="alk-edu-card">
+        <h3>منصة أحمد عبد الواحد</h3>
+        <p>شرح الفيزياء والكورسات والتدريبات</p>
+        <a href="https://ahmed-abdelwahed.com/" target="_blank" rel="noopener noreferrer">افتح المنصة ←</a>
+      </article>
+
+      <article class="alk-edu-card">
+        <h3>منصة كريم عبده</h3>
+        <p>شرح الفيزياء والاختبارات</p>
+        <a href="https://mrkareemabdo.com/" target="_blank" rel="noopener noreferrer">افتح المنصة ←</a>
+      </article>
+
+      <article class="alk-edu-card">
+        <h3>منصة إسماعيل أبو العزائم</h3>
+        <p>شرح الفيزياء والمراجعات وحل المسائل</p>
+        <a href="https://aboelazayemphysics.com/" target="_blank" rel="noopener noreferrer">افتح المنصة ←</a>
+      </article>
+
+      <article class="alk-edu-card">
+        <h3>منصة رضا عبد الرحيم</h3>
+        <p>شرح الفيزياء وحل الأسئلة</p>
+        <a href="https://genius.edu4.org/" target="_blank" rel="noopener noreferrer">افتح المنصة ←</a>
+      </article>
+
+      <article class="alk-edu-card">
+        <h3>منصة نجوى</h3>
+        <p>شرح الدروس والتدريبات والاختبارات</p>
+        <a href="https://www.nagwa.com/ar/eg/portals/" target="_blank" rel="noopener noreferrer">افتح المنصة ←</a>
+      </article>
+
+      <article class="alk-edu-card">
+        <h3>منصة حصص مصر</h3>
+        <p>شرح المناهج والمراجعات ونماذج الأسئلة</p>
+        <a href="https://www.hesas.eg/home" target="_blank" rel="noopener noreferrer">افتح المنصة ←</a>
+      </article>
+
+      <article class="alk-edu-card">
+        <h3>بنك المعرفة المصري</h3>
+        <p>مصادر علمية وكتب ومراجع تعليمية</p>
+        <a href="https://www.ekb.eg/" target="_blank" rel="noopener noreferrer">افتح المنصة ←</a>
+      </article>
+
+      <article class="alk-edu-card">
+        <h3>نظام إدارة التعلم LMS</h3>
+        <p>المحتوى التعليمي والمواد الدراسية</p>
+        <a href="https://lms.ekb.eg/" target="_blank" rel="noopener noreferrer">افتح المنصة ←</a>
+      </article>
+
+      <article class="alk-edu-card">
+        <h3>بوابة التعليم الإلكتروني</h3>
+        <p>الكتب الدراسية والمحتوى التعليمي</p>
+        <a href="https://moe.gov.eg/elearningentrypage/" target="_blank" rel="noopener noreferrer">افتح المنصة ←</a>
+      </article>
+
+      <article class="alk-edu-card">
+        <h3>منصة البث المباشر</h3>
+        <p>متابعة الحصص والمراجعات التعليمية</p>
+        <a href="https://stream.moe.gov.eg/" target="_blank" rel="noopener noreferrer">افتح المنصة ←</a>
+      </article>
+
+      <article class="alk-edu-card">
+        <h3>منصة ذاكر</h3>
+        <p>مصادر للمذاكرة والمراجعة</p>
+        <a href="https://study.ekb.eg/" target="_blank" rel="noopener noreferrer">افتح المنصة ←</a>
+      </article>
+
+      <article class="alk-edu-card">
+        <h3>Discovery Education</h3>
+        <p>مصادر تعليمية ومحتوى للمرحلة الثانوية</p>
+        <a href="https://discoveryeducation.ekb.eg/curriculum/secondary/" target="_blank" rel="noopener noreferrer">افتح المنصة ←</a>
+      </article>
+
+      <article class="alk-edu-card">
+        <h3>قناة مدرستنا</h3>
+        <p>شرح المناهج والدروس التعليمية</p>
+        <a href="https://www.youtube.com/c/Madrasetnasecondary/videos" target="_blank" rel="noopener noreferrer">افتح المنصة ←</a>
+      </article>
+
+      <article class="alk-edu-card">
+        <h3>البريد المدرسي الموحد</h3>
+        <p>الوصول إلى الحساب المدرسي للطلاب</p>
+        <a href="https://office365.emis.gov.eg/" target="_blank" rel="noopener noreferrer">افتح المنصة ←</a>
+      </article>
+
+      <article class="alk-edu-card">
+        <h3>بوابة الشهادات العامة</h3>
+        <p>الخدمات الإلكترونية وبيانات الطلاب</p>
+        <a href="https://moe-register.emis.gov.eg/login" target="_blank" rel="noopener noreferrer">افتح المنصة ←</a>
+      </article>
+
+      <article class="alk-edu-card">
+        <h3>بوابة التعليم المصري</h3>
+        <p>الخدمات والبوابات التعليمية</p>
+        <a href="https://science3sec.moe.gov.eg/" target="_blank" rel="noopener noreferrer">افتح المنصة ←</a>
+      </article>
+
+      <article class="alk-edu-card">
+        <h3>منصة تعلم معنا</h3>
+        <p>التعلم الإلكتروني والتدريب</p>
+        <a href="https://developandchange.moe.gov.eg/" target="_blank" rel="noopener noreferrer">افتح المنصة ←</a>
+      </article>
+
+  </div>
+</section><!-- ALKFORY-EDU-END -->
+
+<div id="alkfory-copyright" style="
+    width:100%;box-sizing:border-box;text-align:center;
+    margin:35px auto 25px;padding:20px 12px;
+    color:#ff3030;font-size:21px;font-weight:900;
+    line-height:1.9;letter-spacing:.3px;
+    text-shadow:0 0 8px #ff2020,0 0 18px #8b0000;
+    border-top:1px solid #702020;
+  ">
+    جميع الحقوق محفوظة لدى المدون زياد الكفوري<br>
+    © 2026 - 2027
+  </div>
+</div>
+
+
+</section>
+</main>
+
+
+
+<script src="js/app.js?v=21"></script>
+<script src="js/answers.js?v=20"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded",function(){
+
+ const copyFinancialButton=document.getElementById("alkfory-copy-financial-link");
+ if(copyFinancialButton){
+  copyFinancialButton.addEventListener("click",async()=>{
+   const link="https://egy.app.spx-learning-square.com/dashboard";
+   try{
+    await navigator.clipboard.writeText(link);
+   }catch(e){
+    const temp=document.createElement("textarea");
+    temp.value=link;
+    temp.style.position="fixed";
+    temp.style.opacity="0";
+    document.body.appendChild(temp);
+    temp.select();
+    try{document.execCommand("copy");}catch(err){}
+    temp.remove();
+   }
+  });
+ }
+
+ const unit=document.getElementById("study-unit");
+ const lesson=document.getElementById("study-lesson");
+ const lessons=[
+  [
+    "كيف نشأ المال؟",
+    "الوظائف الثلاث للمال",
+    "أشكال المال الحديث",
+    "اختبار المستوى الأول"
+  ],
+  [
+    "الوساطة المالية",
+    "أنواع المؤسسات المالية وأدوارها",
+    "كيف يحرك التمويل المجتمع",
+    "اختبار المستوى الثاني"
+  ],
+  [
+    "آليات السوق وتحديد الأسعار",
+    "المؤشرات الاقتصادية",
+    "النظم الاقتصادية",
+    "اختبار المستوى الثالث"
+  ],
+  [
+    "ما هي الزكاة؟",
+    "كيف تُحسب الزكاة؟",
+    "من يستحق الزكاة؟",
+    "اختبار المستوى الرابع"
+  ],
+  [
+    "أنواع ملكية المشاريع التجارية",
+    "الغرض من المشاريع التجارية ودورها",
+    "المسؤولية الاجتماعية للشركات (CSR)",
+    "اختبار المستوى الخامس"
+  ],
+  [
+    "كيف تحرك الشركات الاقتصاد",
+    "سلاسل التوريد وسلاسل القيمة",
+    "المشاريع التجارية والحكومة والمجتمع",
+    "اختبار المستوى السادس"
+  ],
+  [
+    "أنواع مصادر الدخل",
+    "فهم النفقات",
+    "الأسر والاقتصاد",
+    "اختبار المستوى السابع"
+  ],
+  [
+    "اختبار المعرفة - 50 سؤال"
+  ],
+  [
+    "ما هي الميزانية؟",
+    "الاحتياجات مقابل الرغبات",
+    "تخصيص الموارد المحدودة",
+    "اختبار المستوى التاسع"
+  ]
+];
+ unit.addEventListener("change",function(){
+  lesson.innerHTML='<option value="">اختر الدرس</option>';
+  const n=Number(unit.value);
+  if(n>=1&&n<=9){
+   lessons[n-1].forEach((name,i)=>{
+    const option=document.createElement("option");
+    option.value=String(i+1);
+    option.textContent=name;
+    lesson.appendChild(option);
+   });
+  }
+ });
+ const id=document.getElementById("studentId");
+ id.addEventListener("input",function(){
+  this.value=this.value.replace(/[^0-9]/g,"");
+ });
+});
+</script>
+
+<script id="alkfory-final-validation">
+document.addEventListener("DOMContentLoaded", function () {
+  const form = document.getElementById("loginForm");
+  const id = document.getElementById("studentId");
+  const password = document.getElementById("password");
+  const unit = document.getElementById("study-unit");
+  const lesson = document.getElementById("study-lesson");
+  const button = form?.querySelector('button[type="submit"]');
+
+  if (!form || !id || !password || !unit || !lesson || !button) return;
+
+  [id, password, unit, lesson].forEach(field => field.required = true);
+
+  id.setAttribute("inputmode", "numeric");
+  id.setAttribute("pattern", "[0-9]+");
+
+  function checkFields() {
+    const valid =
+      /^[0-9]+$/.test(id.value.trim()) &&
+      password.value.trim() !== "" &&
+      unit.value !== "" &&
+      lesson.value !== "";
+
+    button.disabled = !valid;
+    return valid;
+  }
+
+  id.addEventListener("input", function () {
+    this.value = this.value.replace(/[^0-9]/g, "");
+    checkFields();
+  });
+
+  id.addEventListener("paste", function () {
+    setTimeout(() => {
+      id.value = id.value.replace(/[^0-9]/g, "");
+      checkFields();
+    }, 0);
+  });
+
+  [password, unit, lesson].forEach(field => {
+    field.addEventListener("input", checkFields);
+    field.addEventListener("change", checkFields);
+  });
+
+  form.addEventListener("submit", function (event) {
+    if (!checkFields()) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      alert("أكمل جميع الخانات واختر المستوى والدرس أولاً.");
+    }
+  }, true);
+
+  checkFields();
+});
+</script>
+
+
+<script id="alkfory-longpress-hints">
+document.addEventListener("DOMContentLoaded", function(){
+  const hints = [
+    {id:"studentId", text:"أدخل معرف الطالب الخاص بك بمنصة الثقافة المالية"},
+    {id:"password", text:"أدخل كلمة المرور الخاصة بك في منصة الثقافة المالية"}
+  ];
+  const box = document.createElement("div");
+  box.id = "alkfory-hint";
+  box.innerHTML = '<div class="hint-box"><div id="alkfory-hint-text"></div><button type="button">حسناً</button></div>';
+  document.body.appendChild(box);
+
+  function showHint(text){
+    document.getElementById("alkfory-hint-text").textContent = text;
+    box.style.display = "flex";
+  }
+  box.querySelector("button").addEventListener("click",()=>box.style.display="none");
+  box.addEventListener("click",e=>{if(e.target===box)box.style.display="none";});
+
+  hints.forEach(item=>{
+    const input=document.getElementById(item.id);
+    if(!input) return;
+    let timer;
+    input.addEventListener("touchstart",()=>{
+      timer=setTimeout(()=>showHint(item.text),650);
+    },{passive:true});
+    ["touchend","touchmove","touchcancel"].forEach(ev=>
+      input.addEventListener(ev,()=>clearTimeout(timer),{passive:true})
+    );
+    input.addEventListener("contextmenu",e=>{
+      e.preventDefault();
+      showHint(item.text);
+    });
+  });
+});
+</script>
+
+
+<script id="alkfory-settings-system">
+document.addEventListener("DOMContentLoaded", function () {
+  const brand = document.getElementById("alkfory-brand");
+  if (!brand) return;
+
+  brand.style.position = "relative";
+
+  const menu = document.createElement("div");
+  menu.id = "alkfory-menu-panel";
+  menu.innerHTML = `
+    <button type="button" id="alkfory-open-theme-direct">🎨 تغيير المظهر والألوان</button>
+    <button type="button" id="alkfory-open-main-platform">⚜️ منصة الكفوري</button>
+    <button type="button" id="alkfory-open-usage">📖 الاستخدام</button>
+    <button type="button" id="alkfory-menu-arrow" aria-label="إغلاق القائمة" style="display:block;width:48px;height:42px;margin:8px auto 0;padding:0;background:transparent;color:#ff3030;border:0;font-size:38px;font-weight:bold;line-height:42px;cursor:pointer">↕</button>
+  `;
+  brand.appendChild(menu);
+  document.getElementById("alkfory-menu-arrow").onclick = () => {
+    menu.style.display = "none";
+  };
+
+  const modal = document.createElement("div");
+  modal.id = "alkfory-settings";
+  modal.innerHTML = `
+    <div class="settings-box">
+      <h3>إعدادات ALKFORY</h3>
+      <button type="button" id="alkfory-platforms">منصات المطور</button>
+      <button type="button" class="close-settings">إغلاق</button>
+    </div>`;
+  document.body.appendChild(modal);
+
+  const platformPage = document.createElement("div");
+  platformPage.id = "alkfory-platform-page";
+  platformPage.style.cssText =
+    "display:none;position:fixed;inset:0;z-index:10001;background:#000d;align-items:center;justify-content:center;padding:18px;";
+  platformPage.innerHTML = `
+    <div class="settings-box">
+      <h3>منصات المطور</h3>
+      <button type="button" id="alkfory-open-theme">🎨 تغيير المظهر والألوان</button>
+      <button type="button" id="alkfory-back-main">رجوع للإعدادات</button>
+      <button type="button" id="alkfory-close-platforms">إغلاق</button>
+    </div>`;
+  document.body.appendChild(platformPage);
+
+  const colors = [
+    ["الأساسي","default","#b00035","#ff4778"],
+    ["الأخضر","green","#00b86b","#42bfff"],
+    ["الأزرق","blue","#087cf0","#53c7ff"],
+    ["البنفسجي","purple","#923be0","#e0b5ff"],
+    ["الذهبي","gold","#c69b20","#ffe082"],
+    ["البرتقالي","orange","#e87516","#ffc078"],
+    ["السماوي","cyan","#009eae","#80f0ff"],
+    ["الوردي","pink","#df438b","#ffadd5"],
+    ["الأحمر","red","#e32636","#ff8b94"],
+    ["التركواز","teal","#008f83","#72e5d8"]
+  ];
+
+  const themePage = document.createElement("div");
+  themePage.id = "alkfory-theme-page";
+  themePage.innerHTML = `
+    <div class="settings-box">
+      <h3>اختار لون الموقع</h3>
+      <div class="alkfory-color-grid"></div>
+      <button type="button" id="alkfory-back-platforms">رجوع لمنصات المطور</button>
+    </div>`;
+  document.body.appendChild(themePage);
+
+  const grid = themePage.querySelector(".alkfory-color-grid");
+
+  function applyTheme(item) {
+    document.body.dataset.theme = item[1];
+    localStorage.setItem("alkfory-theme", item[1]);
+    document.documentElement.style.setProperty("--accent", item[2]);
+    document.documentElement.style.setProperty("--accent2", item[2]);
+    document.documentElement.style.setProperty("--text-accent", item[3]);
+    document.documentElement.style.setProperty("--border-accent", item[2]);
+  }
+
+  colors.forEach(item => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "alkfory-color-choice";
+    b.innerHTML = '<span class="alkfory-color-dot"></span>' + item[0];
+    b.querySelector(".alkfory-color-dot").style.background = item[2];
+    b.addEventListener("click", () => {
+      applyTheme(item);
+      themePage.classList.remove("alkfory-theme-open");
+    });
+    grid.appendChild(b);
+  });
+
+  const saved = localStorage.getItem("alkfory-theme") || "default";
+  applyTheme(colors.find(c => c[1] === saved) || colors[0]);
+
+
+  document.getElementById("alkfory-open-theme-direct").onclick = () => {
+    menu.style.display = "none";
+    themePage.classList.add("alkfory-theme-open");
+  };
+
+  document.getElementById("alkfory-open-main-platform").onclick = () => {
+    menu.style.display = "none";
+    window.location.href = "/platforms";
+  };
+  const usagePage = document.createElement("div");
+  usagePage.id = "alkfory-usage-page";
+  usagePage.style.cssText = `
+    display:none;position:fixed;inset:0;z-index:10005;
+    background:radial-gradient(circle at top,#351010 0%,#090909 48%,#000 100%);
+    overflow-y:auto;padding:22px 14px;color:#fff;direction:rtl;
+    font-family:inherit;box-sizing:border-box;
+  `;
+  usagePage.innerHTML = `
+    <div style="max-width:520px;margin:15px auto 35px">
+      <div style="text-align:center;padding:20px 10px">
+        <div style="font-size:35px;color:#ff3030">⚜️</div>
+        <h2 style="margin:8px 0;color:#ff3434;font-size:27px">دليل الاستخدام</h2>
+        <p style="color:#bbb;font-size:14px">اتبع الخطوات بالترتيب للاستفادة من الموقع</p>
+      </div>
+
+      <div style="display:grid;gap:13px">
+        <div class="alkfory-usage-card"><b>01 — تسجيل البيانات</b><p>أدخل معرف الطالب (ID) وكلمة المرور الخاصة بحسابك.</p></div>
+        <div class="alkfory-usage-card"><b>02 — اختيار المستوى</b><p>اختر المستوى الدراسي المطلوب.</p></div>
+        <div class="alkfory-usage-card"><b>03 — اختيار الدرس</b><p>حدد الدرس الذي تريد العمل عليه.</p></div>
+        <div class="alkfory-usage-card"><b>04 — عرض المحتوى</b><p>اضغط على زر عرض المحتوى لمشاهدة المواد المتاحة للمراجعة.</p></div>
+        <div class="alkfory-usage-card"><b>05 — الثقافة المالية</b><p>اضغط على زر «الثقافة المالية» لنسخ رابط المنصة.</p></div>
+        <div class="alkfory-usage-card"><b>06 — تسجيل الدخول</b><p>افتح الرابط الرسمي، وسجّل الدخول بحسابك، ثم اختر المستوى والدرس المطلوبين.</p></div>
+        <div class="alkfory-usage-card"><b>07 — متابعة الدراسة</b><p>ارجع إلى الموقع وتابع الدرس واستخدم المحتوى للمراجعة والفهم.</p></div>
+      </div>
+
+      <div style="margin:18px 0;padding:14px;border:1px solid #7d2424;border-radius:13px;background:#160909;color:#ddd;font-size:13px;line-height:1.8">
+        ⚠️ استخدم حسابك الشخصي والرابط الرسمي فقط، ولا تحاول تجاوز حماية المنصة أو الدخول إلى حسابات الآخرين.
+      </div>
+
+      <button type="button" id="alkfory-close-usage"
+        style="width:100%;padding:14px;border:0;border-radius:12px;
+        background:linear-gradient(90deg,#a90000,#ff3030);color:white;
+        font-size:17px;font-weight:bold;cursor:pointer">رجوع</button>
+      <div style="text-align:center;color:#777;margin-top:18px;font-size:12px">⚜️ ALKFORY ⚜️</div>
+    </div>
+  `;
+
+  const usageStyle = document.createElement("style");
+  usageStyle.textContent = `
+    #alkfory-usage-page .alkfory-usage-card {
+      background:linear-gradient(135deg,#191919,#090909);
+      border:1px solid #632020;border-right:4px solid #ff3030;
+      border-radius:13px;padding:15px 16px;
+      box-shadow:0 4px 15px #0008;
+    }
+    #alkfory-usage-page .alkfory-usage-card b {
+      color:#ff4141;font-size:16px;
+    }
+    #alkfory-usage-page .alkfory-usage-card p {
+      color:#ddd;font-size:14px;line-height:1.8;margin:8px 0 0;
+    }
+    #alkfory-open-usage {
+      display:block;width:100%;margin-top:7px;padding:11px;
+      border:1px solid #8f2929;border-radius:9px;
+      background:#171010;color:#fff;font-size:15px;cursor:pointer;
+    }
+    #alkfory-open-usage:active {background:#481313}
+  `;
+  document.head.appendChild(usageStyle);
+  document.body.appendChild(usagePage);
+
+  document.getElementById("alkfory-open-usage").onclick = () => {
+    menu.style.display = "none";
+    usagePage.style.display = "block";
+  };
+  document.getElementById("alkfory-close-usage").onclick = () => {
+    usagePage.style.display = "none";
+  };
+
+
+  const openSettings = document.getElementById("alkfory-open-settings");
+  const menuButton = document.getElementById("alkfory-menu-button");
+
+  if (menuButton) {
+    menuButton.addEventListener("click", e => {
+      e.stopPropagation();
+      menu.style.display = menu.style.display === "block" ? "none" : "block";
+    });
+  }
+
+  openSettings.onclick = () => {
+    menu.style.display = "none";
+    modal.style.display = "flex";
+  };
+
+  document.getElementById("alkfory-platforms").onclick = () => {
+    modal.style.display = "none";
+    platformPage.style.display = "flex";
+  };
+
+  document.getElementById("alkfory-open-theme").onclick = () => {
+    platformPage.style.display = "none";
+    themePage.classList.add("alkfory-theme-open");
+  };
+
+  document.getElementById("alkfory-back-platforms").onclick = () => {
+    themePage.classList.remove("alkfory-theme-open");
+    platformPage.style.display = "flex";
+  };
+
+  document.getElementById("alkfory-back-main").onclick = () => {
+    platformPage.style.display = "none";
+    modal.style.display = "flex";
+  };
+
+  document.getElementById("alkfory-close-platforms").onclick = () => {
+    platformPage.style.display = "none";
+  };
+
+  modal.querySelector(".close-settings").onclick = () => {
+    modal.style.display = "none";
+  };
+
+  themePage.addEventListener("click", e => {
+    if (e.target === themePage) themePage.classList.remove("alkfory-theme-open");
+  });
+
+  modal.addEventListener("click", e => {
+    if (e.target === modal) modal.style.display = "none";
+  });
+
+  platformPage.addEventListener("click", e => {
+    if (e.target === platformPage) platformPage.style.display = "none";
+  });
+
+  document.addEventListener("click", e => {
+    if (!brand.contains(e.target)) menu.style.display = "none";
+  });
+});
+</script>
+
+
+<script id="ALKFORY-NEXT-LESSON-V1">
+(() => {
+  const installNextButton = () => {
+    const panel = document.getElementById("alkfory-answer-results");
+    const lesson = document.getElementById("study-lesson");
+    if (!panel || !lesson || panel.querySelector("#alkfory-next-lesson")) return;
+
+    const button = document.createElement("button");
+    button.id = "alkfory-next-lesson";
+    button.type = "button";
+    button.textContent = "الدرس التالي ⟵";
+    button.style.cssText =
+      "display:block;width:100%;margin:14px 0;padding:14px;background:#171717;color:white;border:1px solid #ff174f;border-radius:12px;font-size:16px;font-weight:bold";
+
+    button.addEventListener("click", () => {
+      const nextIndex = lesson.selectedIndex + 1;
+      if (nextIndex >= lesson.options.length) {
+        button.textContent = "لا يوجد درس تالٍ في هذه الوحدة";
+        return;
+      }
+
+      lesson.selectedIndex = nextIndex;
+      lesson.dispatchEvent(new Event("change", { bubbles: true }));
+
+      const form = lesson.closest("form");
+      if (form) {
+        if (typeof form.requestSubmit === "function") form.requestSubmit();
+        else form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+      }
+    });
+
+    panel.appendChild(button);
+  };
+
+  new MutationObserver(installNextButton).observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+  installNextButton();
+})();
+</script>
+
+
+<script id="ALKFORY-THANK-CONTACTS-V1">
+(() => {
+  const phonePattern = /(?:\+?20|0020|0)?1[0125]\d{8}/g;
+
+  function normalizePhone(value) {
+    let n = String(value || "").replace(/[^\d+]/g, "");
+    if (n.startsWith("+20")) n = "0" + n.slice(3);
+    else if (n.startsWith("0020")) n = "0" + n.slice(4);
+    else if (/^20?1[0125]\d{8}$/.test(n)) n = "0" + n.replace(/^20?/, "");
+    return /^01[0125]\d{8}$/.test(n) ? n : "";
+  }
+
+  function getContacts() {
+    const found = new Map();
+
+    document.querySelectorAll('a[href]').forEach(a => {
+      const href = a.getAttribute("href") || "";
+      const text = a.innerText || a.textContent || "";
+      const isWhatsApp = /wa\.me|whatsapp|api\.whatsapp/i.test(href + " " + text);
+      const isPhone = /^tel:/i.test(href);
+
+      if (!isWhatsApp && !isPhone) return;
+
+      const candidates = (href + " " + text).match(phonePattern) || [];
+      candidates.forEach(raw => {
+        const number = normalizePhone(raw);
+        if (number && !found.has(number)) {
+          found.set(number, {
+            number,
+            type: isWhatsApp ? "واتساب" : "اتصال هاتفي"
+          });
+        }
+      });
+    });
+
+    return [...found.values()].slice(0, 3);
+  }
+
+  function showContacts() {
+    const old = document.getElementById("alkfory-thank-contacts-modal");
+    if (old) old.remove();
+
+    const contacts = getContacts();
+    const overlay = document.createElement("div");
+    overlay.id = "alkfory-thank-contacts-modal";
+    overlay.dir = "rtl";
+    overlay.style.cssText =
+      "position:fixed;inset:0;z-index:1000005;background:#000d;display:flex;align-items:center;justify-content:center;padding:15px";
+
+    const box = document.createElement("section");
+    box.style.cssText =
+      "width:100%;max-width:430px;background:#111;color:white;border:1px solid #b00035;border-radius:16px;padding:20px;text-align:center";
+
+    const title = document.createElement("h3");
+    title.textContent = "⚜️ تواصل مع المطور زياد الكفوري ⚜️";
+    title.style.color = "#ff315c";
+    box.appendChild(title);
+
+    const description = document.createElement("p");
+    description.textContent = "اختار وسيلة التواصل المناسبة:";
+    box.appendChild(description);
+
+    const contactNumbers = ["01031808795", "01114536964"];
+
+    contactNumbers.forEach((number) => {
+      const card = document.createElement("div");
+      card.style.cssText =
+        "margin:12px 0;padding:13px;background:#1b1b1b;border:1px solid #b00035;border-radius:12px";
+
+      const numberText = document.createElement("div");
+      numberText.textContent = "📞 " + number;
+      numberText.style.cssText =
+        "font-size:18px;font-weight:bold;margin-bottom:12px;color:#fff;direction:ltr";
+      card.appendChild(numberText);
+
+      const actions = document.createElement("div");
+      actions.style.cssText = "display:flex;gap:9px;justify-content:center";
+
+      const call = document.createElement("a");
+      call.textContent = "📞 اتصال";
+      call.href = "tel:" + number;
+
+      const whatsapp = document.createElement("a");
+      whatsapp.textContent = "واتساب";
+      whatsapp.href = "https://wa.me/2" + number.slice(1);
+      whatsapp.target = "_blank";
+      whatsapp.rel = "noopener noreferrer";
+
+      [call, whatsapp].forEach((button) => {
+        button.style.cssText =
+          "flex:1;padding:12px 8px;background:#292929;color:white;text-decoration:none;border:1px solid #ff315c;border-radius:9px;font-weight:bold";
+        actions.appendChild(button);
+      });
+
+      card.appendChild(actions);
+      box.appendChild(card);
+    });
+
+    const close = document.createElement("button");
+    close.type = "button";
+    close.textContent = "إغلاق";
+    close.style.cssText =
+      "width:100%;padding:12px;margin-top:10px;background:#a90035;color:white;border:0;border-radius:9px";
+    close.onclick = () => overlay.remove();
+    box.appendChild(close);
+
+    overlay.addEventListener("click", e => {
+      if (e.target === overlay) overlay.remove();
+    });
+
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+  }
+
+  document.addEventListener("click", event => {
+    const button = event.target.closest("#alkfory-thank-developer");
+    if (!button) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    showContacts();
+  }, true);
+})();
+</script>
+
+
+<script src="/alkfory-global-theme.js" defer></script>
+
+<!-- ALKFORY FINANCIAL PASSWORD EYE -->
+<style>
+.alk-password-wrap {
+  position: relative !important;
+  display: block !important;
+  width: 100% !important;
+}
+.alk-password-wrap input {
+  box-sizing: border-box !important;
+  padding-right: 48px !important;
+}
+.alk-password-eye {
+  position: absolute !important;
+  left: 2px !important;
+  right: auto !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  width: 20px !important;
+  min-width: 20px !important;
+  height: 20px !important;
+  min-height: 20px !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 4px !important;
+  background: transparent !important;
+  color: var(--alkfory-accent, #ff315f) !important;
+  font-size: 13px !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
+  z-index: 10 !important;
+  box-shadow: none !important;
+}
+.alk-password-wrap input {
+  padding-left: 27px !important;
+}
+.alk-password-eye:focus-visible {
+  outline: 2px solid var(--alkfory-accent, #ff315f) !important;
+  border-radius: 8px !important;
+}
+</style>
+<script>
+(() => {
+  function addPasswordEyes() {
+    const path = location.pathname.toLowerCase();
+    if (!path.includes("financial-tracker")) return;
+
+    document.querySelectorAll('input[type="password"]').forEach(input => {
+      if (input.dataset.alkEyeAdded) return;
+      input.dataset.alkEyeAdded = "1";
+
+      const wrap = document.createElement("span");
+      wrap.className = "alk-password-wrap";
+      input.parentNode.insertBefore(wrap, input);
+      wrap.appendChild(input);
+
+      const eye = document.createElement("button");
+      eye.type = "button";
+      eye.className = "alk-password-eye";
+      eye.textContent = "👁";
+      eye.setAttribute("aria-label", "إظهار كلمة المرور");
+      eye.title = "إظهار كلمة المرور";
+
+      eye.addEventListener("click", () => {
+        const showing = input.type === "password";
+        input.type = showing ? "text" : "password";
+        eye.textContent = showing ? "🙈" : "👁";
+        eye.setAttribute("aria-label",
+          showing ? "إخفاء كلمة المرور" : "إظهار كلمة المرور");
+        eye.title = showing ? "إخفاء كلمة المرور" : "إظهار كلمة المرور";
+        input.focus();
+      });
+
+      wrap.appendChild(eye);
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", addPasswordEyes);
+  } else {
+    addPasswordEyes();
+  }
+
+  new MutationObserver(addPasswordEyes).observe(document.documentElement, {
+    childList: true,
+    subtree: true
+  });
+})();
+</script>
+
+
+
+
+
+<style>
+/* ALKFORY-LOGIN-FIX-V1 */
+#studentId,
+input[type="password"] {
+  direction: rtl !important;
+  text-align: right !important;
+  unicode-bidi: plaintext !important;
+  padding-right: 12px !important;
+  padding-left: 28px !important;
+  text-indent: 0 !important;
+}
+</style>
+<script>
+/* ALKFORY-LOGIN-VALIDATION-V1 */
+(() => {
+  const idField = document.getElementById('studentId');
+  const passwordField = document.querySelector('input[type="password"]');
+  if (!idField || !passwordField) return;
+
+  idField.setAttribute('inputmode', 'numeric');
+  idField.addEventListener('input', () => {
+    idField.value = idField.value.replace(/\D/g, '');
+  });
+
+  document.addEventListener('submit', event => {
+    const id = idField.value.trim();
+    const password = passwordField.value;
+
+    if (!/^\d{7,}$/.test(id)) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      alert('رقم الـ ID غلط أو الطالب غير معروف');
+      idField.focus();
+      return;
+    }
+
+    if (password.length < 7) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      alert('كلمة المرور غلط');
+      passwordField.focus();
+    }
+  }, true);
+})();
+</script>
+
+
+<script>
+/* ALKFORY-CLEAR-ANSWERS-ON-LOAD-V2 */
+(() => {
+  function clearPreviousAnswers() {
+    const nodes = document.querySelectorAll('[id], [class]');
+    nodes.forEach(el => {
+      if (!(el instanceof HTMLElement)) return;
+      if (el.closest('form')) return;
+
+      const name = ((el.id || '') + ' ' + (typeof el.className === 'string' ? el.className : '')).toLowerCase();
+
+      if (/(answer|answers|result|results|solution|solutions)/.test(name)) {
+        if (el.matches('input, textarea, select, button, script, style')) return;
+        el.replaceChildren();
+        el.hidden = true;
+        el.setAttribute('aria-hidden', 'true');
+      }
+    });
+  }
+
+  document.addEventListener('change', e => {
+    if (e.target.matches('#study-unit, #study-lesson')) {
+      clearPreviousAnswers();
+    }
+  }, true);
+
+  document.addEventListener('click', e => {
+    const button = e.target.closest('button, input[type="submit"], input[type="button"]');
+    if (!button) return;
+
+    const label = ((button.innerText || button.value || '')).trim();
+    if (/تحميل|عرض|إجابات|اجابات|حل|ابدأ/i.test(label)) {
+      clearPreviousAnswers();
+    }
+  }, true);
+
+  document.addEventListener('submit', clearPreviousAnswers, true);
+})();
+</script>
+
+</body>
+</html>

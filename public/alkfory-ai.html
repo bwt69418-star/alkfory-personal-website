@@ -2317,7 +2317,7 @@ document.addEventListener("DOMContentLoaded", function () {
   if (document.getElementById("alkfory-tracker-frame")) return;
   const frame = document.createElement("iframe");
   frame.id = "alkfory-tracker-frame";
-  frame.src = "/financial-tracker/index.html";
+  frame.src = "/financial-tracker/index.html?v=" + Date.now();
   frame.title = "ALKFORY FINANCIAL TRACKER";
   document.body.appendChild(frame);
 });
