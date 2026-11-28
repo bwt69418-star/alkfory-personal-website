@@ -4284,11 +4284,12 @@ setInterval(()=>{const m=document.getElementById('alkfory-app-update-modal');if(
 })();
 </script>
 <!-- ALKFORY_UPDATE_PROMPT_BANNER_V1_END -->
+
 <!-- ALKFORY_OFFLINE_NOTICE_V1_START -->
 <style id="ALKFORY-OFFLINE-NOTICE-STYLE">
-#alkfory-offline-modal{position:fixed!important;inset:0!important;z-index:2147483647!important;background:rgba(0,0,0,.82)!important;display:none!important;align-items:center!important;justify-content:center!important;padding:16px!important;box-sizing:border-box!important;backdrop-filter:blur(4px)!important}
+#alkfory-offline-modal{position:fixed!important;inset:0!important;z-index:2147483647!important;background:rgba(0,0,0,.84)!important;display:none!important;align-items:center!important;justify-content:center!important;padding:16px!important;box-sizing:border-box!important;backdrop-filter:blur(4px)!important}
 #alkfory-offline-modal.is-open{display:flex!important}
-#alkfory-offline-card{width:100%!important;max-width:360px!important;background:#170910!important;border:1px solid rgba(255,209,102,.65)!important;border-radius:18px!important;padding:16px 15px!important;box-sizing:border-box!important;color:#fffbeb!important;box-shadow:0 18px 42px rgba(0,0,0,.92)!important;text-align:center!important;font-family:inherit!important}
+#alkfory-offline-card{width:100%!important;max-width:360px!important;background:#170910!important;border:1px solid rgba(255,209,102,.7)!important;border-radius:18px!important;padding:16px 15px!important;box-sizing:border-box!important;color:#fffbeb!important;box-shadow:0 18px 42px rgba(0,0,0,.92)!important;text-align:center!important;font-family:inherit!important}
 #alkfory-off-badge{display:inline-block!important;background:rgba(255,209,102,.15)!important;color:#ffd166!important;border:1px solid rgba(255,209,102,.45)!important;border-radius:999px!important;padding:3px 10px!important;font-size:11px!important;font-weight:bold!important;margin-bottom:8px!important}
 #alkfory-off-title{font-size:15px!important;font-weight:bold!important;color:#fff!important;margin-bottom:6px!important}
 #alkfory-off-desc{font-size:12px!important;line-height:1.6!important;color:#e5e7eb!important;margin-bottom:12px!important}
@@ -4302,31 +4303,34 @@ function ensureOff(){
 if(!document.body)return null;
 let m=document.getElementById('alkfory-offline-modal');
 if(!m){m=document.createElement('div');m.id='alkfory-offline-modal';m.dir='rtl';
-m.innerHTML="<div id='alkfory-offline-card'><div id='alkfory-off-badge'>📵 تنبيه اتصال التطبيق</div><div id='alkfory-off-title'>مفيش اتصال بالإنترنت</div><div id='alkfory-off-desc'>يبدو إن الإنترنت مفصول حالياً، تأكد من اتصالك بالشبكة ثم أعد المحاولة.</div><div id='alkfory-off-actions'><button type='button' id='alkfory-off-retry'>إعادة المحاولة ↻</button><button type='button' id='alkfory-off-hide'>إغلاق</button></div></div>";
+m.innerHTML="<div id='alkfory-offline-card'><div id='alkfory-off-badge'>📵 تنبيه اتصال التطبيق</div><div id='alkfory-off-title'>مفيش اتصال بالإنترنت</div><div id='alkfory-off-desc'>التطبيق يعمل حالياً بدون إنترنت، شغّل الإنترنت ثم اضغط إعادة المحاولة لتحديث البيانات.</div><div id='alkfory-off-actions'><button type='button' id='alkfory-off-retry'>إعادة المحاولة ↻</button><button type='button' id='alkfory-off-hide'>إغلاق</button></div></div>";
 document.body.appendChild(m);}
 const r=document.getElementById('alkfory-off-retry');
-if(r&&!r.dataset.b){r.dataset.b='1';r.onclick=(e)=>{e.preventDefault();e.stopPropagation();if(navigator.onLine!==false)location.reload();else syncOff(true);};}
+if(r&&!r.dataset.b){r.dataset.b='1';r.onclick=(e)=>{e.preventDefault();e.stopPropagation();location.reload();};}
 const h=document.getElementById('alkfory-off-hide');
 if(h&&!h.dataset.b){h.dataset.b='1';h.onclick=(e)=>{e.preventDefault();e.stopPropagation();m.classList.remove('is-open');};}
 return m;
 }
+function isOfflineNow(){
+if(navigator.onLine===false)return true;
+if(location.hostname==='localhost'||location.hostname==='127.0.0.1')return false;
+return false;
+}
 function syncOff(forceShow){
 const m=ensureOff();
 if(!m)return;
-const offline=(navigator.onLine===false);
-if(offline||forceShow){m.classList.add('is-open');}else{m.classList.remove('is-open');}
+if(isOfflineNow()||forceShow){m.classList.add('is-open');}else{m.classList.remove('is-open');}
 }
-function regSW(){
+function regRealSW(){
 if(!('serviceWorker'in navigator))return;
-const swCode="const C='alkfory-app-cache-v1';self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.addAll([self.location.href])).then(()=>self.skipWaiting()));});self.addEventListener('activate',e=>{e.waitUntil(self.clients.claim());});self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWith(fetch(e.request).then(res=>{const copy=res.clone();caches.open(C).then(c=>c.put(e.request,copy)).catch(()=>{});return res;}).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.location.href))));});";
-const blob=new Blob([swCode],{type:'application/javascript'});
-const u=URL.createObjectURL(blob);
-navigator.serviceWorker.register(u).catch(()=>{});
+navigator.serviceWorker.register('./sw.js').then((reg)=>{
+if(reg&&reg.active&&navigator.onLine){reg.active.postMessage({type:'CACHE_PAGE'});}
+}).catch(()=>{});
 }
 window.addEventListener('offline',()=>syncOff(true));
 window.addEventListener('online',()=>syncOff(false));
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{syncOff(false);regSW();});else{syncOff(false);regSW();}
-setInterval(()=>syncOff(false),2500);
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{syncOff(false);regRealSW();});else{syncOff(false);regRealSW();}
+setInterval(()=>syncOff(false),2000);
 })();
 </script>
 <!-- ALKFORY_OFFLINE_NOTICE_V1_END -->
