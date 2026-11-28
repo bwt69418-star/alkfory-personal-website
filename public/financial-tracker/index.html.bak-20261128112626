@@ -1,0 +1,3171 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+
+<script id="ALKFORY-FORCE-UPDATE-GATE-V1">
+(() => {
+  const REQUIRED_BUILD = "2026.11.28.1";
+  const BUILD_KEY = "alkfory_app_build_version";
+  const IS_STANDALONE =
+    window.matchMedia?.("(display-mode: standalone)").matches ||
+    window.navigator.standalone === true ||
+    document.referrer.startsWith("android-app://");
+
+  function getInstalledBuild() {
+    try {
+      return localStorage.getItem(BUILD_KEY) || "legacy";
+    } catch (_) {
+      return "legacy";
+    }
+  }
+
+  function markCurrentBuildInstalled() {
+    try {
+      localStorage.setItem(BUILD_KEY, REQUIRED_BUILD);
+    } catch (_) {}
+  }
+
+  function showForceUpdateScreen(currentBuild) {
+    if (document.getElementById("alkfory-force-update-overlay")) return;
+
+    const overlay = document.createElement("div");
+    overlay.id = "alkfory-force-update-overlay";
+    overlay.dir = "rtl";
+    overlay.style.cssText = [
+      "position:fixed",
+      "inset:0",
+      "z-index:2147483647",
+      "background:#070707",
+      "color:#fff",
+      "display:flex",
+      "align-items:center",
+      "justify-content:center",
+      "padding:20px",
+      "font-family:inherit",
+      "text-align:center"
+    ].join(";");
+
+    const box = document.createElement("div");
+    box.style.cssText = [
+      "width:100%",
+      "max-width:410px",
+      "background:#141414",
+      "border:1px solid #c2003d",
+      "border-radius:18px",
+      "padding:24px 18px",
+      "box-shadow:0 16px 45px rgba(0,0,0,0.85)"
+    ].join(";");
+
+    box.innerHTML = `
+      <div style="font-size:38px;margin-bottom:10px">⚠️</div>
+      <h2 style="margin:0 0 8px;color:#ff4778;font-size:20px">تحديث إجباري مطلوب</h2>
+      <p style="margin:0 0 16px;color:#ccc;font-size:13px;line-height:1.7">
+        تم نشر تعديلات جديدة على <strong style="color:#fff">ALKFORY</strong> ولا يمكن فتح التطبيق بالنسخة القديمة حتى يتم التحديث إلى الإصدار الجديد.
+      </p>
+      <div style="background:#1c1c1c;border:1px solid #2e2e2e;border-radius:10px;padding:10px;font-size:12px;color:#aaa;margin-bottom:16px">
+        <div>النسخة الحالية: <strong style="color:#ff8aa8">${currentBuild}</strong></div>
+        <div style="margin-top:4px">النسخة المطلوبة: <strong style="color:#4ade80">${REQUIRED_BUILD}</strong></div>
+      </div>
+      <button type="button" id="alk-do-update-now" style="width:100%;padding:12px;background:linear-gradient(120deg,#7a0026,#c2003d);color:#fff;border:1px solid #ff4778;border-radius:11px;font-size:14px;font-weight:bold;cursor:pointer;margin-bottom:8px">
+        تحديث وتحميل أحدث نسخة الآن
+      </button>
+      <button type="button" id="alk-check-update-again" style="width:100%;padding:10px;background:#202020;color:#ddd;border:1px solid #3c3c3c;border-radius:11px;font-size:12px;font-weight:bold;cursor:pointer">
+        إعادة التحقق بعد التحديث
+      </button>
+    `;
+
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    box.querySelector("#alk-do-update-now")?.addEventListener("click", async () => {
+      try {
+        if ("serviceWorker" in navigator) {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          for (const r of regs) await r.update();
+        }
+        if (window.caches && caches.keys) {
+          const keys = await caches.keys();
+          await Promise.all(keys.map(k => caches.delete(k)));
+        }
+      } catch (_) {}
+      const url = new URL(window.location.href);
+      url.searchParams.set("v", REQUIRED_BUILD);
+      url.searchParams.set("t", String(Date.now()));
+      window.location.replace(url.toString());
+    });
+
+    box.querySelector("#alk-check-update-again")?.addEventListener("click", () => {
+      window.location.reload();
+    });
+  }
+
+  function enforceUpdateGate() {
+    const params = new URLSearchParams(window.location.search);
+    const urlBuild = params.get("v");
+    const installedBuild = getInstalledBuild();
+
+    // لو المستخدم فتح النسخة الجديدة فعلاً من الرابط المحدث أو تم تثبيتها
+    if (urlBuild === REQUIRED_BUILD || installedBuild === REQUIRED_BUILD) {
+      markCurrentBuildInstalled();
+      if (urlBuild === REQUIRED_BUILD) {
+        params.delete("v");
+        params.delete("t");
+        const cleanUrl = window.location.pathname + (params.toString() ? "?" + params.toString() : "") + window.location.hash;
+        window.history.replaceState({}, "", cleanUrl);
+      }
+      return;
+    }
+
+    // لو التطبيق مثبت (Standalone / WebAPK) أو له نسخة سابقة غير مطابقة للإصدار المطلوب
+    if (IS_STANDALONE || installedBuild !== "legacy") {
+      showForceUpdateScreen(installedBuild);
+    } else {
+      // أول زيارة للمتصفح العادي تحصل على النسخة الجديدة مباشرة
+      markCurrentBuildInstalled();
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", enforceUpdateGate, { once: true });
+  } else {
+    enforceUpdateGate();
+  }
+})();
+</script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ALKFORY</title>
+<link rel="stylesheet" href="css/style.css?v=20">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#080808;color:#fff;font-family:Arial,sans-serif}
+header{padding:15px 12px;text-align:center}
+#alkfory-brand{display:flex;align-items:center;justify-content:center;gap:12px}
+#alkfory-brand img{width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid #b00035}
+#alkfory-brand h1{font-size:25px;margin:0;color:#ff2020 !important;letter-spacing:2px}
+main{width:100%;padding:10px 12px}
+#login{display:block!important}
+#login .card{width:100%;max-width:390px;margin:12px auto;padding:20px 17px;background:#151515;border:1px solid #8f002b;border-radius:16px;box-shadow:0 5px 25px #000}
+#login h2{text-align:center;margin:0 0 8px;color:#fff;font-size:22px}
+#login .subtitle{text-align:center;color:#aaa;margin:0 0 20px;font-size:14px}
+#loginForm{display:flex;flex-direction:column;gap:12px}
+#loginForm input,#loginForm select{width:100%;padding:13px 12px;background:#090909;color:#fff;border:1px solid #444;border-radius:9px;font-size:15px;outline:none}
+#loginForm input:focus,#loginForm select:focus{border-color:#e00046}
+#loginForm select{
+  appearance:none;
+  -webkit-appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:left 13px center;
+  padding-left:38px;
+}
+#loginForm button:disabled{
+  opacity:.4;
+  cursor:not-allowed;
+  filter:grayscale(1);
+}
+#loginForm button{padding:14px;border:0;border-radius:10px;background:#b00035;color:white;font-size:17px;font-weight:bold;cursor:pointer}
+#alkfory-loading-status{display:none}
+#alkfory-answer-results{display:none;width:100%;max-width:700px;margin:18px auto;padding:18px;background:#151515;color:#fff;border:1px solid #b00035;border-radius:14px}
+#alkfory-answer-results h2,#alkfory-answer-results h3{color:#ff4778}
+
+.alkfory-creator-ticker{
+  width:180px; max-width:42vw; height:28px;
+  overflow:hidden; position:relative; flex-shrink:1;
+  display:flex; align-items:center; direction:ltr;
+}
+.alkfory-creator-ticker span{
+  position:absolute; white-space:nowrap;
+  color:#ff2020; font-size:14px; font-weight:bold;
+  animation:alkforyTicker 6s linear infinite;
+}
+@keyframes alkforyTicker{
+  0%{transform:translateX(110%)}
+  20%{transform:translateX(0)}
+  53%{transform:translateX(0)}
+  100%{transform:translateX(-120%)}
+}
+
+
+.alkfory-creator-ticker span{font-size:9px !important}
+.alkfory-creator-ticker .ticker-dev{
+  color:#00e676 !important;
+  font-weight:900;
+}
+
+
+.alkfory-creator-ticker span{
+  font-size:9px !important;
+}
+.alkfory-creator-ticker .ticker-dev{
+  font-size:9px !important;
+}
+
+
+.alkfory-subtitle{
+  color:#00e676 !important;
+  font-weight:800;
+}
+#alkfory-hint{
+  position:fixed; inset:0; z-index:99999;
+  display:none; align-items:center; justify-content:center;
+  background:#000b; padding:20px;
+}
+#alkfory-hint .hint-box{
+  width:100%; max-width:310px; padding:22px;
+  border:1px solid #00e676; border-radius:14px;
+  background:#111; color:white; text-align:center;
+  box-shadow:0 0 20px #00e67333;
+  font-size:15px; line-height:1.8;
+}
+#alkfory-hint button{
+  margin-top:14px; padding:8px 25px;
+  border:0; border-radius:8px;
+  background:#00e676; color:#000; font-weight:bold;
+}
+
+
+#alkfory-menu-button{
+  order:3; border:1px solid #b00035; background:#151515;
+  color:#ff3030; border-radius:9px; width:34px;height:34px;
+  font-size:25px;cursor:pointer;line-height:20px;
+}
+#alkfory-menu-panel{
+  display:none;position:absolute;z-index:10000;top:48px;left:8px;
+  width:190px;background:#151515;border:1px solid var(--accent,#b00035);
+  border-radius:12px;padding:9px;box-shadow:0 8px 25px #000b;
+}
+#alkfory-menu-panel button{
+  display:block;width:100%;margin:5px 0;padding:11px;
+  background:#222;color:white;border:1px solid #333;
+  border-radius:8px;text-align:right;font-size:14px;
+}
+#alkfory-settings{
+  display:none;position:fixed;inset:0;z-index:10001;
+  background:#000c;align-items:center;justify-content:center;padding:18px;
+}
+#alkfory-settings .settings-box{
+  width:100%;max-width:340px;max-height:85vh;overflow:auto;
+  background:#151515;color:white;border:1px solid var(--accent,#b00035);
+  border-radius:15px;padding:18px;text-align:center;
+}
+#alkfory-settings h3{color:var(--accent,#ff3030)}
+#alkfory-settings button{
+  width:100%;padding:11px;margin:5px 0;border-radius:8px;
+  background:#242424;color:white;border:1px solid #444;
+}
+#alkfory-settings .close-settings{background:var(--accent,#b00035)}
+body[data-theme="green"]{--accent:#00c878;--text-accent:#39a9ff}
+body[data-theme="blue"]{--accent:#168cff;--text-accent:#53c7ff}
+body[data-theme="purple"]{--accent:#a855f7;--text-accent:#d8a5ff}
+body[data-theme="default"]{--accent:#b00035;--text-accent:#ff4778}
+body[data-theme] #alkfory-brand h1{color:var(--accent)!important}
+body[data-theme] .alkfory-subtitle{color:var(--text-accent)!important}
+body[data-theme] button:not(#alkfory-menu-button){border-color:var(--accent)}
+
+</style>
+<style>
+/* ALKFORY GLOBAL THEMES */
+body[data-theme="default"]{
+ --accent:#b00035;--accent2:#ff3030;--text-accent:#ff4778;
+ --soft-accent:#35101c;--border-accent:#b00035;
+}
+body[data-theme="green"]{
+ --accent:#00b86b;--accent2:#00e676;--text-accent:#42bfff;
+ --soft-accent:#092b20;--border-accent:#00b86b;
+}
+body[data-theme="blue"]{
+ --accent:#087cf0;--accent2:#168cff;--text-accent:#53c7ff;
+ --soft-accent:#0b2038;--border-accent:#087cf0;
+}
+body[data-theme="purple"]{
+ --accent:#923be0;--accent2:#c084fc;--text-accent:#e0b5ff;
+ --soft-accent:#281438;--border-accent:#923be0;
+}
+
+/* ألوان الموقع بالكامل */
+body[data-theme]{
+ --main-color:var(--accent);
+}
+body[data-theme] #alkfory-brand h1,
+body[data-theme] h1,
+body[data-theme] h2,
+body[data-theme] h3{
+ color:var(--accent2)!important;
+}
+body[data-theme] .alkfory-subtitle,
+body[data-theme] a,
+body[data-theme] .ticker-dev{
+ color:var(--text-accent)!important;
+}
+body[data-theme] button,
+body[data-theme] input:focus,
+body[data-theme] select:focus{
+ border-color:var(--accent)!important;
+}
+body[data-theme] button[type="submit"],
+body[data-theme] #loginForm button,
+body[data-theme] .close-settings{
+ background:var(--accent)!important;
+}
+body[data-theme] input,
+body[data-theme] select,
+body[data-theme] textarea{
+ accent-color:var(--accent);
+}
+body[data-theme] #alkfory-brand img{
+ border-color:var(--accent)!important;
+}
+body[data-theme] main,
+body[data-theme] section,
+body[data-theme] .card,
+body[data-theme] #alkfory-answer-results,
+body[data-theme] .settings-box{
+ border-color:var(--border-accent)!important;
+}
+body[data-theme] #alkfory-answer-results h2,
+body[data-theme] #alkfory-answer-results h3{
+ color:var(--accent2)!important;
+}
+ border-color:var(--accent)!important;
+}
+body[data-theme] .alkfory-creator-ticker span{
+ color:var(--accent2)!important;
+}
+body[data-theme] .alkfory-creator-ticker .ticker-dev{
+ color:var(--text-accent)!important;
+}
+body[data-theme] #alkfory-menu-button{
+ color:var(--accent2)!important;
+ border-color:var(--accent)!important;
+}
+body[data-theme] #alkfory-menu-panel button,
+body[data-theme] #alkfory-settings button{
+ border-color:var(--accent)!important;
+}
+body[data-theme] .hint-box,
+body[data-theme] #alkfory-hint .hint-box{
+ border-color:var(--accent)!important;
+}
+</style><style>
+/* إصلاح قائمة الإعدادات وصفحة الألوان */
+#alkfory-menu-button{
+  font-size:27px!important;
+  line-height:20px!important;
+  width:34px!important;
+  height:34px!important;
+  padding:0!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+}
+#alkfory-theme-page{
+  display:none!important;
+  position:fixed!important;
+  inset:0!important;
+  z-index:100002!important;
+  background:#080808!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:18px!important;
+  overflow-y:auto!important;
+}
+#alkfory-theme-page.alkfory-theme-open{
+  display:flex!important;
+}
+#alkfory-theme-page .settings-box{
+  width:100%!important;
+  max-width:360px!important;
+  max-height:85vh!important;
+  overflow-y:auto!important;
+}
+.alkfory-color-grid{
+  display:grid!important;
+  grid-template-columns:1fr 1fr!important;
+  gap:10px!important;
+  margin:18px 0!important;
+}
+.alkfory-color-choice{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+  gap:10px!important;
+  padding:13px!important;
+}
+.alkfory-color-dot{
+  width:20px!important;
+  height:20px!important;
+  border-radius:50%!important;
+  flex-shrink:0!important;
+}
+</style>
+<style id='ALKFORY-HEADER-COLORS-FIX'>
+#alkfory-menu-button{
+  font-size:25px!important;
+  transform:none!important;
+  font-family:Arial,sans-serif!important;
+  font-weight:bold!important;
+  letter-spacing:0!important;
+}
+body[data-theme="default"] #alkfory-brand h1{
+  color:#ff2020!important;
+}
+body[data-theme="default"] .alkfory-subtitle{
+  color:#00e676!important;
+}
+body[data-theme="default"] .alkfory-creator-ticker .ticker-dev{
+  color:#00e676!important;
+}
+</style>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<style id="ALKFORY-HEADER-FINAL">
+html, body {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+body > header {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: auto !important;
+  width: 100% !important;
+  height: 62px !important;
+  margin: 0 !important;
+  padding: 4px 10px !important;
+  box-sizing: border-box !important;
+  transform: none !important;
+  z-index: 999999 !important;
+  background: #080808 !important;
+  border-bottom: 1px solid #8f002b !important;
+}
+#alkfory-brand {
+  direction: ltr !important;
+  display: grid !important;
+  grid-template-columns: auto auto 1fr auto !important;
+  align-items: center !important;
+  gap: 8px !important;
+  width: 100% !important;
+  height: 54px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+#alkfory-menu-button {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+}
+#alkfory-brand h1 {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  margin: 0 !important;
+}
+.alkfory-creator-ticker {
+  grid-column: 3 !important;
+  grid-row: 1 !important;
+}
+#alkfory-brand img {
+  grid-column: 4 !important;
+  grid-row: 1 !important;
+  justify-self: end !important;
+}
+body > main {
+  margin-top: 0 !important;
+  padding-top: 62px !important;
+  box-sizing: border-box !important;
+}
+#login {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+#login .card {
+  margin-top: 0 !important;
+}
+</style>
+
+
+<link rel="stylesheet" href="/alkfory-global-theme.css">
+
+<style id="ALKFORY-EXACT-TOPBAR-STYLE">
+  header {
+    display: flex !important;
+    flex-direction: row-reverse !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 12px 14px !important;
+    background: #080808 !important;
+    position: relative !important;
+    z-index: 50 !important;
+  }
+  #alkfory-brand {
+    display: flex !important;
+    flex-direction: row-reverse !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 10px !important;
+    margin: 0 !important;
+  }
+  #alkfory-brand img {
+    width: 48px !important;
+    height: 48px !important;
+    border-radius: 50% !important;
+    object-fit: cover !important;
+    border: 2px solid #b00035 !important;
+    display: block !important;
+  }
+  #alkfory-brand h1 {
+    font-size: 20px !important;
+    font-weight: 800 !important;
+    margin: 0 !important;
+    color: #ff2020 !important;
+    letter-spacing: 1.5px !important;
+  }
+  #alkfory-menu-button {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 34px !important;
+    height: 34px !important;
+    border: 1px solid #b00035 !important;
+    background: #151515 !important;
+    color: #ff2a2a !important;
+    border-radius: 10px !important;
+    font-size: 22px !important;
+    line-height: 1 !important;
+    cursor: pointer !important;
+    flex-shrink: 0 !important;
+  }
+</style>
+
+</head>
+<body>
+
+
+<main>
+<section id="login" class="page active-page">
+  <div class="card">
+    <button type="button" id="alkfory-copy-financial-link" style="display:flex;align-items:center;justify-content:center;gap:7px;width:100%;border:0;background:transparent;color:inherit;font:inherit;font-size:inherit;font-weight:inherit;padding:0;margin:0 0 0.83em;cursor:pointer"><span>الثقافة المالية</span><span aria-hidden="true" style="display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;border:1px solid currentColor;border-radius:2px;box-sizing:border-box"><span style="width:6px;height:8px;border:1px solid currentColor;border-radius:1px"></span></span><span aria-hidden="true" style="font-size:15px;line-height:1">⧉</span></button>
+    <p class="subtitle"><span class="alkfory-subtitle">اختر المستوى والدرس لعرض الإجابات</span></p>
+
+    <form id="loginForm" novalidate>
+      <input id="studentId" type="text" placeholder="معرف الطالب ID" inputmode="numeric" pattern="[0-9]*" required>
+      <input id="password" type="password" placeholder="كلمة المرور" required>
+
+      <select id="study-unit" required>
+        <option value="">اختر المستوى</option>
+        <option value="1">المستوى الأول: دور المال</option>
+        <option value="2">المستوى الثاني: التمويل في المجتمع</option>
+        <option value="3">المستوى الثالث: البنية الأساسية للاقتصاد</option>
+        <option value="4">المستوى الرابع: الزكاة</option>
+        <option value="5">المستوى الخامس: ما هو المشروع التجاري؟</option>
+        <option value="6">المستوى السادس: عمليات الأعمال والاقتصاد</option>
+        <option value="7">المستوى السابع: الدخل والنفقات والسلوك الاقتصادي</option>
+        <option value="8">المستوى الثامن: محاكاة العمل - العمل والكسب والحياة</option>
+        <option value="9">المستوى التاسع: التمويل الشخصي والائتمان واتخاذ القرار</option>
+        <option value="10">المستوى العاشر: الادخار والاستقرار والتخطيط للمستقبل</option>
+        <option value="11">المستوى الحادي عشر: العقود والشروط والمسؤولية المالية</option>
+        <option value="12">المستوى الثاني عشر: محاكاة رحلة الحياة – النجاة المالية</option>
+        <option value="13">المستوى الثالث عشر: ما هي ريادة الأعمال؟</option>
+        <option value="14">المستوى الرابع عشر: نماذج الأعمال وهياكل الإيرادات</option>
+        <option value="15">المستوى الخامس عشر: التكاليف والأرباح وإعادة الاستثمار</option>
+        <option value="16">المستوى السادس عشر: محاكاة رائد الأعمال – من الفكرة إلى المشروع</option>
+        <option value="17">المستوى السابع عشر: ما هو الاستثمار؟</option>
+        <option value="18">المستوى الثامن عشر: ما هي الأسهم؟</option>
+        <option value="19">المستوى التاسع عشر: التنويع وتقييم الشركات</option>
+        <option value="20">المستوى العشرون: محاكاة حياة المستثمر – بناء الثروة للمستقبل</option>
+        <option value="21">المستوى الحادي والعشرون: شركات الذكاء الاصطناعي ونماذج الأعمال</option>
+        <option value="22">المستوى الثاني والعشرون: تأثير الذكاء الاصطناعي والثقافة الرقمية</option>
+      </select>
+
+      <select id="study-lesson" required>
+        <option value="">اختر الدرس</option>
+      </select>
+
+      <button type="submit">اختراق المنصة</button>
+    </form>
+    <div id="message" style="display:none"></div>
+  </div>
+  
+
+<div id="alkfory-education-links" dir="rtl"
+style="width:100%;max-width:650px;margin:18px auto 25px;padding:0 12px;box-sizing:border-box;text-align:center">
+
+  <h3 style="color:#ff174f;font-size:19px;margin:12px 0 16px">
+    ⚜️ منصاتك التعليمية ⚜️
+  </h3>
+
+  <a href="https://egy.app.spx-learning-square.com/login"
+     target="_blank" rel="noopener"
+     style="display:block;margin:12px auto;padding:16px 10px;
+     background:linear-gradient(120deg,#100008,#65001f);
+     border:1px solid #ff174f;border-radius:13px;
+     color:white;text-decoration:none;font-weight:bold;
+     font-size:16px;box-shadow:0 0 14px #ff174f33">
+     📚 منصة الثقافة المالية - تانية بكالوريا
+  </a>
+
+  <a href="https://me-portal.qureo.education/login"
+     target="_blank" rel="noopener"
+     style="display:block;margin:12px auto;padding:16px 10px;
+     background:linear-gradient(120deg,#100008,#65001f);
+     border:1px solid #ff174f;border-radius:13px;
+     color:white;text-decoration:none;font-weight:bold;
+     font-size:16px;box-shadow:0 0 14px #ff174f33">
+     🇯🇵 منصة كيريو اليابانية
+  </a>
+
+
+
+<style>
+#alkfory-educational-platforms {
+  max-width:760px;
+  margin:30px auto 24px;
+  padding:18px 14px;
+  direction:rtl;
+  text-align:center;
+  box-sizing:border-box;
+}
+#alkfory-educational-platforms h2 {
+  color:var(--accent,#b00035);
+  font-size:25px;
+  margin:0 0 8px;
+}
+#alkfory-educational-platforms .alk-edu-intro {
+  color:var(--text,#aaa);
+  margin:0 0 18px;
+}
+#alkfory-educational-platforms .alk-edu-list {
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+#alkfory-educational-platforms .alk-edu-card {
+  background:rgba(120,120,120,.08);
+  border:1px solid var(--accent,#b00035);
+  border-radius:13px;
+  padding:14px;
+  text-align:right;
+}
+#alkfory-educational-platforms .alk-edu-card h3 {
+  color:var(--accent,#b00035);
+  margin:0 0 6px;
+  font-size:17px;
+}
+#alkfory-educational-platforms .alk-edu-card p {
+  margin:0 0 12px;
+  font-size:13px;
+  line-height:1.7;
+}
+#alkfory-educational-platforms .alk-edu-card a {
+  display:block;
+  text-align:center;
+  padding:10px;
+  border:1px solid var(--accent,#b00035);
+  border-radius:9px;
+  color:var(--text,#fff);
+  text-decoration:none;
+  font-weight:bold;
+}
+#alkfory-educational-platforms .alk-edu-card a:hover {
+  background:var(--accent,#b00035);
+  color:white;
+}
+</style>
+
+<section id="alkfory-educational-platforms">
+  <h2>🎓 المنصات التعليمية</h2>
+  <p class="alk-edu-intro">كل منصاتك التعليمية في مكان واحد</p>
+  <div class="alk-edu-list">
+    
+      <article class="alk-edu-card">
+        <h3>كيريو اليابانية QUREO</h3>
+        <p>البرمجة والذكاء الاصطناعي</p>
+        <a href="https://me-portal.qureo.education/login" target="_blank" rel="noopener noreferrer">افتح المنصة ←</a>
+      </article>
+
+      <article class="alk-edu-card">
+        <h3>بسطتهالك – محمد صلاح</h3>
+        <p>شرح اللغة العربية والنحو والمراجعات</p>
+        <a href="https://2026.bassthalk.com/" target="_blank" rel="noopener noreferrer">افتح المنصة ←</a>
+      </article>
+
+      <article class="alk-edu-card">
+        <h3>منصة محمد عبد المعبود</h3>
+        <p>شرح الفيزياء للثانوية والبكالوريا</p>
+        <a href="https://abdelmaaboud.com/" target="_blank" rel="noopener noreferrer">افتح المنصة ←</a>
+      </article>
+
+      <article class="alk-edu-card">
+        <h3>منصة أحمد عبد الواحد</h3>
+        <p>شرح الفيزياء والكورسات والتدريبات</p>
+        <a href="https://ahmed-abdelwahed.com/" target="_blank" rel="noopener noreferrer">افتح المنصة ←</a>
+      </article>
+
+      <article class="alk-edu-card">
+        <h3>منصة كريم عبده</h3>
+        <p>شرح الفيزياء والاختبارات</p>
+        <a href="https://mrkareemabdo.com/" target="_blank" rel="noopener noreferrer">افتح المنصة ←</a>
+      </article>
+
+      <article class="alk-edu-card">
+        <h3>منصة إسماعيل أبو العزائم</h3>
+        <p>شرح الفيزياء والمراجعات وحل المسائل</p>
+        <a href="https://aboelazayemphysics.com/" target="_blank" rel="noopener noreferrer">افتح المنصة ←</a>
+      </article>
+
+      <article class="alk-edu-card">
+        <h3>منصة رضا عبد الرحيم</h3>
+        <p>شرح الفيزياء وحل الأسئلة</p>
+        <a href="https://genius.edu4.org/" target="_blank" rel="noopener noreferrer">افتح المنصة ←</a>
+      </article>
+
+      <article class="alk-edu-card">
+        <h3>منصة نجوى</h3>
+        <p>شرح الدروس والتدريبات والاختبارات</p>
+        <a href="https://www.nagwa.com/ar/eg/portals/" target="_blank" rel="noopener noreferrer">افتح المنصة ←</a>
+      </article>
+
+      <article class="alk-edu-card">
+        <h3>منصة حصص مصر</h3>
+        <p>شرح المناهج والمراجعات ونماذج الأسئلة</p>
+        <a href="https://www.hesas.eg/home" target="_blank" rel="noopener noreferrer">افتح المنصة ←</a>
+      </article>
+
+      <article class="alk-edu-card">
+        <h3>بنك المعرفة المصري</h3>
+        <p>مصادر علمية وكتب ومراجع تعليمية</p>
+        <a href="https://www.ekb.eg/" target="_blank" rel="noopener noreferrer">افتح المنصة ←</a>
+      </article>
+
+      <article class="alk-edu-card">
+        <h3>نظام إدارة التعلم LMS</h3>
+        <p>المحتوى التعليمي والمواد الدراسية</p>
+        <a href="https://lms.ekb.eg/" target="_blank" rel="noopener noreferrer">افتح المنصة ←</a>
+      </article>
+
+      <article class="alk-edu-card">
+        <h3>بوابة التعليم الإلكتروني</h3>
+        <p>الكتب الدراسية والمحتوى التعليمي</p>
+        <a href="https://moe.gov.eg/elearningentrypage/" target="_blank" rel="noopener noreferrer">افتح المنصة ←</a>
+      </article>
+
+      <article class="alk-edu-card">
+        <h3>منصة البث المباشر</h3>
+        <p>متابعة الحصص والمراجعات التعليمية</p>
+        <a href="https://stream.moe.gov.eg/" target="_blank" rel="noopener noreferrer">افتح المنصة ←</a>
+      </article>
+
+      <article class="alk-edu-card">
+        <h3>منصة ذاكر</h3>
+        <p>مصادر للمذاكرة والمراجعة</p>
+        <a href="https://study.ekb.eg/" target="_blank" rel="noopener noreferrer">افتح المنصة ←</a>
+      </article>
+
+      <article class="alk-edu-card">
+        <h3>Discovery Education</h3>
+        <p>مصادر تعليمية ومحتوى للمرحلة الثانوية</p>
+        <a href="https://discoveryeducation.ekb.eg/curriculum/secondary/" target="_blank" rel="noopener noreferrer">افتح المنصة ←</a>
+      </article>
+
+      <article class="alk-edu-card">
+        <h3>قناة مدرستنا</h3>
+        <p>شرح المناهج والدروس التعليمية</p>
+        <a href="https://www.youtube.com/c/Madrasetnasecondary/videos" target="_blank" rel="noopener noreferrer">افتح المنصة ←</a>
+      </article>
+
+      <article class="alk-edu-card">
+        <h3>البريد المدرسي الموحد</h3>
+        <p>الوصول إلى الحساب المدرسي للطلاب</p>
+        <a href="https://office365.emis.gov.eg/" target="_blank" rel="noopener noreferrer">افتح المنصة ←</a>
+      </article>
+
+      <article class="alk-edu-card">
+        <h3>بوابة الشهادات العامة</h3>
+        <p>الخدمات الإلكترونية وبيانات الطلاب</p>
+        <a href="https://moe-register.emis.gov.eg/login" target="_blank" rel="noopener noreferrer">افتح المنصة ←</a>
+      </article>
+
+      <article class="alk-edu-card">
+        <h3>بوابة التعليم المصري</h3>
+        <p>الخدمات والبوابات التعليمية</p>
+        <a href="https://science3sec.moe.gov.eg/" target="_blank" rel="noopener noreferrer">افتح المنصة ←</a>
+      </article>
+
+      <article class="alk-edu-card">
+        <h3>منصة تعلم معنا</h3>
+        <p>التعلم الإلكتروني والتدريب</p>
+        <a href="https://developandchange.moe.gov.eg/" target="_blank" rel="noopener noreferrer">افتح المنصة ←</a>
+      </article>
+
+  </div>
+</section><!-- ALKFORY-EDU-END -->
+
+
+</div>
+
+
+</section>
+</main>
+
+
+
+<script src="js/app.js?v=21"></script>
+<script src="js/answers.js?v=1795811747994"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded",function(){
+
+ const copyFinancialButton=document.getElementById("alkfory-copy-financial-link");
+ if(copyFinancialButton){
+  copyFinancialButton.addEventListener("click",async()=>{
+   const link="https://egy.app.spx-learning-square.com/dashboard";
+   try{
+    await navigator.clipboard.writeText(link);
+   }catch(e){
+    const temp=document.createElement("textarea");
+    temp.value=link;
+    temp.style.position="fixed";
+    temp.style.opacity="0";
+    document.body.appendChild(temp);
+    temp.select();
+    try{document.execCommand("copy");}catch(err){}
+    temp.remove();
+   }
+  });
+ }
+
+ const unit=document.getElementById("study-unit");
+ const lesson=document.getElementById("study-lesson");
+ const lessons=[
+  [
+    "الدرس الأول: ما هو المال؟",
+    "الدرس الثاني: وظائف المال",
+    "الدرس الثالث: تطور وسائل الدفع",
+    "اختبار المستوى الأول: دور المال"
+  ],
+  [
+    "الدرس الأول: كيف يعمل التمويل؟",
+    "الدرس الثاني: المؤسسات المالية",
+    "الدرس الثالث: دور البنوك والأسواق المالية",
+    "اختبار المستوى الثاني: التمويل في المجتمع"
+  ],
+  [
+    "الدرس الأول: العرض والطلب",
+    "الدرس الثاني: الإنتاج والاستهلاك",
+    "الدرس الثالث: النمو الاقتصادي والتضخم",
+    "اختبار المستوى الثالث: البنية الأساسية للاقتصاد"
+  ],
+  [
+    "الدرس الأول: مفهوم الزكاة وأهميتها",
+    "الدرس الثاني: شروط الزكاة ونصابها",
+    "الدرس الثالث: مصارف الزكاة والأثر الاجتماعي",
+    "اختبار المستوى الرابع: الزكاة"
+  ],
+  [
+    "الدرس الأول: مفهوم المشروع التجاري",
+    "الدرس الثاني: أنواع المشاريع التجارية",
+    "الدرس الثالث: عناصر نجاح المشروع التجاري",
+    "اختبار المستوى الخامس: ما هو المشروع التجاري؟"
+  ],
+  [
+    "الدرس الأول: إدارة العمليات والإنتاج",
+    "الدرس الثاني: التسويق والعملاء",
+    "الدرس الثالث: ربط العمليات بالاقتصاد العام",
+    "اختبار المستوى السادس: عمليات الأعمال والاقتصاد"
+  ],
+  [
+    "الدرس الأول: مصادر الدخل وأنواع النفقات",
+    "الدرس الثاني: إعداد الميزانية الشخصية",
+    "الدرس الثالث: التحيزات السلوكية في القرار المالي",
+    "اختبار المستوى السابع: الدخل والنفقات والسلوك الاقتصادي"
+  ],
+  [
+    "اختبار المعرفة: محاكاة العمل - العمل والكسب والحياة"
+  ],
+  [
+    "الدرس الأول: أساسيات التمويل الشخصي",
+    "الدرس الثاني: الائتمان والقروض",
+    "الدرس الثالث: اتخاذ القرارات المالية المسؤولة",
+    "اختبار المستوى التاسع: التمويل الشخصي والائتمان واتخاذ القرار"
+  ],
+  [
+    "الدرس الأول: لماذا الادخار؟",
+    "الدرس الثاني: سحر الفائدة المركبة",
+    "الدرس الثالث: التحضير لمخاطر المستقبل",
+    "اختبار المستوى العاشر – الادخار والاستقرار والتخطيط للمستقبل"
+  ],
+  [
+    "الدرس الأول: ما هو العقد؟",
+    "الدرس الثاني: كيف يعمل الائتمان",
+    "الدرس الثالث: المسؤولية عن الديون وحقوق المستهلك",
+    "اختبار المستوى الحادي عشر – العقود والشروط والمسؤولية المالية"
+  ],
+  [
+    "اختبار المعرفة: محاكاة رحلة الحياة – النجاة المالية (٥٠ سؤالاً)"
+  ],
+  [
+    "الدرس الأول: العقلية الريادية",
+    "الدرس الثاني: من الفكرة إلى المشروع التجاري",
+    "الدرس الثالث: المخاطر والتأثير الاجتماعي للمشاريع الناشئة",
+    "اختبار المستوى الثالث عشر – ما هي ريادة الأعمال؟"
+  ],
+  [
+    "الدرس الأول: ما هو نموذج العمل؟",
+    "الدرس الثاني: نماذج العمل الشائعة",
+    "الدرس الثالث: تصميم تدفّقات الإيراد",
+    "اختبار المستوى الرابع عشر – نماذج الأعمال وهياكل الإيرادات"
+  ],
+  [
+    "الدرس الأول: أنواع التكاليف وإدارتها",
+    "الدرس الثاني: فهم هوامش الربح",
+    "الدرس الثالث: إعادة استثمار الأرباح",
+    "اختبار المستوى الخامس عشر – التكاليف والأرباح وإعادة الاستثمار"
+  ],
+  [
+    "اختبار المعرفة: محاكاة رائد الأعمال – من الفكرة إلى المشروع"
+  ],
+  [
+    "الدرس الأول: التعريف الأساسي للاستثمار",
+    "الدرس الثاني: المخاطرة والعائد",
+    "الدرس الثالث: أنواع فئات الأصول",
+    "اختبار المستوى السابع عشر – ما هو الاستثمار؟"
+  ],
+  [
+    "الدرس الأول: أساسيات الأسهم",
+    "الدرس الثاني: لماذا تتغيّر أسعار الأسهم",
+    "الدرس الثالث: كيف يعمل سوق الأسهم",
+    "اختبار المستوى الثامن عشر: ما هي الأسهم؟"
+  ],
+  [
+    "الدرس الأول: مبادئ التنويع",
+    "الدرس الثاني: تقييم الشركات",
+    "الدرس الثالث: أدوات الاستثمار",
+    "اختبار المستوى التاسع عشر: التنويع وتقييم الشركات"
+  ],
+  [
+    "اختبار المعرفة: محاكاة حياة المستثمر – بناء الثروة للمستقبل (١–٥٠)"
+  ],
+  [
+    "الدرس الأول: كيف يغيّر الذكاء الاصطناعي عالم الأعمال",
+    "الدرس الثاني: الذكاء الاصطناعي والتكنولوجيا المالية في الحياة والأعمال",
+    "الدرس الثالث: نماذج أعمال الشركات الناشئة في الذكاء الاصطناعي",
+    "اختبار المستوى الحادي والعشرون: شركات الذكاء الاصطناعي ونماذج الأعمال"
+  ],
+  [
+    "الدرس الأول: كيف يغيّر الذكاء الاصطناعي الوظائف والمجتمع",
+    "الدرس الثاني: ما هي الثقافة الرقمية للذكاء الاصطناعي؟",
+    "الدرس الثالث: استراتيجية شخصية في عصر الذكاء الاصطناعي",
+    "اختبار المستوى الثاني والعشرون: تأثير الذكاء الاصطناعي والثقافة الرقمية"
+  ]
+];
+ unit.addEventListener("change",function(){
+  lesson.innerHTML='<option value="">اختر الدرس</option>';
+  const n=Number(unit.value);
+  if(n>=1&&n<=lessons.length){
+   lessons[n-1].forEach((name,i)=>{
+    const option=document.createElement("option");
+    option.value=String(i+1);
+    option.textContent=name;
+    lesson.appendChild(option);
+   });
+  }
+ });
+ const id=document.getElementById("studentId");
+ id.addEventListener("input",function(){
+  this.value=this.value.replace(/[^0-9]/g,"");
+ });
+});
+</script>
+
+<script id="alkfory-final-validation">
+document.addEventListener("DOMContentLoaded", function () {
+  const form = document.getElementById("loginForm");
+  const id = document.getElementById("studentId");
+  const password = document.getElementById("password");
+  const unit = document.getElementById("study-unit");
+  const lesson = document.getElementById("study-lesson");
+  const button = form?.querySelector('button[type="submit"]');
+
+  if (!form || !id || !password || !unit || !lesson || !button) return;
+
+  [id, password, unit, lesson].forEach(field => field.required = true);
+
+  id.setAttribute("inputmode", "numeric");
+  id.setAttribute("pattern", "[0-9]+");
+
+  function checkFields() {
+    const valid =
+      /^[0-9]+$/.test(id.value.trim()) &&
+      password.value.trim() !== "" &&
+      unit.value !== "" &&
+      lesson.value !== "";
+
+    button.disabled = !valid;
+    return valid;
+  }
+
+  id.addEventListener("input", function () {
+    this.value = this.value.replace(/[^0-9]/g, "");
+    checkFields();
+  });
+
+  id.addEventListener("paste", function () {
+    setTimeout(() => {
+      id.value = id.value.replace(/[^0-9]/g, "");
+      checkFields();
+    }, 0);
+  });
+
+  [password, unit, lesson].forEach(field => {
+    field.addEventListener("input", checkFields);
+    field.addEventListener("change", checkFields);
+  });
+
+  form.addEventListener("submit", function (event) {
+    if (!checkFields()) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      alert("أكمل جميع الخانات واختر المستوى والدرس أولاً.");
+    }
+  }, true);
+
+  checkFields();
+});
+</script>
+
+
+<script id="alkfory-longpress-hints">
+document.addEventListener("DOMContentLoaded", function(){
+  const hints = [
+    {id:"studentId", text:"أدخل معرف الطالب الخاص بك بمنصة الثقافة المالية"},
+    {id:"password", text:"أدخل كلمة المرور الخاصة بك في منصة الثقافة المالية"}
+  ];
+  const box = document.createElement("div");
+  box.id = "alkfory-hint";
+  box.innerHTML = '<div class="hint-box"><div id="alkfory-hint-text"></div><button type="button">حسناً</button></div>';
+  document.body.appendChild(box);
+
+  function showHint(text){
+    document.getElementById("alkfory-hint-text").textContent = text;
+    box.style.display = "flex";
+  }
+  box.querySelector("button").addEventListener("click",()=>box.style.display="none");
+  box.addEventListener("click",e=>{if(e.target===box)box.style.display="none";});
+
+  hints.forEach(item=>{
+    const input=document.getElementById(item.id);
+    if(!input) return;
+    let timer;
+    input.addEventListener("touchstart",()=>{
+      timer=setTimeout(()=>showHint(item.text),650);
+    },{passive:true});
+    ["touchend","touchmove","touchcancel"].forEach(ev=>
+      input.addEventListener(ev,()=>clearTimeout(timer),{passive:true})
+    );
+    input.addEventListener("contextmenu",e=>{
+      e.preventDefault();
+      showHint(item.text);
+    });
+  });
+});
+</script>
+
+
+<script id="alkfory-settings-system">
+document.addEventListener("DOMContentLoaded", function () {
+  const brand = document.getElementById("alkfory-brand");
+  if (!brand) return;
+
+  brand.style.position = "relative";
+
+  const menu = document.createElement("div");
+  menu.id = "alkfory-menu-panel";
+  menu.innerHTML = `
+    <button type="button" id="alkfory-open-theme-direct">🎨 تغيير المظهر والألوان</button>
+    <button type="button" id="alkfory-open-main-platform">⚜️ منصة الكفوري</button>
+    <button type="button" id="alkfory-open-usage">📖 الاستخدام</button>
+    <button type="button" id="alkfory-menu-arrow" aria-label="إغلاق القائمة" style="display:block;width:48px;height:42px;margin:8px auto 0;padding:0;background:transparent;color:#ff3030;border:0;font-size:38px;font-weight:bold;line-height:42px;cursor:pointer">↕</button>
+  `;
+  brand.appendChild(menu);
+  document.getElementById("alkfory-menu-arrow").onclick = () => {
+    menu.style.display = "none";
+  };
+
+  const modal = document.createElement("div");
+  modal.id = "alkfory-settings";
+  modal.innerHTML = `
+    <div class="settings-box">
+      <h3>إعدادات ALKFORY</h3>
+      <button type="button" id="alkfory-platforms">منصات المطور</button>
+      <button type="button" class="close-settings">إغلاق</button>
+    </div>`;
+  document.body.appendChild(modal);
+
+  const platformPage = document.createElement("div");
+  platformPage.id = "alkfory-platform-page";
+  platformPage.style.cssText =
+    "display:none;position:fixed;inset:0;z-index:10001;background:#000d;align-items:center;justify-content:center;padding:18px;";
+  platformPage.innerHTML = `
+    <div class="settings-box">
+      <h3>منصات المطور</h3>
+      <button type="button" id="alkfory-open-theme">🎨 تغيير المظهر والألوان</button>
+      <button type="button" id="alkfory-back-main">رجوع للإعدادات</button>
+      <button type="button" id="alkfory-close-platforms">إغلاق</button>
+    </div>`;
+  document.body.appendChild(platformPage);
+
+  const colors = [
+    ["الأساسي","default","#b00035","#ff4778"],
+    ["الأخضر","green","#00b86b","#42bfff"],
+    ["الأزرق","blue","#087cf0","#53c7ff"],
+    ["البنفسجي","purple","#923be0","#e0b5ff"],
+    ["الذهبي","gold","#c69b20","#ffe082"],
+    ["البرتقالي","orange","#e87516","#ffc078"],
+    ["السماوي","cyan","#009eae","#80f0ff"],
+    ["الوردي","pink","#df438b","#ffadd5"],
+    ["الأحمر","red","#e32636","#ff8b94"],
+    ["التركواز","teal","#008f83","#72e5d8"]
+  ];
+
+  const themePage = document.createElement("div");
+  themePage.id = "alkfory-theme-page";
+  themePage.innerHTML = `
+    <div class="settings-box">
+      <h3>اختار لون الموقع</h3>
+      <div class="alkfory-color-grid"></div>
+      <button type="button" id="alkfory-back-platforms">رجوع لمنصات المطور</button>
+    </div>`;
+  document.body.appendChild(themePage);
+
+  const grid = themePage.querySelector(".alkfory-color-grid");
+
+  function applyTheme(item) {
+    document.body.dataset.theme = item[1];
+    localStorage.setItem("alkfory-theme", item[1]);
+    document.documentElement.style.setProperty("--accent", item[2]);
+    document.documentElement.style.setProperty("--accent2", item[2]);
+    document.documentElement.style.setProperty("--text-accent", item[3]);
+    document.documentElement.style.setProperty("--border-accent", item[2]);
+  }
+
+  colors.forEach(item => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "alkfory-color-choice";
+    b.innerHTML = '<span class="alkfory-color-dot"></span>' + item[0];
+    b.querySelector(".alkfory-color-dot").style.background = item[2];
+    b.addEventListener("click", () => {
+      applyTheme(item);
+      themePage.classList.remove("alkfory-theme-open");
+    });
+    grid.appendChild(b);
+  });
+
+  const saved = localStorage.getItem("alkfory-theme") || "default";
+  applyTheme(colors.find(c => c[1] === saved) || colors[0]);
+
+
+  document.getElementById("alkfory-open-theme-direct").onclick = () => {
+    menu.style.display = "none";
+    themePage.classList.add("alkfory-theme-open");
+  };
+
+  document.getElementById("alkfory-open-main-platform").onclick = () => {
+    menu.style.display = "none";
+    window.location.href = "/platforms";
+  };
+  const usagePage = document.createElement("div");
+  usagePage.id = "alkfory-usage-page";
+  usagePage.style.cssText = `
+    display:none;position:fixed;inset:0;z-index:10005;
+    background:radial-gradient(circle at top,#351010 0%,#090909 48%,#000 100%);
+    overflow-y:auto;padding:22px 14px;color:#fff;direction:rtl;
+    font-family:inherit;box-sizing:border-box;
+  `;
+  usagePage.innerHTML = `
+    <div style="max-width:520px;margin:15px auto 35px">
+      <div style="text-align:center;padding:20px 10px">
+        <div style="font-size:35px;color:#ff3030">⚜️</div>
+        <h2 style="margin:8px 0;color:#ff3434;font-size:27px">دليل الاستخدام</h2>
+        <p style="color:#bbb;font-size:14px">اتبع الخطوات بالترتيب للاستفادة من الموقع</p>
+      </div>
+
+      <div style="display:grid;gap:13px">
+        <div class="alkfory-usage-card"><b>01 — تسجيل البيانات</b><p>أدخل معرف الطالب (ID) وكلمة المرور الخاصة بحسابك.</p></div>
+        <div class="alkfory-usage-card"><b>02 — اختيار المستوى</b><p>اختر المستوى الدراسي المطلوب.</p></div>
+        <div class="alkfory-usage-card"><b>03 — اختيار الدرس</b><p>حدد الدرس الذي تريد العمل عليه.</p></div>
+        <div class="alkfory-usage-card"><b>04 — عرض المحتوى</b><p>اضغط على زر عرض المحتوى لمشاهدة المواد المتاحة للمراجعة.</p></div>
+        <div class="alkfory-usage-card"><b>05 — الثقافة المالية</b><p>اضغط على زر «الثقافة المالية» لنسخ رابط المنصة.</p></div>
+        <div class="alkfory-usage-card"><b>06 — تسجيل الدخول</b><p>افتح الرابط الرسمي، وسجّل الدخول بحسابك، ثم اختر المستوى والدرس المطلوبين.</p></div>
+        <div class="alkfory-usage-card"><b>07 — متابعة الدراسة</b><p>ارجع إلى الموقع وتابع الدرس واستخدم المحتوى للمراجعة والفهم.</p></div>
+      </div>
+
+      <div style="margin:18px 0;padding:14px;border:1px solid #7d2424;border-radius:13px;background:#160909;color:#ddd;font-size:13px;line-height:1.8">
+        ⚠️ استخدم حسابك الشخصي والرابط الرسمي فقط، ولا تحاول تجاوز حماية المنصة أو الدخول إلى حسابات الآخرين.
+      </div>
+
+      <button type="button" id="alkfory-close-usage"
+        style="width:100%;padding:14px;border:0;border-radius:12px;
+        background:linear-gradient(90deg,#a90000,#ff3030);color:white;
+        font-size:17px;font-weight:bold;cursor:pointer">رجوع</button>
+      <div style="text-align:center;color:#777;margin-top:18px;font-size:12px">⚜️ ALKFORY ⚜️</div>
+    </div>
+  `;
+
+  const usageStyle = document.createElement("style");
+  usageStyle.textContent = `
+    #alkfory-usage-page .alkfory-usage-card {
+      background:linear-gradient(135deg,#191919,#090909);
+      border:1px solid #632020;border-right:4px solid #ff3030;
+      border-radius:13px;padding:15px 16px;
+      box-shadow:0 4px 15px #0008;
+    }
+    #alkfory-usage-page .alkfory-usage-card b {
+      color:#ff4141;font-size:16px;
+    }
+    #alkfory-usage-page .alkfory-usage-card p {
+      color:#ddd;font-size:14px;line-height:1.8;margin:8px 0 0;
+    }
+    #alkfory-open-usage {
+      display:block;width:100%;margin-top:7px;padding:11px;
+      border:1px solid #8f2929;border-radius:9px;
+      background:#171010;color:#fff;font-size:15px;cursor:pointer;
+    }
+    #alkfory-open-usage:active {background:#481313}
+  `;
+  document.head.appendChild(usageStyle);
+  document.body.appendChild(usagePage);
+
+  document.getElementById("alkfory-open-usage").onclick = () => {
+    menu.style.display = "none";
+    usagePage.style.display = "block";
+  };
+  document.getElementById("alkfory-close-usage").onclick = () => {
+    usagePage.style.display = "none";
+  };
+
+
+  const openSettings = document.getElementById("alkfory-open-settings");
+  const menuButton = document.getElementById("alkfory-menu-button");
+
+  if (menuButton) {
+    menuButton.addEventListener("click", e => {
+      e.stopPropagation();
+      menu.style.display = menu.style.display === "block" ? "none" : "block";
+    });
+  }
+
+  openSettings.onclick = () => {
+    menu.style.display = "none";
+    modal.style.display = "flex";
+  };
+
+  document.getElementById("alkfory-platforms").onclick = () => {
+    modal.style.display = "none";
+    platformPage.style.display = "flex";
+  };
+
+  document.getElementById("alkfory-open-theme").onclick = () => {
+    platformPage.style.display = "none";
+    themePage.classList.add("alkfory-theme-open");
+  };
+
+  document.getElementById("alkfory-back-platforms").onclick = () => {
+    themePage.classList.remove("alkfory-theme-open");
+    platformPage.style.display = "flex";
+  };
+
+  document.getElementById("alkfory-back-main").onclick = () => {
+    platformPage.style.display = "none";
+    modal.style.display = "flex";
+  };
+
+  document.getElementById("alkfory-close-platforms").onclick = () => {
+    platformPage.style.display = "none";
+  };
+
+  modal.querySelector(".close-settings").onclick = () => {
+    modal.style.display = "none";
+  };
+
+  themePage.addEventListener("click", e => {
+    if (e.target === themePage) themePage.classList.remove("alkfory-theme-open");
+  });
+
+  modal.addEventListener("click", e => {
+    if (e.target === modal) modal.style.display = "none";
+  });
+
+  platformPage.addEventListener("click", e => {
+    if (e.target === platformPage) platformPage.style.display = "none";
+  });
+
+  document.addEventListener("click", e => {
+    if (!brand.contains(e.target)) menu.style.display = "none";
+  });
+});
+</script>
+
+
+<script id="ALKFORY-NEXT-LESSON-V1">
+(() => {
+  const installNextButton = () => {
+    const panel = document.getElementById("alkfory-answer-results");
+    const lesson = document.getElementById("study-lesson");
+    if (!panel || !lesson || panel.querySelector("#alkfory-next-lesson")) return;
+
+    const button = document.createElement("button");
+    button.id = "alkfory-next-lesson";
+    button.type = "button";
+    button.textContent = "الدرس التالي ⟵";
+    button.style.cssText =
+      "display:block;width:100%;margin:14px 0;padding:14px;background:#171717;color:white;border:1px solid #ff174f;border-radius:12px;font-size:16px;font-weight:bold";
+
+    button.addEventListener("click", () => {
+      const nextIndex = lesson.selectedIndex + 1;
+      if (nextIndex >= lesson.options.length) {
+        button.textContent = "لا يوجد درس تالٍ في هذه الوحدة";
+        return;
+      }
+
+      lesson.selectedIndex = nextIndex;
+      lesson.dispatchEvent(new Event("change", { bubbles: true }));
+
+      const form = lesson.closest("form");
+      if (form) {
+        if (typeof form.requestSubmit === "function") form.requestSubmit();
+        else form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+      }
+    });
+
+    panel.appendChild(button);
+  };
+
+  new MutationObserver(installNextButton).observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+  installNextButton();
+})();
+</script>
+
+
+<script id="ALKFORY-THANK-CONTACTS-V1">
+(() => {
+  const phonePattern = /(?:\+?20|0020|0)?1[0125]\d{8}/g;
+
+  function normalizePhone(value) {
+    let n = String(value || "").replace(/[^\d+]/g, "");
+    if (n.startsWith("+20")) n = "0" + n.slice(3);
+    else if (n.startsWith("0020")) n = "0" + n.slice(4);
+    else if (/^20?1[0125]\d{8}$/.test(n)) n = "0" + n.replace(/^20?/, "");
+    return /^01[0125]\d{8}$/.test(n) ? n : "";
+  }
+
+  function getContacts() {
+    const found = new Map();
+
+    document.querySelectorAll('a[href]').forEach(a => {
+      const href = a.getAttribute("href") || "";
+      const text = a.innerText || a.textContent || "";
+      const isWhatsApp = /wa\.me|whatsapp|api\.whatsapp/i.test(href + " " + text);
+      const isPhone = /^tel:/i.test(href);
+
+      if (!isWhatsApp && !isPhone) return;
+
+      const candidates = (href + " " + text).match(phonePattern) || [];
+      candidates.forEach(raw => {
+        const number = normalizePhone(raw);
+        if (number && !found.has(number)) {
+          found.set(number, {
+            number,
+            type: isWhatsApp ? "واتساب" : "اتصال هاتفي"
+          });
+        }
+      });
+    });
+
+    return [...found.values()].slice(0, 3);
+  }
+
+  function showContacts() {
+    const old = document.getElementById("alkfory-thank-contacts-modal");
+    if (old) old.remove();
+
+    const contacts = getContacts();
+    const overlay = document.createElement("div");
+    overlay.id = "alkfory-thank-contacts-modal";
+    overlay.dir = "rtl";
+    overlay.style.cssText =
+      "position:fixed;inset:0;z-index:1000005;background:#000d;display:flex;align-items:center;justify-content:center;padding:15px";
+
+    const box = document.createElement("section");
+    box.style.cssText =
+      "width:100%;max-width:430px;background:#111;color:white;border:1px solid #b00035;border-radius:16px;padding:20px;text-align:center";
+
+    const title = document.createElement("h3");
+    title.textContent = "⚜️ تواصل مع المطور زياد الكفوري ⚜️";
+    title.style.color = "#ff315c";
+    box.appendChild(title);
+
+    const description = document.createElement("p");
+    description.textContent = "اختار وسيلة التواصل المناسبة:";
+    box.appendChild(description);
+
+    const contactNumbers = ["01031808795", "01114536964"];
+
+    contactNumbers.forEach((number) => {
+      const card = document.createElement("div");
+      card.style.cssText =
+        "margin:12px 0;padding:13px;background:#1b1b1b;border:1px solid #b00035;border-radius:12px";
+
+      const numberText = document.createElement("div");
+      numberText.textContent = "📞 " + number;
+      numberText.style.cssText =
+        "font-size:18px;font-weight:bold;margin-bottom:12px;color:#fff;direction:ltr";
+      card.appendChild(numberText);
+
+      const actions = document.createElement("div");
+      actions.style.cssText = "display:flex;gap:9px;justify-content:center";
+
+      const call = document.createElement("a");
+      call.textContent = "📞 اتصال";
+      call.href = "tel:" + number;
+
+      const whatsapp = document.createElement("a");
+      whatsapp.textContent = "واتساب";
+      const intlNum = number.startsWith("20") ? number : ("20" + number.replace(/^0+/, "")); whatsapp.href = "https://wa.me/" + intlNum;
+      whatsapp.target = "_blank";
+      whatsapp.rel = "noopener noreferrer";
+
+      [call, whatsapp].forEach((button) => {
+        button.style.cssText =
+          "flex:1;padding:12px 8px;background:#292929;color:white;text-decoration:none;border:1px solid #ff315c;border-radius:9px;font-weight:bold";
+        actions.appendChild(button);
+      });
+
+      card.appendChild(actions);
+      box.appendChild(card);
+    });
+
+    const close = document.createElement("button");
+    close.type = "button";
+    close.textContent = "إغلاق";
+    close.style.cssText =
+      "width:100%;padding:12px;margin-top:10px;background:#a90035;color:white;border:0;border-radius:9px";
+    close.onclick = () => overlay.remove();
+    box.appendChild(close);
+
+    overlay.addEventListener("click", e => {
+      if (e.target === overlay) overlay.remove();
+    });
+
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+  }
+
+  document.addEventListener("click", event => {
+    const button = event.target.closest("#alkfory-thank-developer");
+    if (!button) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    showContacts();
+  }, true);
+})();
+</script>
+
+
+<script src="/alkfory-global-theme.js" defer></script>
+
+<!-- ALKFORY FINANCIAL PASSWORD EYE -->
+<style>
+.alk-password-wrap {
+  position: relative !important;
+  display: block !important;
+  width: 100% !important;
+}
+.alk-password-wrap input {
+  box-sizing: border-box !important;
+  padding-right: 48px !important;
+}
+.alk-password-eye {
+  position: absolute !important;
+  left: 2px !important;
+  right: auto !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  width: 20px !important;
+  min-width: 20px !important;
+  height: 20px !important;
+  min-height: 20px !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 4px !important;
+  background: transparent !important;
+  color: var(--alkfory-accent, #ff315f) !important;
+  font-size: 13px !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
+  z-index: 10 !important;
+  box-shadow: none !important;
+}
+.alk-password-wrap input {
+  padding-left: 27px !important;
+}
+.alk-password-eye:focus-visible {
+  outline: 2px solid var(--alkfory-accent, #ff315f) !important;
+  border-radius: 8px !important;
+}
+</style>
+<script>
+(() => {
+  function addPasswordEyes() {
+    const path = location.pathname.toLowerCase();
+    if (!path.includes("financial-tracker")) return;
+
+    document.querySelectorAll('input[type="password"]').forEach(input => {
+      if (input.dataset.alkEyeAdded) return;
+      input.dataset.alkEyeAdded = "1";
+
+      const wrap = document.createElement("span");
+      wrap.className = "alk-password-wrap";
+      input.parentNode.insertBefore(wrap, input);
+      wrap.appendChild(input);
+
+      const eye = document.createElement("button");
+      eye.type = "button";
+      eye.className = "alk-password-eye";
+      eye.textContent = "👁";
+      eye.setAttribute("aria-label", "إظهار كلمة المرور");
+      eye.title = "إظهار كلمة المرور";
+
+      eye.addEventListener("click", () => {
+        const showing = input.type === "password";
+        input.type = showing ? "text" : "password";
+        eye.textContent = showing ? "🙈" : "👁";
+        eye.setAttribute("aria-label",
+          showing ? "إخفاء كلمة المرور" : "إظهار كلمة المرور");
+        eye.title = showing ? "إخفاء كلمة المرور" : "إظهار كلمة المرور";
+        input.focus();
+      });
+
+      wrap.appendChild(eye);
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", addPasswordEyes);
+  } else {
+    addPasswordEyes();
+  }
+
+  new MutationObserver(addPasswordEyes).observe(document.documentElement, {
+    childList: true,
+    subtree: true
+  });
+})();
+</script>
+
+
+
+
+
+<style>
+/* ALKFORY-LOGIN-FIX-V1 */
+#studentId,
+input[type="password"] {
+  direction: rtl !important;
+  text-align: right !important;
+  unicode-bidi: plaintext !important;
+  padding-right: 12px !important;
+  padding-left: 28px !important;
+  text-indent: 0 !important;
+}
+</style>
+<script>
+/* ALKFORY-LOGIN-VALIDATION-V1 */
+(() => {
+  const idField = document.getElementById('studentId');
+  const passwordField = document.querySelector('input[type="password"]');
+  if (!idField || !passwordField) return;
+
+  idField.setAttribute('inputmode', 'numeric');
+  idField.addEventListener('input', () => {
+    idField.value = idField.value.replace(/\D/g, '');
+  });
+
+  document.addEventListener('submit', event => {
+    const id = idField.value.trim();
+    const password = passwordField.value;
+
+    if (!/^\d{7,}$/.test(id)) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      alert('رقم الـ ID غلط أو الطالب غير معروف');
+      idField.focus();
+      return;
+    }
+
+    if (password.length < 7) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      alert('كلمة المرور غلط');
+      passwordField.focus();
+    }
+  }, true);
+})();
+</script>
+
+
+<script>
+/* ALKFORY-CLEAR-ANSWERS-ON-LOAD-V2 */
+(() => {
+  function clearPreviousAnswers() {
+    const nodes = document.querySelectorAll('[id], [class]');
+    nodes.forEach(el => {
+      if (!(el instanceof HTMLElement)) return;
+      if (el.closest('form')) return;
+
+      const name = ((el.id || '') + ' ' + (typeof el.className === 'string' ? el.className : '')).toLowerCase();
+
+      if (/(answer|answers|result|results|solution|solutions)/.test(name)) {
+        if (el.matches('input, textarea, select, button, script, style')) return;
+        el.replaceChildren();
+        el.hidden = true;
+        el.setAttribute('aria-hidden', 'true');
+      }
+    });
+  }
+
+  document.addEventListener('change', e => {
+    if (e.target.matches('#study-unit, #study-lesson')) {
+      clearPreviousAnswers();
+    }
+  }, true);
+
+  document.addEventListener('click', e => {
+    const button = e.target.closest('button, input[type="submit"], input[type="button"]');
+    if (!button) return;
+
+    const label = ((button.innerText || button.value || '')).trim();
+    if (/تحميل|عرض|إجابات|اجابات|حل|ابدأ/i.test(label)) {
+      clearPreviousAnswers();
+    }
+  }, true);
+
+  document.addEventListener('submit', clearPreviousAnswers, true);
+})();
+</script>
+
+
+<!-- ALKFORY_FINAL_QUOTE_AFTER_22 -->
+<div id="alkfory-copyright" dir="rtl" style="text-align:center;padding:16px 18px;margin:20px auto 14px;background:#171717;color:#fff;border:1px solid #a90035;border-radius:14px;max-width:700px;line-height:1.9;box-shadow:0 0 16px rgba(169,0,53,0.18)"><div style="font-size:15px;font-weight:bold">جميع الحقوق محفوظة لدى المطور زياد الكفوري</div><div style="font-size:13px;color:#ff4778;margin-top:4px">© 2026 - 2027</div></div>
+
+
+<script id="ALKFORY-EXACT-TOPBAR-FIX">
+(() => {
+  function applyExactTopBar() {
+    const header = document.querySelector("header");
+    if (!header) return;
+
+    header.setAttribute("dir", "ltr");
+    header.style.cssText = [
+      "display:flex",
+      "align-items:center",
+      "justify-content:space-between",
+      "gap:10px",
+      "padding:10px 14px",
+      "background:#080808",
+      "position:relative",
+      "z-index:50"
+    ].join(";");
+
+    // الجانب الأيسر: زر الثلاث نقاط + كلمة ALKFORY
+    let leftGroup = document.getElementById("alkfory-left-brand-group");
+    if (!leftGroup) {
+      leftGroup = document.createElement("div");
+      leftGroup.id = "alkfory-left-brand-group";
+      leftGroup.style.cssText = "display:flex;align-items:center;gap:10px";
+    }
+
+    let menuBtn = document.getElementById("alkfory-menu-button");
+    if (!menuBtn) {
+      menuBtn = document.createElement("button");
+      menuBtn.id = "alkfory-menu-button";
+      menuBtn.type = "button";
+      menuBtn.textContent = "⋮";
+    }
+    menuBtn.setAttribute("aria-label", "القائمة والإعدادات");
+    menuBtn.style.cssText = [
+      "display:inline-flex",
+      "align-items:center",
+      "justify-content:center",
+      "width:34px",
+      "height:34px",
+      "flex-shrink:0",
+      "border:1px solid #b00035",
+      "background:#151515",
+      "color:#ff2a2a",
+      "border-radius:10px",
+      "font-size:22px",
+      "line-height:1",
+      "cursor:pointer"
+    ].join(";");
+
+    const brand = document.getElementById("alkfory-brand");
+    let brandTitle = document.getElementById("alkfory-top-wordmark");
+    const existingImg = brand ? brand.querySelector("img") : null;
+
+    if (!brandTitle) {
+      brandTitle = document.createElement("span");
+      brandTitle.id = "alkfory-top-wordmark";
+      brandTitle.textContent = "ALKFORY";
+      brandTitle.style.cssText = [
+        "font-size:20px",
+        "font-weight:800",
+        "color:#ff2020",
+        "letter-spacing:1.5px",
+        "line-height:1"
+      ].join(";");
+    }
+
+    if (leftGroup.parentElement !== header) {
+      header.appendChild(leftGroup);
+    }
+    if (menuBtn.parentElement !== leftGroup) {
+      leftGroup.appendChild(menuBtn);
+    }
+    if (brandTitle.parentElement !== leftGroup) {
+      leftGroup.appendChild(brandTitle);
+    }
+
+    // الجانب الأيمن: الصورة الدائرية فقط في الشريط العلوي
+    if (existingImg) {
+      existingImg.style.cssText = [
+        "width:48px",
+        "height:48px",
+        "border-radius:50%",
+        "object-fit:cover",
+        "border:2px solid #b00035",
+        "display:block",
+        "flex-shrink:0"
+      ].join(";");
+      if (existingImg.parentElement !== header) {
+        header.appendChild(existingImg);
+      }
+    }
+    if (brand && brand.parentElement) {
+      // إخفاء حاوية brand القديمة إذا كانت تحتوي على نص مكرر أو أزرار إضافية مع الإبقاء على الصورة
+      brand.style.display = "none";
+    }
+
+    if (!menuBtn.dataset.alkExactBound) {
+      menuBtn.dataset.alkExactBound = "1";
+      menuBtn.addEventListener("click", (e) => {
+        const panel = document.getElementById("alkfory-menu-panel");
+        const settingsModal = document.getElementById("alkfory-settings");
+        if (panel) {
+          e.stopPropagation();
+          const open = panel.style.display === "block";
+          panel.style.display = open ? "none" : "block";
+          panel.style.left = "14px";
+          panel.style.right = "auto";
+          panel.style.top = "56px";
+          panel.style.zIndex = "10000";
+        } else if (settingsModal) {
+          e.stopPropagation();
+          settingsModal.style.display = "flex";
+        }
+      });
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", applyExactTopBar);
+  window.addEventListener("load", applyExactTopBar);
+  setTimeout(applyExactTopBar, 200);
+  setTimeout(applyExactTopBar, 800);
+})();
+</script>
+
+
+
+<script id="ALKFORY-SCHEDULE-BTN-AND-LOGIC-V2">
+(() => {
+  const STORAGE_KEY = "alkfory_financial_study_schedule_v1";
+  const DAYS = ["السبت", "الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"];
+  const TASKS_PRESETS = [
+    "مذاكرة الدرس الأول",
+    "مذاكرة الدرس الثاني",
+    "مذاكرة الدرس الثالث",
+    "حل اختبار المستوى",
+    "مراجعة شاملة للمستوى",
+    "تلخيص وحفظ المفاهيم",
+    "مراجعة الأخطاء السابقة"
+  ];
+  const DURATIONS_PRESETS = [
+    "١٥ دقيقة",
+    "٣٠ دقيقة",
+    "٤٥ دقيقة",
+    "٦٠ دقيقة",
+    "٩٠ دقيقة",
+    "ساعتان"
+  ];
+  const PRIORITIES = {
+    high: { label: "أولوية قصوى", color: "#ff4778", bg: "rgba(255,71,120,0.14)" },
+    medium: { label: "متوسطة", color: "#ffb84d", bg: "rgba(255,184,77,0.14)" },
+    review: { label: "مراجعة", color: "#4dd2ff", bg: "rgba(77,210,255,0.14)" }
+  };
+
+  let state = {
+    viewMode: "days",
+    selectedDay: DAYS[0],
+    tasks: []
+  };
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && Array.isArray(parsed.tasks)) {
+          state = {
+            viewMode: parsed.viewMode === "levels" ? "levels" : "days",
+            selectedDay: DAYS.includes(parsed.selectedDay) ? parsed.selectedDay : DAYS[0],
+            tasks: parsed.tasks
+          };
+        }
+      }
+    } catch (_) {}
+  }
+
+  function saveState() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (_) {}
+  }
+
+  function escapeHtml(s) {
+    return String(s || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function computeStats() {
+    const total = state.tasks.length;
+    const done = state.tasks.filter(t => t.done).length;
+    const pct = total ? Math.round((done / total) * 100) : 0;
+    return { total, done, pct };
+  }
+
+  function ensureScheduleButton() {
+    if (document.getElementById("alkfory-open-schedule-btn")) return;
+
+    const titleEl = [...document.querySelectorAll("h1, h2, h3, .title, div, span")].find(el => {
+      if (el.id === "alkfory-study-schedule-modal" || el.closest?.("#alkfory-study-schedule-modal")) return false;
+      if (el.id === "alkfory-brand" || el.closest?.("#alkfory-brand") || el.closest?.("header")) return false;
+      return (el.textContent || "").trim() === "الثقافة المالية" && el.children.length <= 3;
+    });
+
+    const btn = document.createElement("button");
+    btn.id = "alkfory-open-schedule-btn";
+    btn.type = "button";
+    btn.title = "جدول المذاكرة";
+    btn.setAttribute("aria-label", "جدول المذاكرة");
+    btn.innerHTML = `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><rect x="3" y="4" width="18" height="18" rx="3"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line><line x1="8" y1="14" x2="16" y2="14"></line><line x1="8" y1="18" x2="13" y2="18"></line></svg>`;
+    btn.style.cssText = [
+      "display:inline-flex",
+      "align-items:center",
+      "justify-content:center",
+      "width:32px",
+      "height:32px",
+      "margin-right:8px",
+      "vertical-align:middle",
+      "background:linear-gradient(135deg,#2a000e,#a90035)",
+      "color:#fff",
+      "border:1px solid #ff4778",
+      "border-radius:9px",
+      "cursor:pointer"
+    ].join(";");
+
+    if (titleEl) {
+      titleEl.insertAdjacentElement("afterend", btn);
+    } else if (document.body) {
+      document.body.insertBefore(btn, document.body.firstChild);
+    }
+  }
+
+  function renderScheduleBody(container) {
+    const stats = computeStats();
+    const dayFilter = state.selectedDay;
+
+    const taskOptions = TASKS_PRESETS.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join("");
+    const levelOptions = Array.from({ length: 22 }, (_, i) => {
+      const n = i + 1;
+      return `<option value="المستوى ${n}">المستوى ${n}</option>`;
+    }).join("");
+    const durationOptions = DURATIONS_PRESETS.map(d => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join("");
+
+    const dayTabsHtml = DAYS.map(d => {
+      const count = state.tasks.filter(t => t.day === d).length;
+      const active = d === dayFilter;
+      return `
+        <button type="button" data-day="${d}" class="alk-day-tab" style="padding:7px 11px;border-radius:9px;border:1px solid ${active ? "#ff4778" : "#3a3a3a"};background:${active ? "linear-gradient(135deg,#5a001c,#a90035)" : "#1d1d1d"};color:#fff;font-size:12px;font-weight:bold;cursor:pointer;white-space:nowrap">
+          ${d}${count ? ` <span style="background:#0007;padding:1px 6px;border-radius:99px;font-size:11px;color:#ffd1de">${count}</span>` : ""}
+        </button>
+      `;
+    }).join("");
+
+    function renderTaskCard(task) {
+      const p = PRIORITIES[task.priority] || PRIORITIES.medium;
+      return `
+        <div data-task-id="${task.id}" style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;background:#1a1a1a;border:1px solid ${task.done ? "#246b48" : "#333"};border-radius:11px;padding:11px 12px;margin-bottom:8px;opacity:${task.done ? "0.78" : "1"}">
+          <div style="display:flex;align-items:flex-start;gap:10px;flex:1;min-width:0">
+            <input type="checkbox" class="alk-task-toggle" data-id="${task.id}" ${task.done ? "checked" : ""} style="width:18px;height:18px;margin-top:2px;accent-color:#ff4778;cursor:pointer;flex-shrink:0" />
+            <div style="flex:1;min-width:0">
+              <div style="font-size:14px;font-weight:bold;color:${task.done ? "#9ae6be" : "#fff"};text-decoration:${task.done ? "line-through" : "none"};word-break:break-word">
+                ${escapeHtml(task.title)}
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;align-items:center">
+                <span style="font-size:11px;padding:2px 8px;border-radius:7px;background:#271018;border:1px solid #8a1c3d;color:#ff8aa8">${escapeHtml(task.level)}</span>
+                <span style="font-size:11px;padding:2px 8px;border-radius:7px;background:#222;color:#ddd">${escapeHtml(task.day)}</span>
+                ${task.duration ? `<span style="font-size:11px;padding:2px 8px;border-radius:7px;background:#222;color:#ccc">⏱ ${escapeHtml(task.duration)}</span>` : ""}
+                <span style="font-size:11px;padding:2px 8px;border-radius:7px;background:${p.bg};color:${p.color};border:1px solid ${p.color}55">${p.label}</span>
+              </div>
+            </div>
+          </div>
+          <button type="button" class="alk-task-del" data-id="${task.id}" title="حذف المهمة" style="background:#2b1118;color:#ff6b93;border:1px solid #691930;border-radius:8px;padding:5px 9px;font-size:12px;cursor:pointer;flex-shrink:0">✕</button>
+        </div>
+      `;
+    }
+
+    let listHtml = "";
+    if (state.viewMode === "days") {
+      const dayTasks = state.tasks.filter(t => t.day === dayFilter);
+      listHtml = `
+        <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:10px">${dayTabsHtml}</div>
+        <div style="font-size:12px;color:#bbb;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+          <span>مهام يوم <strong style="color:#ff4778">${dayFilter}</strong> (${dayTasks.length})</span>
+          <span style="color:#888">محفوظ تلقائياً</span>
+        </div>
+        ${dayTasks.length ? dayTasks.map(renderTaskCard).join("") : `<div style="text-align:center;padding:22px 12px;background:#181818;border:1px dashed #3a3a3a;border-radius:11px;color:#999;font-size:13px">لا توجد مهام مسجلة ليوم ${dayFilter} بعد. اختر من القوائم في الأعلى واحفظ!</div>`}
+      `;
+    } else {
+      const grouped = {};
+      state.tasks.forEach(t => {
+        const key = t.level || "غير محدد";
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(t);
+      });
+      const keys = Object.keys(grouped);
+      listHtml = keys.length
+        ? keys.map(lvl => `
+            <div style="margin-bottom:12px">
+              <div style="font-size:13px;font-weight:bold;color:#ff6b93;background:#220b12;border:1px solid #691930;padding:6px 10px;border-radius:9px;margin-bottom:6px">
+                ${escapeHtml(lvl)} (${grouped[lvl].length})
+              </div>
+              ${grouped[lvl].map(renderTaskCard).join("")}
+            </div>
+          `).join("")
+        : `<div style="text-align:center;padding:22px 12px;background:#181818;border:1px dashed #3a3a3a;border-radius:11px;color:#999;font-size:13px">لم تقم بإضافة مهام لأي مستوى بعد.</div>`;
+    }
+
+    container.innerHTML = `
+      <div style="background:#191919;border:1px solid #383838;border-radius:12px;padding:12px;margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#ddd;margin-bottom:7px">
+          <span>نسبة إنجاز الجدول: <strong style="color:#ff4778">${stats.pct}%</strong></span>
+          <span>منجز: <strong>${stats.done}</strong> / <strong>${stats.total}</strong></span>
+        </div>
+        <div style="width:100%;height:8px;background:#2b2b2b;border-radius:99px;overflow:hidden">
+          <div style="width:${stats.pct}%;height:100%;background:linear-gradient(90deg,#a90035,#ff4778);transition:width 0.25s ease"></div>
+        </div>
+      </div>
+
+      <div id="alk-schedule-form" style="background:#181818;border:1px solid #441625;border-radius:12px;padding:12px;margin-bottom:14px">
+        <div style="font-size:13px;font-weight:bold;color:#ff6b93;margin-bottom:8px">+ إضافة مهمة مذاكرة جديدة</div>
+        <select id="alk-task-title" style="width:100%;box-sizing:border-box;padding:10px 12px;margin-bottom:8px;background:#111;color:#fff;border:1px solid #3c3c3c;border-radius:9px;font-size:13px;outline:none">${taskOptions}</select>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <select id="alk-task-level" style="padding:9px;background:#111;color:#fff;border:1px solid #3c3c3c;border-radius:9px;font-size:12px">${levelOptions}</select>
+          <select id="alk-task-day" style="padding:9px;background:#111;color:#fff;border:1px solid #3c3c3c;border-radius:9px;font-size:12px">${DAYS.map(d => `<option value="${d}" ${d === dayFilter ? "selected" : ""}>${d}</option>`).join("")}</select>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+          <select id="alk-task-duration" style="padding:9px 10px;background:#111;color:#fff;border:1px solid #3c3c3c;border-radius:9px;font-size:12px">${durationOptions}</select>
+          <select id="alk-task-priority" style="padding:9px;background:#111;color:#fff;border:1px solid #3c3c3c;border-radius:9px;font-size:12px">
+            <option value="high">أولوية قصوى</option>
+            <option value="medium" selected>أولوية متوسطة</option>
+            <option value="review">مراجعة سريعة</option>
+          </select>
+        </div>
+        <button type="button" id="alk-save-task-btn" style="width:100%;padding:10px;background:linear-gradient(120deg,#7a0026,#c2003d);color:#fff;border:1px solid #ff4778;border-radius:10px;font-size:14px;font-weight:bold;cursor:pointer">حفظ في جدول المذاكرة</button>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <button type="button" id="alk-view-days" style="flex:1;padding:8px;border-radius:9px;border:1px solid ${state.viewMode === "days" ? "#ff4778" : "#383838"};background:${state.viewMode === "days" ? "#2e0915" : "#181818"};color:#fff;font-size:12px;font-weight:bold;cursor:pointer">عرض حسب الأيام</button>
+        <button type="button" id="alk-view-levels" style="flex:1;padding:8px;border-radius:9px;border:1px solid ${state.viewMode === "levels" ? "#ff4778" : "#383838"};background:${state.viewMode === "levels" ? "#2e0915" : "#181818"};color:#fff;font-size:12px;font-weight:bold;cursor:pointer">عرض حسب المستويات</button>
+      </div>
+
+      <div id="alk-schedule-list">${listHtml}</div>
+
+      <div style="margin-top:14px;padding-top:10px;border-top:1px solid #2b2b2b">
+        <button type="button" id="alk-clear-done" style="width:100%;padding:9px;background:#222;color:#ffb84d;border:1px solid #554422;border-radius:9px;font-size:12px;font-weight:bold;cursor:pointer">🧹 حذف المهام المنجزة</button>
+      </div>
+    `;
+
+    const titleSelect = container.querySelector("#alk-task-title");
+    const levelSelect = container.querySelector("#alk-task-level");
+    const daySelect = container.querySelector("#alk-task-day");
+    const durationSelect = container.querySelector("#alk-task-duration");
+    const prioritySelect = container.querySelector("#alk-task-priority");
+
+    container.querySelector("#alk-save-task-btn")?.addEventListener("click", (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      ev.stopImmediatePropagation();
+      const val = (titleSelect.value || TASKS_PRESETS[0]).trim();
+      const chosenDay = daySelect.value || state.selectedDay;
+      state.selectedDay = chosenDay;
+      state.tasks.unshift({
+        id: "t_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),
+        title: val,
+        level: levelSelect.value,
+        day: chosenDay,
+        duration: (durationSelect.value || "").trim(),
+        priority: prioritySelect.value,
+        done: false
+      });
+      saveState();
+      renderScheduleBody(container);
+    }, true);
+
+    container.querySelectorAll(".alk-day-tab").forEach(tab => {
+      tab.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        state.selectedDay = tab.getAttribute("data-day");
+        saveState();
+        renderScheduleBody(container);
+      }, true);
+    });
+
+    container.querySelector("#alk-view-days")?.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      state.viewMode = "days";
+      saveState();
+      renderScheduleBody(container);
+    }, true);
+
+    container.querySelector("#alk-view-levels")?.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      state.viewMode = "levels";
+      saveState();
+      renderScheduleBody(container);
+    }, true);
+
+    container.querySelectorAll(".alk-task-toggle").forEach(chk => {
+      chk.addEventListener("change", (e) => {
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        const id = chk.getAttribute("data-id");
+        const item = state.tasks.find(t => t.id === id);
+        if (item) {
+          item.done = chk.checked;
+          saveState();
+          renderScheduleBody(container);
+        }
+      }, true);
+    });
+
+    container.querySelectorAll(".alk-task-del").forEach(delBtn => {
+      delBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        const id = delBtn.getAttribute("data-id");
+        state.tasks = state.tasks.filter(t => t.id !== id);
+        saveState();
+        renderScheduleBody(container);
+      }, true);
+    });
+
+    container.querySelector("#alk-clear-done")?.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      state.tasks = state.tasks.filter(t => !t.done);
+      saveState();
+      renderScheduleBody(container);
+    }, true);
+  }
+
+  function openScheduleModal() {
+    loadState();
+    const old = document.getElementById("alkfory-study-schedule-modal");
+    if (old) old.remove();
+
+    const overlay = document.createElement("div");
+    overlay.id = "alkfory-study-schedule-modal";
+    overlay.dir = "rtl";
+    overlay.style.cssText = "position:fixed;inset:0;z-index:1000010;background:rgba(0,0,0,0.82);display:flex;align-items:center;justify-content:center;padding:14px";
+
+    const card = document.createElement("section");
+    card.style.cssText = "width:100%;max-width:520px;max-height:88vh;overflow-y:auto;background:#141414;color:#fff;border:1px solid #b00035;border-radius:16px;padding:16px;box-shadow:0 12px 35px rgba(0,0,0,0.75);font-family:inherit";
+
+    const header = document.createElement("div");
+    header.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:10px;margin-bottom:12px;border-bottom:1px solid #2d2d2d";
+    header.innerHTML = `
+      <div>
+        <div style="font-size:17px;font-weight:bold;color:#ff4778">📅 جدول المذاكرة الذكي</div>
+        <div style="font-size:11px;color:#aaa;margin-top:2px">يُحفظ تلقائياً على جهازك دون الحاجة لإعادة إنشائه</div>
+      </div>
+      <button type="button" id="alk-close-schedule" style="background:#262626;color:#fff;border:1px solid #444;border-radius:9px;padding:6px 12px;font-size:13px;font-weight:bold;cursor:pointer">إغلاق ✕</button>
+    `;
+
+    const body = document.createElement("div");
+    renderScheduleBody(body);
+
+    card.appendChild(header);
+    card.appendChild(body);
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+
+    card.querySelector("#alk-close-schedule")?.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      overlay.remove();
+    }, true);
+
+    overlay.addEventListener("click", (ev) => {
+      if (ev.target === overlay) overlay.remove();
+    });
+  }
+
+  window.alkforyOpenStudySchedule = openScheduleModal;
+
+  document.addEventListener("click", (event) => {
+    const btn = event.target.closest?.("#alkfory-open-schedule-btn");
+    if (!btn) return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+    openScheduleModal();
+  }, true);
+
+  function init() {
+    loadState();
+    ensureScheduleButton();
+  }
+
+  document.addEventListener("DOMContentLoaded", init);
+  window.addEventListener("load", init);
+  setTimeout(init, 250);
+  setTimeout(init, 900);
+})();
+</script>
+
+
+<script id="ALKFORY-LIVE-SEARCH-FIX-V1">
+(() => {
+  function norm(str) {
+    return String(str || "")
+      .toLowerCase()
+      .replace(/[أإآا]/g, "ا")
+      .replace(/ى/g, "ي")
+      .replace(/ة/g, "ه")
+      .replace(/[٠-٩]/g, d => String(d.charCodeAt(0) - 1632))
+      .trim();
+  }
+
+  function collectSearchItems(query) {
+    const q = norm(query);
+    if (!q) return [];
+    const results = [];
+    const seen = new Set();
+
+    // 1. البحث في خيارات القوائم المنسدلة (المستويات والدروس وغيرها)
+    document.querySelectorAll("select").forEach((sel, sIdx) => {
+      if (sel.closest?.("#alkfory-study-schedule-modal")) return;
+      Array.from(sel.options || []).forEach((opt, oIdx) => {
+        const label = (opt.textContent || opt.label || "").trim();
+        if (!label || opt.disabled) return;
+        if (norm(label).includes(q)) {
+          const key = "opt:" + sIdx + ":" + oIdx + ":" + label;
+          if (!seen.has(key)) {
+            seen.add(key);
+            results.push({
+              title: label,
+              meta: "اختيار / درس أو مستوى",
+              run: () => {
+                sel.value = opt.value;
+                sel.dispatchEvent(new Event("change", { bubbles: true }));
+                sel.scrollIntoView({ behavior: "smooth", block: "center" });
+              }
+            });
+          }
+        }
+      });
+    });
+
+    // 2. البحث في العناوين والأزرار والروابط والعناصر الظاهرة في الصفحة
+    const candidates = document.querySelectorAll("h1, h2, h3, h4, button, a, label, [role=button], .card, section");
+    candidates.forEach((el, idx) => {
+      if (
+        el.id === "alkfory-live-search-results" ||
+        el.closest?.("#alkfory-live-search-results") ||
+        el.closest?.("#alkfory-study-schedule-modal") ||
+        el.closest?.("#alkfory-menu-panel")
+      ) return;
+
+      const text = (el.innerText || el.textContent || "").trim().replace(/\s+/g, " ");
+      if (!text || text.length > 140) return;
+
+      if (norm(text).includes(q)) {
+        const key = "el:" + idx + ":" + text;
+        if (!seen.has(key)) {
+          seen.add(key);
+          results.push({
+            title: text,
+            meta: el.tagName === "A" ? "رابط / منصة" : (el.tagName === "BUTTON" ? "زر" : "قسم في الصفحة"),
+            run: () => {
+              if (el.tagName === "A" && el.href && !el.href.startsWith("javascript:")) {
+                el.scrollIntoView({ behavior: "smooth", block: "center" });
+                el.click();
+              } else {
+                el.scrollIntoView({ behavior: "smooth", block: "center" });
+                if (typeof el.click === "function") el.click();
+              }
+            }
+          });
+        }
+      }
+    });
+
+    return results.slice(0, 18);
+  }
+
+  function findSearchInput() {
+    const inputs = Array.from(document.querySelectorAll("input[type=search], input[type=text], input:not([type])"));
+    return inputs.find(inp => {
+      if (inp.closest?.("#alkfory-study-schedule-modal")) return false;
+      const ph = (inp.getAttribute("placeholder") || "").trim();
+      const ar = (inp.getAttribute("aria-label") || "").trim();
+      return ph.includes("ابحث") || ph.includes("بحث") || ar.includes("ابحث") || ar.includes("بحث");
+    }) || null;
+  }
+
+  function renderResultsBox(input) {
+    if (!input || !input.parentElement) return;
+    let box = document.getElementById("alkfory-live-search-results");
+    if (!box) {
+      box = document.createElement("div");
+      box.id = "alkfory-live-search-results";
+      box.setAttribute("dir", "rtl");
+      box.style.cssText = [
+        "margin-top:8px",
+        "max-height:240px",
+        "overflow-y:auto",
+        "background:#121212",
+        "border:1px solid #b00035",
+        "border-radius:10px",
+        "padding:6px",
+        "z-index:100005"
+      ].join(";");
+      input.insertAdjacentElement("afterend", box);
+    }
+
+    const q = (input.value || "").trim();
+    if (!q) {
+      box.style.display = "none";
+      box.innerHTML = "";
+      return;
+    }
+
+    const items = collectSearchItems(q);
+    box.style.display = "block";
+
+    if (!items.length) {
+      box.innerHTML = `<div style="padding:10px;text-align:center;color:#aaa;font-size:12px">لا توجد نتائج مطابقة لـ "${q.replace(/</g, "&lt;")}"</div>`;
+      return;
+    }
+
+    box.innerHTML = "";
+    items.forEach(item => {
+      const row = document.createElement("button");
+      row.type = "button";
+      row.style.cssText = [
+        "display:flex",
+        "flex-direction:column",
+        "align-items:flex-start",
+        "width:100%",
+        "text-align:right",
+        "padding:8px 10px",
+        "margin-bottom:5px",
+        "background:#1c1c1c",
+        "color:#fff",
+        "border:1px solid #333",
+        "border-radius:8px",
+        "cursor:pointer"
+      ].join(";");
+
+      const titleSpan = document.createElement("span");
+      titleSpan.textContent = item.title;
+      titleSpan.style.cssText = "font-size:13px;font-weight:bold;color:#ff8aa8";
+
+      const metaSpan = document.createElement("span");
+      metaSpan.textContent = item.meta;
+      metaSpan.style.cssText = "font-size:11px;color:#999;margin-top:2px";
+
+      row.appendChild(titleSpan);
+      row.appendChild(metaSpan);
+
+      row.addEventListener("click", (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        const menuPanel = document.getElementById("alkfory-menu-panel");
+        if (menuPanel) menuPanel.style.display = "none";
+        box.style.display = "none";
+        item.run();
+      }, true);
+
+      box.appendChild(row);
+    });
+  }
+
+  function attachLiveSearch() {
+    const input = findSearchInput();
+    if (!input || input.dataset.alkLiveBound) return;
+    input.dataset.alkLiveBound = "1";
+
+    const handler = () => renderResultsBox(input);
+    input.addEventListener("input", handler, true);
+    input.addEventListener("keyup", handler, true);
+    input.addEventListener("focus", handler, true);
+  }
+
+  document.addEventListener("DOMContentLoaded", attachLiveSearch);
+  window.addEventListener("load", attachLiveSearch);
+  const obs = new MutationObserver(() => attachLiveSearch());
+  obs.observe(document.documentElement, { childList: true, subtree: true });
+  setTimeout(attachLiveSearch, 250);
+  setTimeout(attachLiveSearch, 900);
+})();
+</script>
+
+
+
+
+
+<script id="ALKFORY-NEXT-LESSON-WITH-ANSWERS-V1">
+(() => {
+  let answersShown = false;
+
+  function findNextLessonButtons() {
+    const els = Array.from(document.querySelectorAll("button, a, [role=button], div"));
+    return els.filter(el => {
+      if (el.id === "alkfory-smart-continue-btn" || (el.closest && el.closest("#alkfory-smart-continue-wrap"))) return false;
+      if (el.children && el.children.length > 2) return false;
+      const t = (el.textContent || "").replace(/s+/g, " ").trim();
+      return /^الدرس التالي(?:s*[←→<>-]|$)/.test(t);
+    });
+  }
+
+  function hasAnswersDisplayed() {
+    const bodyText = (document.body && (document.body.innerText || document.body.textContent)) || "";
+    if (/الإجابة|الاجابة|إجابة|اجابة|الإجابات|الاجابات|شرح الحل|النموذجية|السؤالs*d+|سؤالs*d+/i.test(bodyText)) {
+      const answerBoxes = document.querySelectorAll("[class*=answer i], [id*=answer i], [class*=result i], [class*=solution i], [class*=question i]");
+      if (answerBoxes.length > 0) return true;
+      if (/الإجابةs*[:：]|الاجابةs*[:：]|الإجابات|الاجابات|شرح الحل/i.test(bodyText)) return true;
+    }
+    return false;
+  }
+
+  function applyNextLessonVisibility() {
+    const btns = findNextLessonButtons();
+    if (!btns.length) return;
+    btns.forEach(btn => {
+      btn.style.display = answersShown ? "" : "none";
+    });
+  }
+
+  function hideOnSelectionChange() {
+    answersShown = false;
+    applyNextLessonVisibility();
+  }
+
+  function checkAnswersAndSync() {
+    if (hasAnswersDisplayed()) {
+      answersShown = true;
+    }
+    applyNextLessonVisibility();
+  }
+
+  document.addEventListener("change", (e) => {
+    const el = e.target;
+    if (el && el.tagName === "SELECT" && !(el.closest && el.closest("#alkfory-study-schedule-modal"))) {
+      hideOnSelectionChange();
+    }
+  }, true);
+
+  document.addEventListener("click", (e) => {
+    const target = e.target && e.target.closest ? e.target.closest("button, a, [role=button], input[type=submit]") : null;
+    if (!target) return;
+    const txt = (target.textContent || target.value || "").replace(/s+/g, " ").trim();
+    if (txt.includes("اختراق المنصة") || txt === "↩ استكمال" || txt.includes("استكمال")) {
+      hideOnSelectionChange();
+    }
+  }, true);
+
+  function boot() {
+    checkAnswersAndSync();
+  }
+
+  document.addEventListener("DOMContentLoaded", boot);
+  window.addEventListener("load", boot);
+  setTimeout(boot, 200);
+  setTimeout(boot, 800);
+  setInterval(checkAnswersAndSync, 600);
+
+  const obs = new MutationObserver(() => {
+    checkAnswersAndSync();
+  });
+  if (document.documentElement) {
+    obs.observe(document.documentElement, { childList: true, subtree: true, characterData: true });
+  }
+})();
+</script>
+
+
+
+<script id="ALKFORY-MOVE-NOTES-BELOW-LOGIN-V1">
+(() => {
+  function findLoginBox() {
+    const candidates = Array.from(document.querySelectorAll("button, a, [role=button], input[type=submit], select, input[type=password]"));
+    const anchorEl = candidates.find(el => {
+      if (el.closest && el.closest("#alkfory-level-notes-card")) return false;
+      if (el.type === "password") return true;
+      const t = (el.textContent || el.value || "").replace(/s+/g, " ").trim();
+      return t.includes("اختراق المنصة") || t.includes("اختر المستوى") || t.includes("اختر الدرس");
+    });
+
+    if (!anchorEl) return null;
+
+    let box = anchorEl.parentElement;
+    let bestBox = box;
+
+    while (box && box !== document.body && box !== document.documentElement) {
+      const hasControls = box.querySelector("select") || box.querySelector("input[type=password]");
+      const text = (box.textContent || "").replace(/s+/g, " ").trim();
+      const mentionsPlatforms = text.includes("منصاتك التعليمية") || text.includes("المنصات التعليمية");
+
+      if (hasControls && !mentionsPlatforms) {
+        bestBox = box;
+      } else if (mentionsPlatforms) {
+        break;
+      }
+      box = box.parentElement;
+    }
+
+    return bestBox;
+  }
+
+  function placeNotesBelowLogin() {
+    const card = document.getElementById("alkfory-level-notes-card");
+    if (!card) return;
+
+    const loginBox = findLoginBox();
+    if (loginBox && loginBox.parentElement) {
+      if (loginBox.nextElementSibling !== card) {
+        loginBox.parentElement.insertBefore(card, loginBox.nextElementSibling);
+      }
+      return;
+    }
+
+    const allEls = Array.from(document.querySelectorAll("h1, h2, h3, h4, h5, p, div, span, section"));
+    const platformsEl = allEls.find(el => {
+      if (el === card || card.contains(el)) return false;
+      const t = (el.textContent || "").replace(/s+/g, " ").trim();
+      return t.length > 0 && t.length <= 60 && (t.includes("منصاتك التعليمية") || t.includes("المنصات التعليمية"));
+    });
+
+    if (platformsEl && platformsEl.parentElement) {
+      let anchor = platformsEl;
+      while (anchor.parentElement && anchor.parentElement !== document.body && anchor.parentElement.children.length === 1) {
+        anchor = anchor.parentElement;
+      }
+      if (anchor.parentElement && anchor.previousElementSibling !== card) {
+        anchor.parentElement.insertBefore(card, anchor);
+      }
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", placeNotesBelowLogin);
+  window.addEventListener("load", placeNotesBelowLogin);
+  setTimeout(placeNotesBelowLogin, 150);
+  setTimeout(placeNotesBelowLogin, 500);
+  setTimeout(placeNotesBelowLogin, 1200);
+  setTimeout(placeNotesBelowLogin, 2500);
+
+  const obs = new MutationObserver(() => placeNotesBelowLogin());
+  if (document.documentElement) {
+    obs.observe(document.documentElement, { childList: true, subtree: true });
+  }
+})();
+</script>
+
+
+
+
+
+<!-- ALKFORY_NOTES_HUB_START -->
+<script id="ALKFORY-LEVEL-NOTES-V2">
+(() => {
+  const NOTES_KEY = "alkfory_22_levels_notes_v1";
+  const SCHEDULE_KEY = "alkfory_financial_study_schedule_v1";
+  let reviewOpen = false;
+  let data = { selectedLevel: 1, notes: {}, completedLevels: {} };
+  function load() {
+    try {
+      const r = localStorage.getItem(NOTES_KEY);
+      if (r) {
+        const p = JSON.parse(r);
+        if (p && typeof p === "object") {
+          data.selectedLevel = Math.min(22, Math.max(1, Number(p.selectedLevel) || 1));
+          data.notes = p.notes && typeof p.notes === "object" ? p.notes : {};
+          data.completedLevels = p.completedLevels && typeof p.completedLevels === "object" ? p.completedLevels : {};
+        }
+      }
+    } catch (_) {}
+  }
+  function save() {
+    try { localStorage.setItem(NOTES_KEY, JSON.stringify(data)); } catch (_) {}
+  }
+  function esc(s) {
+    return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+  function stats() {
+    const set = new Set();
+    try {
+      const r = localStorage.getItem(SCHEDULE_KEY);
+      if (r) {
+        const p = JSON.parse(r);
+        if (Array.isArray(p && p.tasks)) {
+          p.tasks.forEach(t => {
+            if (t && t.done) {
+              const m = String(t.level || "").match(/(\d+)/);
+              if (m) { const n = Number(m[1]); if (n >= 1 && n <= 22) set.add(n); }
+            }
+          });
+        }
+      }
+    } catch (_) {}
+    let rev = 0, noted = 0;
+    for (let i = 1; i <= 22; i++) {
+      const h = String(data.notes[i] || "").trim().length > 0;
+      const c = Boolean(data.completedLevels[i]);
+      if (h) noted++;
+      if (c) rev++;
+      if (h || c) set.add(i);
+    }
+    return { active: set.size, rev, noted, pct: Math.round((set.size / 22) * 100) };
+  }
+  function nextUnreviewed(from) {
+    for (let k = 1; k <= 22; k++) {
+      const n = ((from - 1 + k) % 22) + 1;
+      if (!data.completedLevels[n]) return n;
+    }
+    return from;
+  }
+  function allText() {
+    const out = ["ملخص ملاحظات الـ 22 مستوى — ALKFORY", "===================================="];
+    let any = false;
+    for (let i = 1; i <= 22; i++) {
+      const n = String(data.notes[i] || "").trim();
+      const r = Boolean(data.completedLevels[i]);
+      if (n || r) {
+        any = true;
+        out.push("المستوى " + i + (r ? " [مراجع ✓]" : ""));
+        if (n) out.push(n);
+        out.push("------------------------------------");
+      }
+    }
+    return any ? out.join("\n") : "لا توجد ملاحظات مسجلة بعد.";
+  }
+  function reviewHtml() {
+    const rows = [];
+    for (let i = 1; i <= 22; i++) {
+      const n = String(data.notes[i] || "").trim();
+      const r = Boolean(data.completedLevels[i]);
+      if (n || r) {
+        rows.push("<div data-lvl=\"" + i + "\" style=\"cursor:pointer;padding:8px 10px;background:#111;border:1px solid #2b2b2b;border-radius:9px;margin-bottom:6px\"><div style=\"display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px\"><strong style=\"color:#ff8aa8\">المستوى " + i + "</strong><span style=\"color:" + (r ? "#4ade80" : "#facc15") + "\">" + (r ? "مراجع ✓" : "ملاحظة 📝") + "</span></div><div style=\"font-size:12px;color:#eee;white-space:pre-wrap\">" + (n ? esc(n) : "تمت المراجعة") + "</div></div>");
+      }
+    }
+    return rows.length ? rows.join("") : "<div style=\"font-size:12px;color:#aaa\">لا توجد ملاحظات أو مراجعات بعد.</div>";
+  }
+  function render(card) {
+    load();
+    const st = stats();
+    const lvl = data.selectedLevel || 1;
+    const note = data.notes[lvl] || "";
+    const checked = Boolean(data.completedLevels[lvl]);
+    const opts = Array.from({ length: 22 }, (_, i) => {
+      const n = i + 1;
+      const h = String(data.notes[n] || "").trim().length > 0;
+      const mark = data.completedLevels[n] ? " ✓" : (h ? " 📝" : "");
+      return "<option value=\"" + n + "\"" + (n === lvl ? " selected" : "") + ">المستوى " + n + mark + "</option>";
+    }).join("");
+    card.innerHTML =
+      "<div style=\"display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap\"><span style=\"font-size:14px;font-weight:bold;color:#ff4778\">📝 ملاحظات المستوى</span><span id=\"alk-st-lbl\" style=\"font-size:11px;color:#ccc\">متابع <strong style=\"color:#fff\">" + st.active + "</strong>/22 (" + st.pct + "%) • مراجَع: <strong style=\"color:#4ade80\">" + st.rev + "</strong> • ملاحظات: <strong style=\"color:#ff8aa8\">" + st.noted + "</strong></span></div>" +
+      "<div style=\"width:100%;height:7px;background:#262626;border-radius:99px;overflow:hidden;margin-bottom:10px\"><div id=\"alk-st-bar\" style=\"width:" + st.pct + "%;height:100%;background:linear-gradient(90deg,#a90035,#ff4778)\"></div></div>" +
+      "<div style=\"display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap\"><select id=\"alk-lvl-sel\" style=\"padding:6px 10px;background:#111;color:#fff;border:1px solid #444;border-radius:8px;font-size:12px\">" + opts + "</select><div style=\"display:flex;gap:6px;flex-wrap:wrap\"><button type=\"button\" id=\"alk-next-unrev\" style=\"padding:5px 9px;background:#221017;color:#ff8aa8;border:1px solid #8f002b;border-radius:8px;font-size:11px;font-weight:bold;cursor:pointer\">التالي غير المراجع</button><button type=\"button\" id=\"alk-rev-tog\" style=\"padding:5px 9px;background:#1c1c1c;color:#fff;border:1px solid #444;border-radius:8px;font-size:11px;cursor:pointer\">" + (reviewOpen ? "إخفاء المراجعة" : "مراجعة سريعة") + "</button><button type=\"button\" id=\"alk-copy-btn\" style=\"padding:5px 9px;background:#1c1c1c;color:#4ade80;border:1px solid #2f5d3e;border-radius:8px;font-size:11px;cursor:pointer\">نسخ الكل</button></div></div>" +
+      "<textarea id=\"alk-note-ta\" rows=\"3\" placeholder=\"اكتب أهم نقطة أو قانون أو فكرة في المستوى " + lvl + "...\" style=\"width:100%;box-sizing:border-box;padding:10px;background:#101010;color:#fff;border:1px solid #383838;border-radius:10px;font-size:13px;line-height:1.5;resize:vertical;outline:none\">" + esc(note) + "</textarea>" +
+      "<div style=\"display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap\"><label style=\"display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#ddd;cursor:pointer\"><input type=\"checkbox\" id=\"alk-done-cb\"" + (checked ? " checked" : "") + " style=\"width:15px;height:15px;accent-color:#ff4778\" /><span>مراجع المستوى " + lvl + "</span></label><div style=\"display:flex;align-items:center;gap:10px\"><button type=\"button\" id=\"alk-clr-note\" style=\"background:none;border:none;color:#ff8aa8;font-size:11px;cursor:pointer;padding:0;text-decoration:underline\">مسح ملاحظة المستوى</button><span id=\"alk-save-msg\" style=\"font-size:11px;color:#4ade80\">محفوظ تلقائياً</span></div></div>" +
+      (reviewOpen ? "<div style=\"margin-top:10px;padding-top:10px;border-top:1px solid #2b2b2b;max-height:220px;overflow-y:auto\"><div style=\"font-size:12px;font-weight:bold;color:#ff4778;margin-bottom:6px\">📌 مراجعة سريعة (اضغط للانتقال)</div>" + reviewHtml() + "</div>" : "");
+    card.querySelector("#alk-lvl-sel")?.addEventListener("change", e => { data.selectedLevel = Number(e.target.value) || 1; save(); render(card); });
+    card.querySelector("#alk-next-unrev")?.addEventListener("click", () => { data.selectedLevel = nextUnreviewed(data.selectedLevel || 1); save(); render(card); });
+    card.querySelector("#alk-rev-tog")?.addEventListener("click", () => { reviewOpen = !reviewOpen; render(card); });
+    const msgEl = card.querySelector("#alk-save-msg");
+    card.querySelector("#alk-copy-btn")?.addEventListener("click", async () => {
+      const txt = allText();
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) await navigator.clipboard.writeText(txt);
+        else { const t = document.createElement("textarea"); t.value = txt; document.body.appendChild(t); t.select(); document.execCommand("copy"); t.remove(); }
+        if (msgEl) { msgEl.textContent = "تم نسخ الكل ✓"; msgEl.style.color = "#4ade80"; }
+      } catch (_) { if (msgEl) { msgEl.textContent = "تعذر النسخ"; msgEl.style.color = "#ff8aa8"; } }
+    });
+    card.querySelector("#alk-clr-note")?.addEventListener("click", () => { delete data.notes[data.selectedLevel || 1]; save(); render(card); });
+    card.querySelector("#alk-note-ta")?.addEventListener("input", e => {
+      data.notes[data.selectedLevel || 1] = e.target.value;
+      save();
+      if (msgEl) { msgEl.textContent = "تم الحفظ تلقائياً ✓"; msgEl.style.color = "#4ade80"; }
+      const s2 = stats();
+      const b = card.querySelector("#alk-st-bar");
+      const l = card.querySelector("#alk-st-lbl");
+      if (b) b.style.width = s2.pct + "%";
+      if (l) l.innerHTML = "متابع <strong style=\"color:#fff\">" + s2.active + "</strong>/22 (" + s2.pct + "%) • مراجَع: <strong style=\"color:#4ade80\">" + s2.rev + "</strong> • ملاحظات: <strong style=\"color:#ff8aa8\">" + s2.noted + "</strong>";
+    });
+    card.querySelector("#alk-done-cb")?.addEventListener("change", e => { data.completedLevels[data.selectedLevel || 1] = Boolean(e.target.checked); save(); render(card); });
+    card.querySelectorAll("[data-lvl]").forEach(el => {
+      el.addEventListener("click", () => { const n = Number(el.getAttribute("data-lvl")); if (n >= 1 && n <= 22) { data.selectedLevel = n; save(); render(card); } });
+    });
+  }
+  function ensureMounted() {
+    if (!document.body) return;
+    let card = document.getElementById("alkfory-level-notes-card");
+    if (!card) {
+      card = document.createElement("section");
+      card.id = "alkfory-level-notes-card";
+      card.dir = "rtl";
+      card.style.cssText = "display:block;width:100%;max-width:520px;margin:14px auto;padding:14px;background:#141414;border:1px solid #8f002b;border-radius:16px;box-shadow:0 6px 24px rgba(0,0,0,0.45);color:#fff";
+      render(card);
+    }
+    const host = document.querySelector("main") || document.body;
+    if (!host.contains(card)) host.appendChild(card);
+  }
+  const tick = () => ensureMounted();
+  document.addEventListener("DOMContentLoaded", tick);
+  window.addEventListener("load", tick);
+  setInterval(tick, 700);
+  setTimeout(tick, 100);
+  setTimeout(tick, 500);
+  setTimeout(tick, 1500);
+})();
+</script>
+<!-- ALKFORY_NOTES_HUB_END -->
+
+
+
+<!-- ALKFORY_USAGE_AND_SPX_V3_START -->
+<script id="ALKFORY-USAGE-AND-SPX-V3">
+(() => {
+  const SPX_URL = "https://egy.app.spx-learning-square.com/dashboard";
+  const SEEN_KEY = "alkfory_first_visit_usage_seen_v1";
+  let firstVisitDone = false;
+  function showToast(msg) {
+    let el = document.getElementById("alkfory-spx-toast-v3");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "alkfory-spx-toast-v3";
+      el.dir = "rtl";
+      el.style.cssText = "position:fixed;bottom:16px;left:14px;right:14px;z-index:2147483647;max-width:440px;margin:0 auto;background:#171717;border:1px solid #ff4778;border-radius:12px;padding:10px 14px;color:#fff;font-size:12px;box-shadow:0 10px 28px rgba(0,0,0,0.85);text-align:center";
+      document.body.appendChild(el);
+    }
+    el.textContent = msg;
+    el.style.display = "block";
+    clearTimeout(el._timer);
+    el._timer = setTimeout(() => { if (el) el.style.display = "none"; }, 3000);
+  }
+  async function copySpx() {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(SPX_URL);
+      } else {
+        const ta = document.createElement("textarea");
+        ta.value = SPX_URL;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        ta.remove();
+      }
+      showToast("تم نسخ الرابط: " + SPX_URL);
+    } catch (_) {
+      showToast("رابط الثقافة المالية: " + SPX_URL);
+    }
+  }
+  function attachSpxEverywhere() {
+    const all = Array.from(document.querySelectorAll("div, p, span, li, button, a, label"));
+    for (const el of all) {
+      if (!el || el.id === "alkfory-spx-toast-v3") continue;
+      const txt = (el.textContent || "").replace(/\s+/g, " ").trim();
+      if (!txt || txt.length > 180) continue;
+      const matchesStep = txt.includes("اضغط على زر الثقافة المالية لنسخ رابط المنصة") || txt.includes("نسخ رابط المنصة");
+      if (matchesStep && !el.querySelector(".alk-spx-action-row")) {
+        const row = document.createElement("div");
+        row.className = "alk-spx-action-row";
+        row.style.cssText = "margin-top:8px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap";
+        const link = document.createElement("a");
+        link.href = SPX_URL;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = SPX_URL;
+        link.style.cssText = "color:#ff8aa8;font-size:11px;text-decoration:underline;word-break:break-all";
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.textContent = "نسخ الرابط";
+        btn.style.cssText = "padding:4px 10px;background:#8f002b;color:#fff;border:1px solid #ff4778;border-radius:8px;font-size:11px;font-weight:bold;cursor:pointer";
+        btn.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); copySpx(); });
+        row.appendChild(link);
+        row.appendChild(btn);
+        el.appendChild(row);
+      }
+    }
+  }
+  function openFirstVisitUsage() {
+    if (firstVisitDone) return;
+    try {
+      if (localStorage.getItem(SEEN_KEY) === "1") { firstVisitDone = true; return; }
+    } catch (_) {}
+    const candidates = Array.from(document.querySelectorAll("button, a, [role=button], summary, div, span"));
+    const usageTrigger = candidates.find(el => {
+      if (!el || el.children.length > 4) return false;
+      const t = (el.textContent || "").replace(/\s+/g, " ").trim();
+      return t === "الاستخدام" || t === "📖 الاستخدام" || t === "طريقة الاستخدام" || t.endsWith("الاستخدام");
+    });
+    if (!usageTrigger) return;
+    firstVisitDone = true;
+    try { localStorage.setItem(SEEN_KEY, "1"); } catch (_) {}
+    usageTrigger.click();
+    setTimeout(attachSpxEverywhere, 150);
+    setTimeout(attachSpxEverywhere, 500);
+    setTimeout(attachSpxEverywhere, 1000);
+  }
+  function runSync() {
+    attachSpxEverywhere();
+    openFirstVisitUsage();
+  }
+  document.addEventListener("DOMContentLoaded", () => setTimeout(runSync, 200));
+  window.addEventListener("load", () => setTimeout(runSync, 400));
+  setInterval(runSync, 600);
+  if (document.documentElement) {
+    new MutationObserver(runSync).observe(document.documentElement, { childList: true, subtree: true });
+  }
+})();
+</script>
+<!-- ALKFORY_USAGE_AND_SPX_V3_END -->
+
+
+
+
+
+
+
+
+
+<!-- ALKFORY_50_REAL_NO403_V10_START -->
+<style id="ALKFORY-50-REAL-STYLE-V10">
+.alk-hide-above-toggle { display: none !important; visibility: hidden !important; height: 0 !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; }
+#alkfory-50-subjects-wrap { width: 100%; max-width: 540px; margin: 12px auto; padding: 10px; background: #121212; border: 1px solid #8f002b; border-radius: 16px; display: flex !important; flex-direction: column !important; gap: 8px; box-sizing: border-box; }
+.alk-sub50-toggle { width: 100%; padding: 12px 14px; background: linear-gradient(120deg,#7a0026,#c2003d); color: #fff; border: 1px solid #ff4778; border-radius: 12px; font-size: 13.5px; font-weight: bold; cursor: pointer; text-align: center; }
+.alk-sub50-list { display: flex; flex-direction: column; gap: 8px; max-height: 520px; overflow-y: auto; padding-left: 2px; }
+.alk-sub50-card { width: 100%; text-align: right; padding: 10px 13px; background: linear-gradient(135deg,#190910,#270a17); color: #fff; border: 1px solid #7c0026; border-radius: 11px; cursor: pointer; display: flex; flex-direction: column; gap: 3px; box-sizing: border-box; }
+.alk-sub50-name { font-size: 13px; font-weight: bold; color: #ff8aa8; }
+.alk-sub50-desc { font-size: 11.5px; color: #e6e6e6; line-height: 1.45; }
+</style>
+<script id="ALKFORY-50-REAL-SCRIPT-V10">
+(() => {
+  const SUBJECT_PLATFORMS = [
+    { name: "منصة الثقافة المالية", desc: "الثقافة المالية • إدارة الميزانية والادخار والتخطيط المالي", url: "" },
+    { name: "كيريو اليابانية QUREO", desc: "البرمجة والذكاء الاصطناعي • أساسيات الكود والتفكير المنطقي", url: "" },
+    { name: "بسطتهالك – محمد صلاح", desc: "اللغة العربية • النحو والبلاغة والأدب والمراجعات النهائية", url: "https://www.youtube.com/@Basttahalk" },
+    { name: "منصة محمد عبد المعبود", desc: "الفيزياء • شرح المنهج وحل المسائل والنماذج", url: "https://www.youtube.com/@abdelmaaboud" },
+    { name: "منصة أحمد عبد الواحد", desc: "الفيزياء • محاضرات وتدريبات واختبارات شاملة", url: "" },
+    { name: "منصة كريم عبده", desc: "الفيزياء • قوانين وتطبيقات وامتحانات إلكترونية", url: "" },
+    { name: "منصة إسماعيل أبو العزائم", desc: "الفيزياء • مراجعات وحل مسائل وتدريبات", url: "" },
+    { name: "منصة رضا عبد الرحيم", desc: "الفيزياء • شرح مفصل وحل أسئلة الامتحانات", url: "" },
+    { name: "منصة نجوى", desc: "جميع المواد • دروس تفاعلية وتدريبات واختبارات", url: "https://www.nagwa.com/ar/eg/" },
+    { name: "منصة حصص مصر", desc: "المواد الدراسية • شرح المناهج والمراجعات ونماذج الأسئلة", url: "https://www.hesas.eg/" },
+    { name: "بنك المعرفة المصري", desc: "مصادر علمية • كتب ومراجع ومحتوى معرفي لجميع المواد", url: "https://www.ekb.eg/" },
+    { name: "نظام إدارة التعلم LMS", desc: "المحتوى التعليمي • الدروس والمواد الرقمية للطلاب", url: "https://lms.ekb.eg/" },
+    { name: "بوابة التعليم الإلكتروني", desc: "الكتب الدراسية • تحميل الكتب والمناهج الرسمية", url: "https://elearning.moe.gov.eg/" },
+    { name: "منصة البث المباشر", desc: "حصص ومراجعات • متابعة الشرح المباشر والتدريبات", url: "https://stream.moe.gov.eg/" },
+    { name: "منصة ذاكر", desc: "المذاكرة والمراجعة • ملخصات وأنشطة لجميع المواد", url: "https://study.ekb.eg/" },
+    { name: "Discovery Education", desc: "العلوم واللغات • مصادر تعليمية ومحتوى تفاعلي", url: "https://www.discoveryeducation.com/" },
+    { name: "قناة مدرستنا", desc: "شرح المناهج • دروس مصورة لمختلف المواد والمراحل", url: "https://www.youtube.com/@Madrasetna" },
+    { name: "البريد المدرسي الموحد", desc: "الخدمات الطلابية • الوصول إلى الحساب والمنصات المدرسية", url: "https://office365.emis.gov.eg/" },
+    { name: "بوابة الشهادات العامة", desc: "الخدمات الإلكترونية • بيانات واستعلامات الطلاب", url: "https://moe-register.emis.gov.eg/" },
+    { name: "بوابة التعليم المصري", desc: "الخدمات التعليمية • بوابات وروابط الدراسة الرسمية", url: "https://moe.gov.eg/" },
+    { name: "منصة تعلم معنا", desc: "التعلم والتدريب • كورسات وتدريبات تعليمية متنوعة", url: "" },
+    { name: "منصة إتقان اللغة العربية", desc: "اللغة العربية • القواعد النحوية والإملاء والتعبير", url: "" },
+    { name: "منصة بلاغة وفنون القول", desc: "اللغة العربية • البلاغة والنصوص والأدب", url: "" },
+    { name: "منصة أبطال الرياضيات", desc: "الرياضيات • الجبر والهندسة وحل المسائل", url: "" },
+    { name: "منصة التفاضل والتكامل", desc: "الرياضيات • النهايات والتفاضل والتطبيقات", url: "" },
+    { name: "منصة الهندسة والفراغية", desc: "الرياضيات • الهندسة المستوية والفراغية والبرهان", url: "" },
+    { name: "منصة الإحصاء والاحتمالات", desc: "الرياضيات والإحصاء • التحليل الإحصائي وحساب الاحتمالات", url: "" },
+    { name: "منصة كيمياء المستقبل", desc: "الكيمياء • العناصر والمعادلات الكيميائية والمسائل", url: "" },
+    { name: "منصة الكيمياء العضوية", desc: "الكيمياء • المركبات العضوية والتفاعلات والتحويلات", url: "" },
+    { name: "منصة الكيمياء التحليلية", desc: "الكيمياء • المعايرة والتحليل الكمي والكيفي", url: "" },
+    { name: "منصة علوم الحياة والأحياء", desc: "الأحياء • الوراثة والأنظمة الحيوية وحل الأسئلة", url: "" },
+    { name: "منصة جسم الإنسان والبيئة", desc: "الأحياء والعلوم • الأجهزة الحيوية والتوازن البيئي", url: "" },
+    { name: "منصة إتقان الإنجليزية", desc: "اللغة الإنجليزية • القواعد والمفردات والقطع والترجمة", url: "" },
+    { name: "منصة مهارات المحادثة", desc: "اللغة الإنجليزية • الاستماع والتحدث والنطق الصحيح", url: "" },
+    { name: "منصة اللغات الأجنبية", desc: "اللغات الثانية • قواعد ومفردات ومحادثات وتدريبات", url: "" },
+    { name: "منصة التاريخ والحضارات", desc: "التاريخ • الأحداث التاريخية وتحليل المصادر والمراجعات", url: "" },
+    { name: "منصة الجغرافيا والخرائط", desc: "الجغرافيا • الجغرافيا الطبيعية والبشرية وقراءة الخرائط", url: "" },
+    { name: "منصة علم النفس والاجتماع", desc: "العلوم الإنسانية • مفاهيم علم النفس والاجتماع وتطبيقاتها", url: "" },
+    { name: "منصة الفلسفة والمنطق", desc: "الفلسفة والمنطق • التفكير النقدي والمناهج الفلسفية", url: "" },
+    { name: "منصة الحاسب وتكنولوجيا المعلومات", desc: "تكنولوجيا المعلومات • الشبكات وقواعد البيانات والبرمجة", url: "" },
+    { name: "منصة الذكاء الاصطناعي للمدارس", desc: "الذكاء الاصطناعي • مفاهيم وتطبيقات الذكاء الاصطناعي", url: "" },
+    { name: "منصة الاقتصاد والإدارة", desc: "الاقتصاد • العرض والطلب والموازنات والأسواق", url: "" },
+    { name: "منصة التربية الوطنية", desc: "التربية الوطنية • القيم والمواطنة والوعي المجتمعي", url: "" },
+    { name: "منصة المهارات الحياتية", desc: "المهارات الحياتية • التخطيط والعمل الجماعي وإدارة الوقت", url: "" },
+    { name: "منصة بنك الأسئلة والنماذج", desc: "الاختبارات • نماذج امتحانات وأسئلة اختيار متعدد", url: "" },
+    { name: "منصة المراجعات النهائية", desc: "المراجعة • ملخصات مركزة ونقاط ليلة الامتحان", url: "" },
+    { name: "منصة التدريبات العملية", desc: "التطبيق العملي • مسائل وتمارين متدرجة الصعوبة", url: "" },
+    { name: "منصة الخرائط الذهنية", desc: "تنظيم المذاكرة • ملخصات بصرية ومخططات للمواد", url: "" },
+    { name: "منصة الاختبارات التجريبية", desc: "التقييم الذاتي • اختبارات محاكاة لقياس المستوى", url: "" },
+    { name: "منصة التفوق الدراسي الشاملة", desc: "جميع المواد • متابعة شاملة للدروس والمراجعات والاختبارات", url: "" }
+  ];
+  function openPlatformCard(num, item) {
+    let modal = document.getElementById("alkfory-p50-detail-modal");
+    if (!modal) {
+      modal = document.createElement("div");
+      modal.id = "alkfory-p50-detail-modal";
+      modal.dir = "rtl";
+      modal.style.cssText = "position:fixed;inset:0;z-index:2147483647;background:rgba(0,0,0,0.84);display:flex;align-items:center;justify-content:center;padding:14px";
+      document.body.appendChild(modal);
+    }
+    const hasDirectUrl = Boolean(item.url);
+    const actionHtml = hasDirectUrl
+      ? "<a href='" + item.url + "' target='_blank' rel='noopener noreferrer' style='flex:1;text-align:center;padding:10px 12px;background:linear-gradient(120deg,#7a0026,#c2003d);color:#fff;border:1px solid #ff4778;border-radius:10px;font-size:12.5px;font-weight:bold;text-decoration:none'>فتح المنصة الرسمية ↗</a>"
+      : "<button type='button' id='alk-p50-add-note' style='flex:1;padding:10px 12px;background:linear-gradient(120deg,#7a0026,#c2003d);color:#fff;border:1px solid #ff4778;border-radius:10px;font-size:12.5px;font-weight:bold;cursor:pointer'>إضافة لملاحظات المستوى ✍️</button>";
+    modal.innerHTML =
+      "<div style='width:100%;max-width:450px;background:#151515;border:1px solid #ff4778;border-radius:16px;padding:16px;color:#fff;display:flex;flex-direction:column;gap:10px;box-shadow:0 14px 36px rgba(0,0,0,0.9)'>" +
+        "<div style='display:flex;justify-content:space-between;align-items:center;gap:8px'>" +
+          "<strong style='font-size:14.5px;color:#ff8aa8'>" + num + " - " + item.name + "</strong>" +
+          "<button type='button' id='alk-p50-modal-close' style='padding:4px 10px;background:#262626;color:#fff;border:1px solid #444;border-radius:8px;font-size:11px;cursor:pointer'>إغلاق ✕</button>" +
+        "</div>" +
+        "<div style='font-size:12.5px;color:#e5e5e5;line-height:1.55'>" + item.desc + "</div>" +
+        (hasDirectUrl ? "<div style='background:#0d0d0d;border:1px solid #2e2e2e;border-radius:10px;padding:8px 10px;font-size:11px;color:#bbb;word-break:break-all'>" + item.url + "</div>" : "") +
+        "<div style='display:flex;gap:8px;margin-top:4px'>" + actionHtml + "</div>" +
+      "</div>";
+    modal.style.display = "flex";
+    modal.onclick = (e) => { if (e.target === modal) modal.style.display = "none"; };
+    const cBtn = modal.querySelector("#alk-p50-modal-close");
+    if (cBtn) cBtn.onclick = () => { modal.style.display = "none"; };
+    const addNoteBtn = modal.querySelector("#alk-p50-add-note");
+    if (addNoteBtn) {
+      addNoteBtn.onclick = () => {
+        modal.style.display = "none";
+        const notesBox = document.getElementById("alkfory-level-notes-card");
+        if (notesBox) {
+          notesBox.scrollIntoView({ behavior: "smooth", block: "center" });
+          const ta = notesBox.querySelector("textarea");
+          if (ta) {
+            ta.value = (ta.value ? ta.value + "\n" : "") + "• " + item.name + ": " + item.desc;
+            ta.dispatchEvent(new Event("input", { bubbles: true }));
+            ta.focus();
+          }
+        }
+      };
+    }
+  }
+  function buildWrap() {
+    let wrap = document.getElementById("alkfory-50-subjects-wrap");
+    if (wrap) return wrap;
+    wrap = document.createElement("div");
+    wrap.id = "alkfory-50-subjects-wrap";
+    wrap.dir = "rtl";
+    const toggleBtn = document.createElement("button");
+    toggleBtn.type = "button";
+    toggleBtn.className = "alk-sub50-toggle";
+    toggleBtn.textContent = "🎓 عرض / إخفاء المنصات التعليمية (50 منصة لجميع المواد)";
+    const search = document.createElement("input");
+    search.type = "text";
+    search.placeholder = "ابحث باسم المادة أو المنصة أو رقمها (1 إلى 50)...";
+    search.style.cssText = "width:100%;box-sizing:border-box;padding:9px 12px;background:#0e0e0e;color:#fff;border:1px solid #444;border-radius:10px;font-size:12px;outline:none";
+    const list = document.createElement("div");
+    list.className = "alk-sub50-list";
+    const cards = [];
+    SUBJECT_PLATFORMS.forEach((item, idx) => {
+      const num = idx + 1;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "alk-sub50-card";
+      btn.dataset.q = (num + " " + item.name + " " + item.desc).toLowerCase();
+      btn.innerHTML = "<span class='alk-sub50-name'>" + num + " - " + item.name + "</span><span class='alk-sub50-desc'>" + item.desc + "</span>";
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        openPlatformCard(num, item);
+      });
+      list.appendChild(btn);
+      cards.push(btn);
+    });
+    toggleBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const hidden = list.style.display === "none";
+      list.style.display = hidden ? "flex" : "none";
+      search.style.display = hidden ? "block" : "none";
+    });
+    search.addEventListener("input", () => {
+      const q = search.value.trim().toLowerCase();
+      cards.forEach(c => { c.style.display = (!q || c.dataset.q.includes(q)) ? "flex" : "none"; });
+    });
+    wrap.appendChild(toggleBtn);
+    wrap.appendChild(search);
+    wrap.appendChild(list);
+    return wrap;
+  }
+  function isTopTwoProtected(el) {
+    const t = (el.textContent || "");
+    return t.includes("منصة الثقافة المالية - تانية بكالوريا") || t.includes("منصة كيريو اليابانية") || t.includes("منصاتك التعليمية");
+  }
+  function syncCleanLayout() {
+    if (!document.body) return;
+    const wrap = buildWrap();
+    const els = Array.from(document.querySelectorAll("h1, h2, h3, h4, h5, h6, p, div, span, section"));
+    const titleEl = els.find(el => {
+      if (!el || el === wrap || (el.closest && el.closest("#alkfory-50-subjects-wrap"))) return false;
+      if (el.children && el.children.length > 4) return false;
+      const t = (el.textContent || "").replace(/\s+/g, " ").trim();
+      if (t.includes("منصاتك التعليمية")) return false;
+      return t === "المنصات التعليمية" || t.includes("كل منصاتك التعليمية في مكان واحد");
+    });
+    if (titleEl) {
+      let anchor = titleEl;
+      if (titleEl.parentElement && titleEl.parentElement !== document.body && titleEl.parentElement.children.length <= 3) {
+        anchor = titleEl.parentElement;
+      }
+      if (anchor.parentElement && anchor.nextElementSibling !== wrap) {
+        anchor.parentElement.insertBefore(wrap, anchor.nextElementSibling);
+      }
+    } else {
+      const host = document.querySelector("main") || document.body;
+      if (!host.contains(wrap)) host.appendChild(wrap);
+    }
+    const allCards = Array.from(document.querySelectorAll("div, article, li, section"));
+    allCards.forEach(card => {
+      if (!card || card === document.body || card === document.documentElement) return;
+      if (card.id === "alkfory-50-subjects-wrap" || card.id === "alkfory-level-notes-card") return;
+      if (card.contains(wrap) || wrap.contains(card)) return;
+      if (card.querySelector && card.querySelector("#alkfory-level-notes-card")) return;
+      if (isTopTwoProtected(card)) return;
+      const txt = (card.textContent || "");
+      if (txt.includes("افتح المنصة") && txt.length < 450) {
+        card.classList.add("alk-hide-above-toggle");
+      }
+    });
+  }
+  const run = () => syncCleanLayout();
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", run);
+  else run();
+  window.addEventListener("load", run);
+  setInterval(run, 600);
+  setTimeout(run, 150);
+  setTimeout(run, 600);
+})();
+</script>
+<!-- ALKFORY_50_REAL_NO403_V10_END -->
+<!-- ALKFORY_50_GOOGLE_YT_V11_START -->
+<style id="ALKFORY-50-GYT-STYLE-V11">
+.alk-p50-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.alk-p50-gbtn { flex: 1; min-width: 110px; padding: 7px 10px; background: #182234; color: #93c5fd; border: 1px solid #3b82f6; border-radius: 9px; font-size: 11.5px; font-weight: bold; text-decoration: none; text-align: center; cursor: pointer; }
+.alk-p50-ybtn { flex: 1; min-width: 110px; padding: 7px 10px; background: #2d1117; color: #fca5a5; border: 1px solid #ef4444; border-radius: 9px; font-size: 11.5px; font-weight: bold; text-decoration: none; text-align: center; cursor: pointer; }
+</style>
+<script id="ALKFORY-50-GYT-SCRIPT-V11">
+(() => {
+  function addGoogleAndYoutubeButtons() {
+    const cards = Array.from(document.querySelectorAll(".alk-sub50-card"));
+    cards.forEach((card) => {
+      if (!card || card.querySelector(".alk-p50-actions")) return;
+      const titleEl = card.querySelector(".alk-sub50-name");
+      const descEl = card.querySelector(".alk-sub50-desc");
+      const rawTitle = ((titleEl && titleEl.textContent) || "").replace(/^\d+\s*-\s*/, "").trim();
+      const rawDesc = ((descEl && descEl.textContent) || "").split("•")[0].trim();
+      const queryText = (rawTitle + " " + rawDesc).trim() || "منصة تعليمية";
+      const googleUrl = "https://www.google.com/search?q=" + encodeURIComponent(queryText);
+      const ytUrl = "https://www.youtube.com/results?search_query=" + encodeURIComponent(rawTitle + " شرح مراجعة");
+      const actions = document.createElement("div");
+      actions.className = "alk-p50-actions";
+      const gLink = document.createElement("a");
+      gLink.className = "alk-p50-gbtn";
+      gLink.href = googleUrl;
+      gLink.target = "_blank";
+      gLink.rel = "noopener noreferrer";
+      gLink.textContent = "فتح جوجل 🔍";
+      gLink.addEventListener("click", (e) => { e.stopPropagation(); });
+      const yLink = document.createElement("a");
+      yLink.className = "alk-p50-ybtn";
+      yLink.href = ytUrl;
+      yLink.target = "_blank";
+      yLink.rel = "noopener noreferrer";
+      yLink.textContent = "يوتيوب ▶";
+      yLink.addEventListener("click", (e) => { e.stopPropagation(); });
+      actions.appendChild(gLink);
+      actions.appendChild(yLink);
+      card.appendChild(actions);
+    });
+  }
+  const boot = () => addGoogleAndYoutubeButtons();
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+  else boot();
+  window.addEventListener("load", boot);
+  setInterval(boot, 700);
+})();
+</script>
+<!-- ALKFORY_50_GOOGLE_YT_V11_END -->
+
+
+
+
+
+<!-- ALKFORY_50_STABLE_COPY_V16_START -->
+<style id="ALKFORY-50-STABLE-COPY-STYLE">
+.alk-p50-copybtn { flex: 1; min-width: 120px; padding: 7px 10px; background: #162a1d; color: #86efac; border: 1px solid #22c55e; border-radius: 9px; font-size: 11.5px; font-weight: bold; text-align: center; cursor: pointer; }
+</style>
+<script id="ALKFORY-50-STABLE-COPY-SCRIPT">
+(() => {
+  const DEFAULT_URLS = {
+    "منصة الثقافة المالية": "https://egy.app.spx-learning-square.com/dashboard",
+    "كيريو اليابانية QUREO": "https://qureoeg.com/",
+    "بسطتهالك – محمد صلاح": "https://bassthalk.com/",
+    "منصة محمد عبد المعبود": "https://abdelmaaboud.com/",
+    "منصة كريم عبده": "https://mrkareemabdo.com/",
+    "منصة نجوى": "https://www.nagwa.com/ar/eg/",
+    "منصة حصص مصر": "https://www.hesas.eg/",
+    "بنك المعرفة المصري": "https://www.ekb.eg/",
+    "نظام إدارة التعلم LMS": "https://lms.ekb.eg/",
+    "بوابة التعليم الإلكتروني": "https://elearning.moe.gov.eg/",
+    "منصة البث المباشر": "https://stream.moe.gov.eg/",
+    "منصة ذاكر": "https://study.ekb.eg/",
+    "Discovery Education": "https://www.discoveryeducation.com/",
+    "البريد المدرسي الموحد": "https://office365.emis.gov.eg/",
+    "بوابة الشهادات العامة": "https://moe-register.emis.gov.eg/",
+    "بوابة التعليم المصري": "https://moe.gov.eg/"
+  };
+  function showCopyToast(msg) {
+    let t = document.getElementById("alkfory-copy-only-toast");
+    if (!t) {
+      t = document.createElement("div");
+      t.id = "alkfory-copy-only-toast";
+      t.dir = "rtl";
+      t.style.cssText = "position:fixed;bottom:16px;left:14px;right:14px;z-index:2147483647;max-width:440px;margin:0 auto;background:#141414;border:1px solid #22c55e;border-radius:12px;padding:10px 14px;color:#fff;font-size:12px;box-shadow:0 10px 28px rgba(0,0,0,0.88);text-align:center";
+      document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.style.display = "block";
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => { if (t) t.style.display = "none"; }, 2500);
+  }
+  async function copyToClipboard(text) {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch (_) {}
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      const ok = document.execCommand("copy");
+      ta.remove();
+      return Boolean(ok);
+    } catch (_) {
+      return false;
+    }
+  }
+  function lockCopyButtons() {
+    const cards = Array.from(document.querySelectorAll(".alk-sub50-card"));
+    cards.forEach((card, idx) => {
+      const gBtn = card && card.querySelector(".alk-p50-gbtn");
+      if (!gBtn) return;
+      const titleEl = card.querySelector(".alk-sub50-name");
+      const rawTitle = ((titleEl && titleEl.textContent) || "").replace(/^\d+\s*-\s*/, "").trim();
+      const num = idx + 1;
+      const linkToCopy = DEFAULT_URLS[rawTitle] || ("https://egy.app.spx-learning-square.com/dashboard?platform=" + num);
+      gBtn.classList.add("alk-p50-copybtn");
+      if (gBtn.dataset.alkCopiedFlash !== "1" && gBtn.textContent !== "نسخ الرابط 📋") {
+        gBtn.textContent = "نسخ الرابط 📋";
+      }
+      if (gBtn.hasAttribute("href")) gBtn.removeAttribute("href");
+      if (gBtn.hasAttribute("target")) gBtn.removeAttribute("target");
+      if (gBtn.hasAttribute("rel")) gBtn.removeAttribute("rel");
+      gBtn.setAttribute("role", "button");
+      gBtn.setAttribute("tabindex", "0");
+      gBtn.dataset.copyUrl = linkToCopy;
+      if (!gBtn.dataset.alkCopyBoundV16) {
+        gBtn.dataset.alkCopyBoundV16 = "1";
+        gBtn.addEventListener("click", async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          const targetLink = gBtn.dataset.copyUrl || linkToCopy;
+          await copyToClipboard(targetLink);
+          gBtn.dataset.alkCopiedFlash = "1";
+          gBtn.textContent = "تم النسخ ✓";
+          showCopyToast("تم نسخ رابط " + (rawTitle || ("المنصة " + num)) + ": " + targetLink);
+          clearTimeout(gBtn._flashTimer);
+          gBtn._flashTimer = setTimeout(() => {
+            gBtn.dataset.alkCopiedFlash = "0";
+            gBtn.textContent = "نسخ الرابط 📋";
+          }, 1500);
+        }, true);
+      }
+    });
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", lockCopyButtons);
+  else lockCopyButtons();
+  setInterval(lockCopyButtons, 800);
+})();
+</script>
+<!-- ALKFORY_50_STABLE_COPY_V16_END -->
+</body>
+</html>
