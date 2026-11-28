@@ -4237,39 +4237,50 @@ body.alk-amb-night #alkfory-asa-ambient-layer {
 })();
 </script>
 <!-- ALKFORY_RHYMED_WISDOM_BANNER_V1_END -->
+
 <!-- ALKFORY_UPDATE_PROMPT_BANNER_V1_START -->
 <style id="ALKFORY-UPDATE-PROMPT-STYLE">
-#alkfory-app-update-modal{position:fixed;inset:0;z-index:2147483647;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;backdrop-filter:blur(4px)}
-#alkfory-app-update-modal.is-open{display:flex}
-#alkfory-app-update-card{width:100%;max-width:360px;background:#170910;border:1px solid rgba(255,71,120,.65);border-radius:18px;padding:16px 15px;box-sizing:border-box;color:#fffbeb;box-shadow:0 18px 42px rgba(0,0,0,.85);text-align:center}
-#alkfory-upd-badge{display:inline-block;background:rgba(255,71,120,.18);color:#ff85a8;border:1px solid rgba(255,71,120,.45);border-radius:999px;padding:3px 10px;font-size:11px;font-weight:bold;margin-bottom:8px}
-#alkfory-upd-title{font-size:15px;font-weight:bold;color:#fff;margin-bottom:6px}
-#alkfory-upd-desc{font-size:12px;line-height:1.6;color:#e5e7eb;margin-bottom:10px}
-#alkfory-upd-size{background:rgba(255,209,102,.12);border:1px solid rgba(255,209,102,.4);color:#ffd166;border-radius:10px;padding:6px 10px;font-size:11.5px;font-weight:bold;margin-bottom:12px}
-#alkfory-upd-actions{display:flex;gap:8px;justify-content:center}
-#alkfory-upd-reload{flex:1.3;background:#ff3876;color:#fff;border:none;border-radius:12px;padding:9px 12px;font-size:12px;font-weight:bold;cursor:pointer}
-#alkfory-upd-later{flex:.9;background:rgba(255,255,255,.08);color:#e5e7eb;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:9px 10px;font-size:11.5px;font-weight:bold;cursor:pointer}
+#alkfory-app-update-modal{position:fixed!important;inset:0!important;z-index:2147483647!important;background:rgba(0,0,0,.78)!important;display:none!important;align-items:center!important;justify-content:center!important;padding:16px!important;box-sizing:border-box!important;backdrop-filter:blur(4px)!important}
+#alkfory-app-update-modal.is-open{display:flex!important}
+#alkfory-app-update-card{width:100%!important;max-width:360px!important;background:#170910!important;border:1px solid rgba(255,71,120,.75)!important;border-radius:18px!important;padding:16px 15px!important;box-sizing:border-box!important;color:#fffbeb!important;box-shadow:0 18px 42px rgba(0,0,0,.9)!important;text-align:center!important;font-family:inherit!important}
+#alkfory-upd-badge{display:inline-block!important;background:rgba(255,71,120,.2)!important;color:#ff85a8!important;border:1px solid rgba(255,71,120,.5)!important;border-radius:999px!important;padding:3px 10px!important;font-size:11px!important;font-weight:bold!important;margin-bottom:8px!important}
+#alkfory-upd-title{font-size:15px!important;font-weight:bold!important;color:#fff!important;margin-bottom:6px!important}
+#alkfory-upd-desc{font-size:12px!important;line-height:1.6!important;color:#e5e7eb!important;margin-bottom:10px!important}
+#alkfory-upd-size{background:rgba(255,209,102,.14)!important;border:1px solid rgba(255,209,102,.45)!important;color:#ffd166!important;border-radius:10px!important;padding:6px 10px!important;font-size:11.5px!important;font-weight:bold!important;margin-bottom:12px!important}
+#alkfory-upd-actions{display:flex!important;gap:8px!important;justify-content:center!important}
+#alkfory-upd-reload{flex:1.3!important;background:#ff3876!important;color:#fff!important;border:none!important;border-radius:12px!important;padding:9px 12px!important;font-size:12px!important;font-weight:bold!important;cursor:pointer!important}
+#alkfory-upd-later{flex:.9!important;background:rgba(255,255,255,.1)!important;color:#e5e7eb!important;border:1px solid rgba(255,255,255,.2)!important;border-radius:12px!important;padding:9px 10px!important;font-size:11.5px!important;font-weight:bold!important;cursor:pointer!important}
 </style>
 <script id="ALKFORY-UPDATE-PROMPT-SCRIPT">
 (()=>{
-const SZ='187.3 KB';
+const SZ='187.5 KB';
 const MS=30*60*1000;
 const K_LAST='alkfory_last_update_notice_at';
-function openM(force){
-if(!document.body)return;
+let dismissedThisLoad=false;
+function ensureM(){
+if(!document.body)return null;
 let m=document.getElementById('alkfory-app-update-modal');
 if(!m){m=document.createElement('div');m.id='alkfory-app-update-modal';m.dir='rtl';
-m.innerHTML="<div id='alkfory-app-update-card'><div id='alkfory-upd-badge'>🔔 إشعار تحديث التطبيق</div><div id='alkfory-upd-title'>التطبيق عاوز يتحدث</div><div id='alkfory-upd-desc'>يتوفر تحديث جديد للتطبيق جاهز للتحميل والتطبيق الآن.</div><div id='alkfory-upd-size'>📦 حجم التحديث: "+SZ+"</div><div id='alkfory-upd-actions'><button type='button' id='alkfory-upd-reload'>تحديث الآن ↻</button><button type='button' id='alkfory-upd-later'>لاحقاً</button></div></div>";
+m.innerHTML="<div id='alkfory-app-update-card'><div id='alkfory-upd-badge'>🔔 إشعار تحديث التطبيق</div><div id='alkfory-upd-title'>التطبيق عاوز يتحدث</div><div id='alkfory-upd-desc'>تم رفع تحديث جديد للتطبيق، حدّث الآن للحصول على أحدث المزايا.</div><div id='alkfory-upd-size'>📦 حجم التحديث: "+SZ+"</div><div id='alkfory-upd-actions'><button type='button' id='alkfory-upd-reload'>تحديث الآن ↻</button><button type='button' id='alkfory-upd-later'>لاحقاً</button></div></div>";
 document.body.appendChild(m);}
 const r=document.getElementById('alkfory-upd-reload');
-if(r&&!r.dataset.b){r.dataset.b='1';r.onclick=(e)=>{e.preventDefault();e.stopPropagation();location.reload();};}
+if(r&&!r.dataset.b){r.dataset.b='1';r.onclick=(e)=>{e.preventDefault();e.stopPropagation();dismissedThisLoad=false;try{localStorage.setItem(K_LAST,'0');}catch(_){}location.reload(true);};}
 const l=document.getElementById('alkfory-upd-later');
-if(l&&!l.dataset.b){l.dataset.b='1';l.onclick=(e)=>{e.preventDefault();e.stopPropagation();m.classList.remove('is-open');try{localStorage.setItem(K_LAST,String(Date.now()));}catch(_){}};}}
-let last=0;try{last=parseInt(localStorage.getItem(K_LAST)||'0',10)||0;}catch(_){}
-if(force||(Date.now()-last>=MS)){m.classList.add('is-open');try{localStorage.setItem(K_LAST,String(Date.now()));}catch(_){}}
+if(l&&!l.dataset.b){l.dataset.b='1';l.onclick=(e)=>{e.preventDefault();e.stopPropagation();dismissedThisLoad=true;m.classList.remove('is-open');try{localStorage.setItem(K_LAST,String(Date.now()));}catch(_){}};}}
+return m;
 }
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>openM(true));else openM(true);
-setInterval(()=>openM(false),MS);
+function tick(force){
+const m=ensureM();
+if(!m)return;
+if(dismissedThisLoad&&!force)return;
+let last=0;try{last=parseInt(localStorage.getItem(K_LAST)||'0',10)||0;}catch(_){}
+if(force||(Date.now()-last>=MS)||!last){dismissedThisLoad=false;m.classList.add('is-open');try{localStorage.setItem(K_LAST,String(Date.now()));}catch(_){}}
+}
+function boot(){tick(true);setTimeout(()=>tick(false),400);setTimeout(()=>tick(false),1500);}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+window.addEventListener('load',()=>tick(false));
+setInterval(()=>tick(false),MS);
+setInterval(()=>{const m=document.getElementById('alkfory-app-update-modal');if(!m&&!dismissedThisLoad)tick(false);},1200);
 })();
 </script>
 <!-- ALKFORY_UPDATE_PROMPT_BANNER_V1_END -->
